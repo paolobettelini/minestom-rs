@@ -199,3 +199,9 @@ impl Component {
         Ok(Self { inner: result })
     }
 }
+
+impl ToJava for &Component {
+    fn to_java<'local>(&self, env: &mut jni::JNIEnv<'local>) -> Result<JniValue<'local>> {
+        self.as_jvalue(env)
+    }
+}

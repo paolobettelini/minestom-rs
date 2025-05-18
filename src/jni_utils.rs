@@ -323,6 +323,14 @@ impl JavaObject {
         check_exception(&mut env)?;
         Ok(result.z()?)
     }
+
+    /// Converts a GlobalRef to a JObject safely
+    pub fn global_to_local(global_ref: &GlobalRef) -> Result<JObject> {
+        let env = get_env()?;
+        let obj = env.new_local_ref(unsafe { JObject::from_raw(global_ref.as_raw()) })?;
+        debug!("Created safe local reference from GlobalRef");
+        Ok(obj)
+    }
 }
 
 impl fmt::Debug for JavaObject {

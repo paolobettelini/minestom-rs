@@ -1,14 +1,40 @@
 use log::info;
 use minestom::MinestomServer;
 use minestom::{
+    command::{Command, CommandSender},
     component,
     entity::GameMode,
     event::{
-        Event,
         player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent},
     },
 };
 use minestom_rs as minestom;
+
+// Define the parkour command
+struct ParkourCommand;
+
+impl Command for ParkourCommand {
+    fn name(&self) -> &str {
+        "parkour"
+    }
+
+    fn aliases(&self) -> Vec<&str> {
+        vec!["pk"]
+    }
+
+    fn execute(&self, sender: &CommandSender, _args: &[String]) -> minestom::Result<()> {
+        info!("Player used the parkour command!");
+        
+        // Create a gold, italic text component
+        let message = component!("Welcome to parkour! This feature is coming soon...")
+            .gold()
+            .italic();
+            
+        sender.send_message(&message)?;
+        
+        Ok(())
+    }
+}
 
 pub async fn run_server() -> minestom::Result<()> {
     init_logging();
@@ -22,27 +48,29 @@ pub async fn run_server() -> minestom::Result<()> {
     let instance = instance_manager.create_instance_container()?;
     instance.load_anvil_world(anvil_path)?;
 
+    // Register commands
+    let command_manager = minecraft_server.command_manager()?;
+    command_manager.register(ParkourCommand)?;
+
     let event_handler = minecraft_server.event_handler()?;
     let spawn_instance = instance.clone();
 
-    event_handler.register_event_listener(
-        move |config_event: &AsyncPlayerConfigurationEvent| {
-            info!("Setting spawning instance for player");
-            config_event.spawn_instance(&spawn_instance)?;
+    event_handler.listen(move |config_event: &AsyncPlayerConfigurationEvent| {
+        info!("Setting spawning instance for player");
+        config_event.spawn_instance(&spawn_instance)?;
 
-            // Try to get player information
-            if let Ok(player) = config_event.player() {
-                if let Ok(name) = player.get_username() {
-                    info!("Player configured: {}", name);
-                }
+        // Try to get player information
+        if let Ok(player) = config_event.player() {
+            if let Ok(name) = player.get_username() {
+                info!("Player configured: {}", name);
             }
+        }
 
-            Ok(())
-        },
-    )?;
+        Ok(())
+    })?;
 
     let welcome_instance = instance.clone();
-    event_handler.register_event_listener(move |spawn_event: &PlayerSpawnEvent| {
+    event_handler.listen(move |spawn_event: &PlayerSpawnEvent| {
         info!("Player spawn event triggered");
         if let Ok(player) = spawn_event.player() {
             let username = player.get_username()?;

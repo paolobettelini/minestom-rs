@@ -223,7 +223,7 @@ pub async fn run_server() -> minestom::Result<()> {
     let server_ref = minecraft_server.clone();
     let states_ref = player_states.clone();
 
-    event_handler.register_event_listener(
+    event_handler.listen(
         move |config_event: &AsyncPlayerConfigurationEvent| {
             info!("Setting spawning instance for player");
 
@@ -242,7 +242,7 @@ pub async fn run_server() -> minestom::Result<()> {
     )?;
 
     let states_ref = player_states.clone();
-    event_handler.register_event_listener(move |spawn_event: &PlayerSpawnEvent| {
+    event_handler.listen(move |spawn_event: &PlayerSpawnEvent| {
         info!("Player spawn event triggered");
         if let Ok(player) = spawn_event.player() {
             let username = player.get_username()?;
@@ -256,7 +256,7 @@ pub async fn run_server() -> minestom::Result<()> {
     })?;
 
     let states_ref = player_states.clone();
-    event_handler.register_event_listener(move |disconnect_event: &PlayerDisconnectEvent| {
+    event_handler.listen(move |disconnect_event: &PlayerDisconnectEvent| {
         info!("Player disconnect event triggered");
         if let Ok(player) = disconnect_event.player() {
             if let Ok(username) = player.get_username() {
@@ -267,7 +267,7 @@ pub async fn run_server() -> minestom::Result<()> {
         Ok(())
     })?;
 
-    event_handler.register_event_listener(move |event: &ServerListPingEvent| {
+    event_handler.listen(move |event: &ServerListPingEvent| {
         let response_data = event.get_response_data()?;
 
         response_data.set_online(-1)?;
@@ -279,7 +279,7 @@ pub async fn run_server() -> minestom::Result<()> {
     })?;
 
     let states_ref = player_states.clone();
-    event_handler.register_event_listener(move |spawn_event: &PlayerMoveEvent| {
+    event_handler.listen(move |spawn_event: &PlayerMoveEvent| {
         if let Ok(player) = spawn_event.player() {
             if let Ok(name) = player.get_username() {
                 if let Some(state) = states_ref.lock().unwrap().get_mut(&name) {

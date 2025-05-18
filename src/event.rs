@@ -22,7 +22,7 @@ pub(crate) static CALLBACKS: Lazy<
 
 static NEXT_CALLBACK_ID: AtomicU64 = AtomicU64::new(1);
 
-/// Represents Minestom's GlobalEventHandler that can be used to register event listeners.
+/// Represents Minestom's EventNode that can be used to register event listeners.
 /// This is the root event node that receives all server events.
 #[derive(Clone)]
 pub struct EventHandler {
@@ -58,26 +58,13 @@ impl EventHandler {
         }
     }
 
-    /// Registers an event listener for a specific event type.
-    /// The callback will receive the specific event type directly, not a generic `&dyn Event`.
-    ///
-    /// # Type Parameters
-    /// * `E` - The event type that implements the `Event` trait
-    ///
-    /// # Arguments
-    /// * `callback` - A function that will be called with the specific event type
-    pub fn register_event_listener<E, F>(&self, callback: F) -> Result<()>
-    where
-        E: Event + 'static,
-        F: Fn(&E) -> Result<()> + Send + Sync + 'static,
-    {
-        // Create a wrapper function that will downcast the dyn Event to the specific type
+    /// Creates a new event listener with optional priority
+    pub fn listen_with_priority<E: Event + 'static>(&self, priority: Option<i32>, callback: impl Fn(&E) -> Result<()> + Send + Sync + 'static) -> Result<()> {
+        // Create wrapper that handles priority if set
         let wrapper = move |event: &dyn Event| -> Result<()> {
-            // Downcast the event to the specific type
             if let Some(e) = event.as_any().downcast_ref::<E>() {
                 callback(e)
             } else {
-                // This should never happen unless there's a bug in the Java side
                 error!("Failed to downcast event to {}", std::any::type_name::<E>());
                 Err(MinestomError::EventError(format!(
                     "Failed to downcast event to {}",
@@ -86,154 +73,62 @@ impl EventHandler {
             }
         };
 
-        self.register_event_listener_internal(E::java_class_name(), wrapper)
-    }
-
-    /// Internal implementation for registering an event listener.
-    /// This is used by the generic `register_event_listener` method.
-    fn register_event_listener_internal<F>(&self, event_class_name: &str, callback: F) -> Result<()>
-    where
-        F: Fn(&dyn Event) -> Result<()> + Send + Sync + 'static,
-    {
         let mut env = get_env()?;
 
-        debug!("Finding required classes for {}...", event_class_name);
+        // Find event class
+        let event_class = env.find_class(E::java_class_name()).map_err(|e| {
+            error!("Failed to find event class {}: {}", E::java_class_name(), e);
+            MinestomError::EventError(format!("Failed to find event class {}", E::java_class_name()))
+        })?;
 
-        // Find needed classes - use more robust class lookups
-        let listener_class = match env.find_class("net/minestom/server/event/EventListener") {
-            Ok(class) => class,
-            Err(e) => {
-                error!("Failed to find EventListener class: {}", e);
-                return Err(MinestomError::EventError(
-                    "Failed to find EventListener class".to_string(),
-                ));
-            }
-        };
+        let callback_class = env.find_class("org/example/ConsumerCallback").map_err(|e| {
+            error!("Failed to find ConsumerCallback class: {}", e);
+            MinestomError::EventError("Failed to find ConsumerCallback class".to_string())
+        })?;
 
-        let event_class = match env.find_class(event_class_name) {
-            Ok(class) => class,
-            Err(e) => {
-                error!("Failed to find event class {}: {}", event_class_name, e);
-                return Err(MinestomError::EventError(format!(
-                    "Failed to find event class {}",
-                    event_class_name
-                )));
-            }
-        };
-
-        let callback_class = match env.find_class("org/example/ConsumerCallback") {
-            Ok(class) => class,
-            Err(e) => {
-                error!("Failed to find ConsumerCallback class: {}", e);
-                return Err(MinestomError::EventError(
-                    "Failed to find ConsumerCallback class".to_string(),
-                ));
-            }
-        };
-
-        debug!("Found all required classes");
-
-        // Store the callback in our global map
+        // Store callback
         let callback_id = NEXT_CALLBACK_ID.fetch_add(1, Ordering::SeqCst);
-        let callback = Arc::new(callback);
-
-        // Insert the callback before creating the Java objects to ensure it's available
+        let callback = Arc::new(wrapper);
         CALLBACKS.write().insert(callback_id, callback);
-        info!("Created callback with ID: {}", callback_id);
 
-        // Create our callback instance with the callback ID
-        let callback_instance = match env.new_object(
+        // Create callback instance
+        let callback_instance = env.new_object(
             &callback_class,
             "(J)V",
             &[JniValue::Long(callback_id as i64).as_jvalue()],
-        ) {
-            Ok(instance) => instance,
-            Err(e) => {
-                error!("Failed to create callback instance: {}", e);
-                // Remove the callback since we failed to create the Java object
-                CALLBACKS.write().remove(&callback_id);
-                return Err(MinestomError::EventError(
-                    "Failed to create callback instance".to_string(),
-                ));
-            }
-        };
+        ).map_err(|e| {
+            error!("Failed to create callback instance: {}", e);
+            CALLBACKS.write().remove(&callback_id);
+            MinestomError::EventError("Failed to create callback instance".to_string())
+        })?;
 
-        debug!("Created callback instance");
+        let callback_global_ref = env.new_global_ref(callback_instance).map_err(|e| {
+            error!("Failed to create global reference for callback: {}", e);
+            CALLBACKS.write().remove(&callback_id);
+            MinestomError::EventError("Failed to create global reference for callback".to_string())
+        })?;
 
-        // Create a global reference for the callback instance to prevent GC
-        let callback_global_ref = match env.new_global_ref(callback_instance) {
-            Ok(global_ref) => global_ref,
-            Err(e) => {
-                error!("Failed to create global reference for callback: {}", e);
-                CALLBACKS.write().remove(&callback_id);
-                return Err(MinestomError::EventError(
-                    "Failed to create global reference for callback".to_string(),
-                ));
-            }
-        };
-        let callback_obj = callback_global_ref.as_obj();
-
-        // Create the EventListener using the static of() method
-        debug!("Creating EventListener...");
-        let result = match env.call_static_method(
-            &listener_class,
-            "of",
-            "(Ljava/lang/Class;Ljava/util/function/Consumer;)Lnet/minestom/server/event/EventListener;",
-            &[
-                jni::objects::JValue::Object(&event_class),
-                jni::objects::JValue::Object(&callback_obj),
-            ],
-        ) {
-            Ok(result) => result,
-            Err(e) => {
-                error!("Failed to create EventListener: {}", e);
-                CALLBACKS.write().remove(&callback_id);
-                return Err(MinestomError::EventError("Failed to create EventListener".to_string()));
-            }
-        };
-
-        let listener = match result.l() {
-            Ok(l) => l,
-            Err(e) => {
-                error!("Failed to get EventListener object: {}", e);
-                CALLBACKS.write().remove(&callback_id);
-                return Err(MinestomError::EventError(
-                    "Failed to get EventListener object".to_string(),
-                ));
-            }
-        };
-        debug!("Created event listener");
-
-        // Create a JavaObject from the listener and keep it alive
-        let listener = match JavaObject::from_env(&mut env, listener) {
-            Ok(obj) => obj,
-            Err(e) => {
-                error!("Failed to create JavaObject from listener: {}", e);
-                CALLBACKS.write().remove(&callback_id);
-                return Err(MinestomError::EventError(
-                    "Failed to create JavaObject from listener".to_string(),
-                ));
-            }
-        };
-
-        debug!("Adding event listener to event handler...");
-        match self.inner.call_void_method(
-            "addListener",
-            "(Lnet/minestom/server/event/EventListener;)Lnet/minestom/server/event/EventNode;",
-            &[JniValue::from(listener.as_obj()?)],
-        ) {
-            Ok(_) => {
-                info!("Event listener added successfully");
-                Ok(())
-            }
-            Err(e) => {
-                error!("Failed to add event listener: {}", e);
-                CALLBACKS.write().remove(&callback_id);
-                Err(MinestomError::EventError(
-                    "Failed to add event listener".to_string(),
-                ))
-            }
+        // Set priority if specified
+        if let Some(priority) = priority {
+            self.set_priority(priority)?;
         }
+
+        // Add listener using the global reference directly
+        self.inner.call_void_method(
+            "addListener",
+            "(Ljava/lang/Class;Ljava/util/function/Consumer;)Lnet/minestom/server/event/EventNode;",
+            &[
+                JniValue::Object(event_class.into()).into(),
+                JniValue::Object(JavaObject::global_to_local(&callback_global_ref)?).into(),
+            ],
+        )?;
+
+        Ok(())
+    }
+
+    /// Convenience method to register a listener without priority
+    pub fn listen<E: Event + 'static>(&self, callback: impl Fn(&E) -> Result<()> + Send + Sync + 'static) -> Result<()> {
+        self.listen_with_priority::<E>(None, callback)
     }
 
     /// Gets the priority of this event handler.
