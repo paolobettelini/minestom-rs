@@ -3,6 +3,7 @@ use std::fmt;
 use crate::jni_utils::{get_env, JavaObject, JniValue};
 use crate::sound::Sound;
 use crate::text::Component;
+use crate::coordinate::Position;
 use crate::Result;
 use jni::objects::{JObject, JValue};
 
@@ -134,5 +135,22 @@ impl Player {
             "(Lnet/kyori/adventure/sound/Sound;)V",
             &[sound.as_jvalue(&mut env)?],
         )
+    }
+
+    /// Gets the current position of the player.
+    pub fn get_position(&self) -> Result<Position> {
+        let mut env = get_env()?;
+        let result = self.inner.call_object_method(
+            "getPosition",
+            "()Lnet/minestom/server/coordinate/Pos;",
+            &[],
+        )?;
+
+        let obj = result.as_obj()?;
+        let x = env.call_method(&obj, "x", "()D", &[])?.d()?;
+        let y = env.call_method(&obj, "y", "()D", &[])?.d()?;
+        let z = env.call_method(&obj, "z", "()D", &[])?.d()?;
+
+        Ok(Position::new(x, y, z))
     }
 }

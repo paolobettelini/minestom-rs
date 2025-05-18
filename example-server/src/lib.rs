@@ -6,7 +6,7 @@ use minestom_rs::{MinestomError, MinestomServer};
 use std::panic;
 
 mod lobby;
-//mod parkour;
+mod parkour;
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_org_example_Main_startServer(env: JNIEnv, class: JClass) -> jint {
@@ -36,7 +36,7 @@ pub extern "system" fn Java_org_example_Main_startServer(env: JNIEnv, class: JCl
     // Run server
     let result = panic::catch_unwind(|| {
         runtime.block_on(async {
-            match lobby::run_server().await {
+            match parkour::run_server().await {
                 Ok(_) => 0,
                 Err(e) => {
                     eprintln!("server error: {}", e);

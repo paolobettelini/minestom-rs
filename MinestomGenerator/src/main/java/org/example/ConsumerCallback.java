@@ -20,10 +20,10 @@ public class ConsumerCallback implements InvocationHandler, Consumer<Object> {
 
     @Override
     public void accept(Object event) {
-        System.out.println("accept called with event: " + event.getClass().getName());
-        System.out.println("Event details: " + event.toString());
+        //System.out.println("accept called with event: " + event.getClass().getName());
+        //System.out.println("Event details: " + event.toString());
         invokeNativeCallback(nativeCallbackPtr, event);
-        System.out.println("Native callback completed for event: " + event.getClass().getName());
+        //System.out.println("Native callback completed for event: " + event.getClass().getName());
     }
 
     @Override

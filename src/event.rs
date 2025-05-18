@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use crate::coordinate::{Pos, Position};
 
 // Re-export event types at the top-level
 pub use self::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent};
@@ -372,25 +373,13 @@ pub mod player {
         /// Gets the player being configured.
         pub fn player(&self) -> Result<Player> {
             let mut env = get_env()?;
-
-            debug!("Getting player from configuration event...");
-
-            // Create a local frame to manage references
-            let _frame = env.push_local_frame(16)?;
-
             let result = self.inner.call_object_method(
                 "getPlayer",
                 "()Lnet/minestom/server/entity/Player;",
                 &[],
             )?;
-
-            let result_obj = result.as_obj()?;
-            if result_obj.is_null() {
-                error!("getPlayer returned null");
-                return Err(MinestomError::EventError("Player is null".to_string()));
-            }
-
-            Ok(Player::new(JavaObject::from_env(&mut env, result_obj)?))
+            let java_obj = JavaObject::from_env(&mut env, result.as_obj()?)?;
+            Ok(Player::new(java_obj))
         }
 
         /// Returns true if this is the first time the player is in the configuration phase.
@@ -408,6 +397,52 @@ pub mod player {
 
         fn java_class_name() -> &'static str {
             "net/minestom/server/event/player/AsyncPlayerConfigurationEvent"
+        }
+
+        fn new(inner: JavaObject) -> Self {
+            Self { inner }
+        }
+    }
+
+    pub struct PlayerMoveEvent {
+        inner: JavaObject,
+    }
+
+    impl PlayerMoveEvent {
+        pub fn player(&self) -> Result<Player> {
+            let mut env = get_env()?;
+            let result = self.inner.call_object_method(
+                "getPlayer",
+                "()Lnet/minestom/server/entity/Player;",
+                &[],
+            )?;
+            let java_obj = JavaObject::from_env(&mut env, result.as_obj()?)?;
+            Ok(Player::new(java_obj))
+        }
+
+        pub fn new_position(&self) -> Result<Position> {
+            let mut env = get_env()?;
+            let result = self.inner.call_object_method(
+                "getNewPosition",
+                "()Lnet/minestom/server/coordinate/Pos;",
+                &[],
+            )?;
+            let pos = Pos::new(JavaObject::from_env(&mut env, result.as_obj()?)?);
+            pos.to_position()
+        }
+
+        pub fn cancel(&mut self) -> Result<()> {
+            self.inner.call_void_method("setCancelled", "(Z)V", &[JniValue::Bool(true)])
+        }
+    }
+
+    impl Event for PlayerMoveEvent {
+        fn as_any(&self) -> &dyn Any {
+            self
+        }
+
+        fn java_class_name() -> &'static str {
+            "net/minestom/server/event/player/PlayerMoveEvent"
         }
 
         fn new(inner: JavaObject) -> Self {

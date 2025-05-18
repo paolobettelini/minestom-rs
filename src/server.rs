@@ -8,6 +8,7 @@ use jni::sys::JNIEnv;
 use log::{debug, info, warn};
 use std::path::Path;
 
+#[derive(Clone)]
 pub struct MinestomServer {
     inner: JavaObject,
 }

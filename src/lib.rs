@@ -27,7 +27,7 @@ use crate::event::CALLBACKS;
 use crate::jni_utils::JavaObject;
 pub use command::Command;
 pub use entity::Player;
-pub use event::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent};
+pub use event::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent, PlayerMoveEvent};
 pub use event::Event;
 pub use instance::InstanceContainer;
 use jni::objects::{JObject, JString};
@@ -49,6 +49,7 @@ pub static EVENT_REGISTRY: Lazy<RwLock<HashMap<String, EventConstructor>>> = Laz
     // Register built-in event types
     register_event_type::<PlayerSpawnEvent>(&mut registry);
     register_event_type::<AsyncPlayerConfigurationEvent>(&mut registry);
+    register_event_type::<PlayerMoveEvent>(&mut registry);
 
     RwLock::new(registry)
 });

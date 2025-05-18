@@ -1,5 +1,5 @@
 use log::{debug, error, info};
-use minestom::{MinestomServer, Block};
+use minestom::{Block, MinestomServer};
 use minestom::{
     component,
     entity::GameMode,
