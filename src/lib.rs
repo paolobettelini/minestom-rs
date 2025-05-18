@@ -1,39 +1,41 @@
+pub mod block;
 pub mod command;
 pub mod coordinate;
 pub mod entity;
 pub mod error;
 pub mod event;
 pub mod instance;
-pub mod jni_utils;
 pub mod jni_env;
+pub mod jni_utils;
 pub mod server;
-pub mod text;
 pub mod sound;
+pub mod text;
 
 pub use error::MinestomError;
 use jni::sys::{jint, JNI_VERSION_1_8};
 use jni::JavaVM;
 use std::path::Path;
 pub type Result<T> = std::result::Result<T, MinestomError>;
+pub use block::Block;
 pub use coordinate::{Pos, Position};
 pub use server::MinestomServer;
-pub use text::Component;
 pub use sound::{Sound, SoundEvent, Source};
+pub use text::Component;
 
 // Re-export commonly used types
-pub use event::Event;
-pub use event::player::{PlayerSpawnEvent, AsyncPlayerConfigurationEvent};
-pub use instance::InstanceContainer;
+use crate::event::CALLBACKS;
+use crate::jni_utils::JavaObject;
 pub use command::Command;
 pub use entity::Player;
-use crate::jni_utils::JavaObject;
+pub use event::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent};
+pub use event::Event;
+pub use instance::InstanceContainer;
 use jni::objects::{JObject, JString};
 use jni::sys::{jlong, jobject, JNIEnv};
-use std::panic::{self, AssertUnwindSafe};
 use log::{debug, error, info};
-use crate::event::CALLBACKS;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
+use std::panic::{self, AssertUnwindSafe};
 use std::sync::RwLock;
 
 /// Type alias for event constructor functions that create event instances from JavaObjects
@@ -41,26 +43,23 @@ pub type EventConstructor = fn(JavaObject) -> Box<dyn Event>;
 
 /// A registry that maps Java class names to event constructor functions.
 /// This allows dynamic instantiation of event types without hardcoded match statements.
-pub static EVENT_REGISTRY: Lazy<RwLock<HashMap<String, EventConstructor>>> = 
-    Lazy::new(|| {
-        let mut registry = HashMap::new();
-        
-        // Register built-in event types
-        register_event_type::<PlayerSpawnEvent>(&mut registry);
-        register_event_type::<AsyncPlayerConfigurationEvent>(&mut registry);
-        
-        RwLock::new(registry)
-    });
+pub static EVENT_REGISTRY: Lazy<RwLock<HashMap<String, EventConstructor>>> = Lazy::new(|| {
+    let mut registry = HashMap::new();
+
+    // Register built-in event types
+    register_event_type::<PlayerSpawnEvent>(&mut registry);
+    register_event_type::<AsyncPlayerConfigurationEvent>(&mut registry);
+
+    RwLock::new(registry)
+});
 
 /// Helper function to register an event type in the registry.
 fn register_event_type<E: Event + 'static>(registry: &mut HashMap<String, EventConstructor>) {
     let class_name = E::java_class_name().replace("/", ".");
-    
+
     // Constructor function that creates a new instance of the event
-    let constructor: EventConstructor = |java_obj| {
-        Box::new(E::new(java_obj))
-    };
-    
+    let constructor: EventConstructor = |java_obj| Box::new(E::new(java_obj));
+
     registry.insert(class_name, constructor);
 }
 
@@ -68,13 +67,14 @@ fn register_event_type<E: Event + 'static>(registry: &mut HashMap<String, EventC
 /// This can be called from anywhere to extend the supported event types.
 pub fn register_event<E: Event + 'static>() {
     let class_name = E::java_class_name().replace("/", ".");
-    
+
     // Constructor function that creates a new instance of the event
-    let constructor: EventConstructor = |java_obj| {
-        Box::new(E::new(java_obj))
-    };
-    
-    EVENT_REGISTRY.write().unwrap().insert(class_name, constructor);
+    let constructor: EventConstructor = |java_obj| Box::new(E::new(java_obj));
+
+    EVENT_REGISTRY
+        .write()
+        .unwrap()
+        .insert(class_name, constructor);
 }
 
 /// Initialize the JVM and required Minestom classes.
@@ -116,7 +116,7 @@ pub unsafe extern "system" fn Java_org_example_ConsumerCallback_invokeNativeCall
                 return;
             }
         };
-        
+
         // Create a mutable reference to the environment
         let mut env = env_wrapper;
 
@@ -146,13 +146,14 @@ pub unsafe extern "system" fn Java_org_example_ConsumerCallback_invokeNativeCall
         };
 
         // Get class name using getName() method
-        let class_name_obj = match env.call_method(&event_class, "getName", "()Ljava/lang/String;", &[]) {
-            Ok(obj) => obj,
-            Err(e) => {
-                error!("Failed to call getName(): {}", e);
-                return;
-            }
-        };
+        let class_name_obj =
+            match env.call_method(&event_class, "getName", "()Ljava/lang/String;", &[]) {
+                Ok(obj) => obj,
+                Err(e) => {
+                    error!("Failed to call getName(): {}", e);
+                    return;
+                }
+            };
 
         let class_name: JString = match class_name_obj.l() {
             Ok(s) => s.into(),
@@ -223,6 +224,6 @@ pub unsafe extern "system" fn Java_org_example_ConsumerCallback_invokeNativeCall
     if let Err(e) = result {
         error!("Panic occurred in native callback: {:?}", e);
     }
-    
+
     debug!("Native callback completed");
 }

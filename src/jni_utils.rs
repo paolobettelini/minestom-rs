@@ -2,13 +2,13 @@ use crate::error::MinestomError;
 use crate::Result;
 use jni::objects::{GlobalRef, JObject, JString, JValue, JValueGen};
 use jni::{JNIEnv, JavaVM};
-use parking_lot::Mutex;
-use std::path::Path;
-use std::sync::Arc;
-use std::fmt;
-use std::sync::atomic::{AtomicBool, Ordering};
 use log::{debug, error, info, warn};
+use parking_lot::Mutex;
 use std::cell::RefCell;
+use std::fmt;
+use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::thread_local;
 
 lazy_static::lazy_static! {
@@ -45,7 +45,8 @@ pub fn attach_jvm(env: &JNIEnv) -> Result<()> {
     }
 
     // Retrieve the raw JavaVM handle from the provided JNIEnv
-    let raw_vm: JavaVM = env.get_java_vm()
+    let raw_vm: JavaVM = env
+        .get_java_vm()
         .map_err(|e| MinestomError::JvmInit(format!("Failed to get JavaVM from JNIEnv: {}", e)))?;
     let arc_vm = Arc::new(raw_vm);
 
@@ -77,7 +78,8 @@ pub fn get_env() -> Result<JNIEnv<'static>> {
 
     let guard = JVM_INSTANCE.lock();
     if let Some(ref java_vm_arc) = *guard {
-        let env = java_vm_arc.attach_current_thread_permanently()
+        let env = java_vm_arc
+            .attach_current_thread_permanently()
             .map_err(|e| MinestomError::Jni(e))?;
         // SAFETY: The JavaVM is stored in a static and outlives all JNIEnv handles
         Ok(unsafe { std::mem::transmute(env) })
@@ -95,7 +97,9 @@ pub struct JavaObject {
 impl JavaObject {
     /// Creates a new JavaObject from a GlobalRef.
     pub fn new(global_ref: GlobalRef) -> Self {
-        Self { inner: Arc::new(global_ref) }
+        Self {
+            inner: Arc::new(global_ref),
+        }
     }
 
     /// Creates a new JavaObject from a JObject in the given environment.
@@ -142,20 +146,26 @@ impl JavaObject {
         for arg in args.iter() {
             match arg {
                 JniValue::Object(_) => {
-                    jvalue_args.push(jni::objects::JValue::from(owned_java_args_iter.next().unwrap()));
+                    jvalue_args.push(jni::objects::JValue::from(
+                        owned_java_args_iter.next().unwrap(),
+                    ));
                 }
                 JniValue::String(_) => {
-                    jvalue_args.push(jni::objects::JValue::from(owned_java_args_iter.next().unwrap()));
+                    jvalue_args.push(jni::objects::JValue::from(
+                        owned_java_args_iter.next().unwrap(),
+                    ));
                 }
                 JniValue::Int(i) => jvalue_args.push(jni::objects::JValue::Int(*i)),
                 JniValue::Long(l) => jvalue_args.push(jni::objects::JValue::Long(*l)),
                 JniValue::Double(d) => jvalue_args.push(jni::objects::JValue::Double(*d)),
                 JniValue::Float(f) => jvalue_args.push(jni::objects::JValue::Float(*f)),
-                JniValue::Bool(b) => jvalue_args.push(jni::objects::JValue::Bool(if *b { 1 } else { 0 })),
+                JniValue::Bool(b) => {
+                    jvalue_args.push(jni::objects::JValue::Bool(if *b { 1 } else { 0 }))
+                }
                 JniValue::Void => jvalue_args.push(jni::objects::JValue::Void),
             }
         }
-        
+
         env.call_method(target_obj_local, name, sig, &jvalue_args)?;
         check_exception(&mut env)?;
         Ok(())
@@ -187,20 +197,26 @@ impl JavaObject {
         for arg in args.iter() {
             match arg {
                 JniValue::Object(_) => {
-                    jvalue_args.push(jni::objects::JValue::from(owned_java_args_iter.next().unwrap()));
+                    jvalue_args.push(jni::objects::JValue::from(
+                        owned_java_args_iter.next().unwrap(),
+                    ));
                 }
                 JniValue::String(_) => {
-                    jvalue_args.push(jni::objects::JValue::from(owned_java_args_iter.next().unwrap()));
+                    jvalue_args.push(jni::objects::JValue::from(
+                        owned_java_args_iter.next().unwrap(),
+                    ));
                 }
                 JniValue::Int(i) => jvalue_args.push(jni::objects::JValue::Int(*i)),
                 JniValue::Long(l) => jvalue_args.push(jni::objects::JValue::Long(*l)),
                 JniValue::Double(d) => jvalue_args.push(jni::objects::JValue::Double(*d)),
                 JniValue::Float(f) => jvalue_args.push(jni::objects::JValue::Float(*f)),
-                JniValue::Bool(b) => jvalue_args.push(jni::objects::JValue::Bool(if *b { 1 } else { 0 })),
+                JniValue::Bool(b) => {
+                    jvalue_args.push(jni::objects::JValue::Bool(if *b { 1 } else { 0 }))
+                }
                 JniValue::Void => jvalue_args.push(jni::objects::JValue::Void),
             }
         }
-        
+
         let result = env.call_method(target_obj_local, name, sig, &jvalue_args)?;
         check_exception(&mut env)?;
         let result_obj_local = result.l()?;
@@ -233,20 +249,26 @@ impl JavaObject {
         for arg in args.iter() {
             match arg {
                 JniValue::Object(_) => {
-                    jvalue_args.push(jni::objects::JValue::from(owned_java_args_iter.next().unwrap()));
+                    jvalue_args.push(jni::objects::JValue::from(
+                        owned_java_args_iter.next().unwrap(),
+                    ));
                 }
                 JniValue::String(_) => {
-                    jvalue_args.push(jni::objects::JValue::from(owned_java_args_iter.next().unwrap()));
+                    jvalue_args.push(jni::objects::JValue::from(
+                        owned_java_args_iter.next().unwrap(),
+                    ));
                 }
                 JniValue::Int(i) => jvalue_args.push(jni::objects::JValue::Int(*i)),
                 JniValue::Long(l) => jvalue_args.push(jni::objects::JValue::Long(*l)),
                 JniValue::Double(d) => jvalue_args.push(jni::objects::JValue::Double(*d)),
                 JniValue::Float(f) => jvalue_args.push(jni::objects::JValue::Float(*f)),
-                JniValue::Bool(b) => jvalue_args.push(jni::objects::JValue::Bool(if *b { 1 } else { 0 })),
+                JniValue::Bool(b) => {
+                    jvalue_args.push(jni::objects::JValue::Bool(if *b { 1 } else { 0 }))
+                }
                 JniValue::Void => jvalue_args.push(jni::objects::JValue::Void),
             }
         }
-        
+
         let result = env.call_method(target_obj_local, name, sig, &jvalue_args)?;
         check_exception(&mut env)?;
         Ok(result.i()?)
@@ -278,20 +300,26 @@ impl JavaObject {
         for arg in args.iter() {
             match arg {
                 JniValue::Object(_) => {
-                    jvalue_args.push(jni::objects::JValue::from(owned_java_args_iter.next().unwrap()));
+                    jvalue_args.push(jni::objects::JValue::from(
+                        owned_java_args_iter.next().unwrap(),
+                    ));
                 }
                 JniValue::String(_) => {
-                    jvalue_args.push(jni::objects::JValue::from(owned_java_args_iter.next().unwrap()));
+                    jvalue_args.push(jni::objects::JValue::from(
+                        owned_java_args_iter.next().unwrap(),
+                    ));
                 }
                 JniValue::Int(i) => jvalue_args.push(jni::objects::JValue::Int(*i)),
                 JniValue::Long(l) => jvalue_args.push(jni::objects::JValue::Long(*l)),
                 JniValue::Double(d) => jvalue_args.push(jni::objects::JValue::Double(*d)),
                 JniValue::Float(f) => jvalue_args.push(jni::objects::JValue::Float(*f)),
-                JniValue::Bool(b) => jvalue_args.push(jni::objects::JValue::Bool(if *b { 1 } else { 0 })),
+                JniValue::Bool(b) => {
+                    jvalue_args.push(jni::objects::JValue::Bool(if *b { 1 } else { 0 }))
+                }
                 JniValue::Void => jvalue_args.push(jni::objects::JValue::Void),
             }
         }
-        
+
         let result = env.call_method(target_obj_local, name, sig, &jvalue_args)?;
         check_exception(&mut env)?;
         Ok(result.z()?)
@@ -330,14 +358,20 @@ impl<'local> JniValue<'local> {
             JValueGen::Float(f) => JniValue::Float(f),
             JValueGen::Bool(b) => JniValue::Bool(b == 1),
             JValueGen::Void => JniValue::Void,
-            _ => return Err(MinestomError::JvmInit("Unsupported JValue type".to_string())),
+            _ => {
+                return Err(MinestomError::JvmInit(
+                    "Unsupported JValue type".to_string(),
+                ))
+            }
         })
     }
 
     pub fn as_jvalue(&'local self) -> JValueGen<&'local JObject<'local>> {
         match self {
             JniValue::Object(obj) => JValueGen::Object(obj),
-            JniValue::String(s) => JValueGen::Object(unsafe { std::mem::transmute::<&JString, &JObject>(s) }),
+            JniValue::String(s) => {
+                JValueGen::Object(unsafe { std::mem::transmute::<&JString, &JObject>(s) })
+            }
             JniValue::Int(i) => JValueGen::Int(*i),
             JniValue::Long(l) => JValueGen::Long(*l),
             JniValue::Double(d) => JValueGen::Double(*d),
@@ -484,14 +518,17 @@ pub(crate) fn check_exception(env: &mut JNIEnv) -> Result<()> {
     if env.exception_check()? {
         let exception = env.exception_occurred()?;
         env.exception_clear()?;
-        
-        let msg = if let Ok(msg) = env.call_method(exception, "getMessage", "()Ljava/lang/String;", &[]) {
+
+        let msg = if let Ok(msg) =
+            env.call_method(exception, "getMessage", "()Ljava/lang/String;", &[])
+        {
             if let Ok(msg) = msg.l() {
                 // Create a new local reference to ensure proper lifetime
                 let msg_ref = env.new_local_ref(msg)?;
                 let jstr = JString::from(msg_ref);
                 // Store the result before the temporary is dropped
-                let result = env.get_string(&jstr)
+                let result = env
+                    .get_string(&jstr)
                     .map(|s| s.to_string_lossy().into_owned())
                     .unwrap_or_else(|_| "Unknown error".to_string());
                 result
@@ -501,9 +538,9 @@ pub(crate) fn check_exception(env: &mut JNIEnv) -> Result<()> {
         } else {
             "Unknown error".to_string()
         };
-        
+
         Err(MinestomError::EventError(msg))
     } else {
         Ok(())
     }
-} 
+}

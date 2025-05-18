@@ -1,10 +1,10 @@
 use std::fmt;
 
 use crate::jni_utils::{get_env, JavaObject, JniValue};
+use crate::sound::Sound;
 use crate::text::Component;
 use crate::Result;
 use jni::objects::{JObject, JValue};
-use crate::sound::Sound;
 
 /// Represents a Minecraft game mode
 #[derive(Debug, Clone, Copy)]
@@ -54,12 +54,10 @@ impl Player {
     /// Gets the username of the player.
     pub fn get_username(&self) -> Result<String> {
         let mut env = get_env()?;
-        let result = self.inner.call_object_method(
-            "getUsername",
-            "()Ljava/lang/String;",
-            &[],
-        )?;
-        
+        let result = self
+            .inner
+            .call_object_method("getUsername", "()Ljava/lang/String;", &[])?;
+
         let obj = result.as_obj()?;
         let string_ref = jni::objects::JString::from(obj);
         let jstr = env.get_string(&string_ref)?;
@@ -70,10 +68,10 @@ impl Player {
     /// Returns true if the game mode was changed successfully.
     pub fn set_game_mode(&self, game_mode: GameMode) -> Result<bool> {
         let mut env = get_env()?;
-        
+
         // Find the GameMode enum class
         let game_mode_class = env.find_class("net/minestom/server/entity/GameMode")?;
-        
+
         // Get the enum constant for the specified game mode
         let game_mode_obj = env.get_static_field(
             game_mode_class,
@@ -94,7 +92,7 @@ impl Player {
     /// Teleports the player to a specific position with view angles.
     pub fn teleport(&self, x: f64, y: f64, z: f64, yaw: f32, pitch: f32) -> Result<()> {
         let mut env = get_env()?;
-        
+
         // Create a new Pos object with the coordinates and view angles
         let pos_class = env.find_class("net/minestom/server/coordinate/Pos")?;
         let pos = env.new_object(

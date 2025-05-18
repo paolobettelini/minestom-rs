@@ -1,12 +1,13 @@
+use crate::block::Block;
 use crate::coordinate::Position;
 use crate::entity::Player;
 use crate::jni_utils::{get_env, JavaObject, JniValue, ToJava};
 use crate::MinestomError;
 use crate::Result;
-use jni::objects::{JObject, JObjectArray};
-use std::path::Path;
-use log::{debug, error, info};
 use jni::objects::JValue;
+use jni::objects::{JObject, JObjectArray};
+use log::{debug, error, info};
+use std::path::Path;
 
 pub struct InstanceManager {
     inner: JavaObject,
@@ -60,41 +61,36 @@ impl InstanceContainer {
     }
 
     /// Loads an Anvil world into this instance using the Common class implementation.
-    /// 
+    ///
     /// # Arguments
     /// * `path` - Path to the Anvil world directory
     pub fn load_anvil_world(&self, path: impl AsRef<Path>) -> Result<()> {
         let mut env = get_env()?;
         let path_str = path.as_ref().to_str().ok_or(MinestomError::InvalidPath)?;
-        
+
         info!("Loading world from Anvil at {}", path_str);
-        
+
         // Convert path to Java string
         let path_jstring = env.new_string(path_str)?;
-        
+
         // Get the instance object
         let instance_obj = self.inner()?;
-        
+
         // Call Common.loadAnvil
         env.call_static_method(
             "org/example/Common",
             "loadAnvil",
             "(Lnet/minestom/server/instance/InstanceContainer;Ljava/lang/String;)V",
-            &[
-                JValue::Object(&instance_obj),
-                JValue::Object(&path_jstring),
-            ],
+            &[JValue::Object(&instance_obj), JValue::Object(&path_jstring)],
         )?;
 
         Ok(())
     }
 
     pub fn get_players(&self) -> Result<Vec<Player>> {
-        let result = self.inner.call_object_method(
-            "getPlayers",
-            "()Ljava/util/Collection;",
-            &[],
-        )?;
+        let result =
+            self.inner
+                .call_object_method("getPlayers", "()Ljava/util/Collection;", &[])?;
 
         let mut env = get_env()?;
         let result_obj = result.as_obj()?;
@@ -129,12 +125,12 @@ impl InstanceContainer {
             "(II)Ljava/util/concurrent/CompletableFuture;",
             &[JniValue::Int(chunk_x), JniValue::Int(chunk_z)],
         )?;
-        
+
         // Call join() on the CompletableFuture to wait for it to complete
         let mut env = get_env()?;
         let future_obj = result.as_obj()?;
         env.call_method(future_obj, "join", "()Ljava/lang/Object;", &[])?;
-        
+
         Ok(())
     }
 
@@ -187,40 +183,43 @@ impl InstanceContainer {
     /// This should be called before starting the server.
     pub fn set_as_default_spawn_instance(&self) -> Result<()> {
         let mut env = get_env()?;
-        
+
         // First, let's try to list the available methods on ConnectionManager to debug the issue
         debug!("Getting ConnectionManager class");
-        let connection_manager_class = env.find_class("net/minestom/server/network/ConnectionManager")?;
-        
+        let connection_manager_class =
+            env.find_class("net/minestom/server/network/ConnectionManager")?;
+
         debug!("Finding MinecraftServer class");
         let minecraft_server = env.find_class("net/minestom/server/MinecraftServer")?;
-        
+
         // Get the ConnectionManager
         debug!("Getting ConnectionManager from MinecraftServer");
         let connection_manager = env.call_static_method(
             minecraft_server,
-            "getConnectionManager", 
+            "getConnectionManager",
             "()Lnet/minestom/server/network/ConnectionManager;",
             &[],
         )?;
-        
+
         debug!("Got connection manager");
         let connection_manager_obj = connection_manager.l()?;
         if connection_manager_obj.is_null() {
             error!("ConnectionManager is null!");
-            return Err(MinestomError::EventError("ConnectionManager is null".to_string()));
+            return Err(MinestomError::EventError(
+                "ConnectionManager is null".to_string(),
+            ));
         }
-        
+
         // Get the instance object
         debug!("Getting instance object");
         let instance_obj = self.inner()?;
-        
+
         // Attempt different method names that might exist in the ConnectionManager
         // Try "setSpawningInstance" instead of "setDefaultInstance"
         debug!("Attempting to call setSpawningInstance on ConnectionManager");
         match env.call_method(
             &connection_manager_obj,
-            "setSpawningInstance", 
+            "setSpawningInstance",
             "(Lnet/minestom/server/instance/Instance;)V",
             &[jni::objects::JValue::Object(&instance_obj)],
         ) {
@@ -228,17 +227,20 @@ impl InstanceContainer {
                 debug!("Successfully called setSpawningInstance");
                 debug!("Successfully set default instance");
                 return Ok(());
-            },
+            }
             Err(e) => {
-                debug!("Method setSpawningInstance not found: {}. Trying next method...", e);
+                debug!(
+                    "Method setSpawningInstance not found: {}. Trying next method...",
+                    e
+                );
             }
         }
-        
+
         // Try "setDefaultSpawningInstance"
         debug!("Attempting to call setDefaultSpawningInstance on ConnectionManager");
         match env.call_method(
             &connection_manager_obj,
-            "setDefaultSpawningInstance", 
+            "setDefaultSpawningInstance",
             "(Lnet/minestom/server/instance/Instance;)V",
             &[jni::objects::JValue::Object(&instance_obj)],
         ) {
@@ -246,15 +248,55 @@ impl InstanceContainer {
                 debug!("Successfully called setDefaultSpawningInstance");
                 debug!("Successfully set default instance");
                 return Ok(());
-            },
+            }
             Err(e) => {
-                debug!("Method setDefaultSpawningInstance not found: {}. Trying next method...", e);
+                debug!(
+                    "Method setDefaultSpawningInstance not found: {}. Trying next method...",
+                    e
+                );
             }
         }
-        
+
         // Fall back to a direct approach - call a static method on the server class
         // or try other methods that might work
         error!("Could not find a method to set the default instance");
-        Err(MinestomError::EventError("Could not find a method to set the default instance".to_string()))
+        Err(MinestomError::EventError(
+            "Could not find a method to set the default instance".to_string(),
+        ))
+    }
+
+    /// Sets a block at the specified coordinates.
+    ///
+    /// # Arguments
+    /// * `x` - The x coordinate
+    /// * `y` - The y coordinate
+    /// * `z` - The z coordinate
+    /// * `block` - The block to set
+    pub fn set_block(&self, x: i32, y: i32, z: i32, block: Block) -> Result<()> {
+        let block_obj = block.to_java_block()?;
+
+        self.inner.call_void_method(
+            "setBlock",
+            "(IIILnet/minestom/server/instance/block/Block;)V",
+            &[
+                JniValue::Int(x),
+                JniValue::Int(y),
+                JniValue::Int(z),
+                JniValue::Object(block_obj.as_obj()?),
+            ],
+        )
+    }
+
+    /// Sets the time rate of this instance.
+    /// The time rate represents how fast time passes in the instance.
+    /// 
+    /// # Arguments
+    /// * `rate` - The time rate (default value is 1)
+    pub fn set_time_rate(&self, rate: i32) -> Result<()> {
+        self.inner.call_void_method(
+            "setTimeRate",
+            "(I)V",
+            &[JniValue::Int(rate)],
+        )
     }
 }

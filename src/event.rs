@@ -1,22 +1,23 @@
 use crate::entity::Player;
 use crate::instance::InstanceContainer;
-use crate::jni_utils::{get_env, JavaObject, JniValue, check_exception};
-use crate::{Result, MinestomError};
+use crate::jni_utils::{check_exception, get_env, JavaObject, JniValue};
+use crate::{MinestomError, Result};
 use jni::objects::{JObject, JString};
-use std::sync::Arc;
-use std::any::Any;
-use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
-use parking_lot::RwLock;
 use log::{debug, error, info};
 use once_cell::sync::Lazy;
+use parking_lot::RwLock;
+use std::any::Any;
+use std::collections::HashMap;
 use std::marker::PhantomData;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 
 // Re-export event types at the top-level
 pub use self::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent};
 
-pub(crate) static CALLBACKS: Lazy<RwLock<HashMap<u64, Arc<dyn Fn(&dyn Event) -> Result<()> + Send + Sync>>>> = 
-    Lazy::new(|| RwLock::new(HashMap::new()));
+pub(crate) static CALLBACKS: Lazy<
+    RwLock<HashMap<u64, Arc<dyn Fn(&dyn Event) -> Result<()> + Send + Sync>>>,
+> = Lazy::new(|| RwLock::new(HashMap::new()));
 
 static NEXT_CALLBACK_ID: AtomicU64 = AtomicU64::new(1);
 
@@ -28,34 +29,40 @@ pub struct EventHandler {
 }
 
 /// Trait implemented by all Minestom events.
-/// 
+///
 /// This trait is used to provide a common interface for all events and enable
 /// dynamic dispatch in event handlers. It also implements `Any` to allow downcasting
 /// to concrete event types.
 pub trait Event: Any {
     /// Returns a reference to self as `Any` to enable downcasting.
     fn as_any(&self) -> &dyn Any;
-    
+
     /// Returns the Java class name of this event.
     /// This is used to register event listeners.
-    fn java_class_name() -> &'static str where Self: Sized;
-    
+    fn java_class_name() -> &'static str
+    where
+        Self: Sized;
+
     /// Creates a new instance of this event from a JavaObject.
     /// This is used by the event registry to create events dynamically.
-    fn new(java_obj: JavaObject) -> Self where Self: Sized;
+    fn new(java_obj: JavaObject) -> Self
+    where
+        Self: Sized;
 }
 
 impl EventHandler {
     pub(crate) fn new(inner: JavaObject) -> Self {
-        Self { inner: Arc::new(inner) }
+        Self {
+            inner: Arc::new(inner),
+        }
     }
 
     /// Registers an event listener for a specific event type.
     /// The callback will receive the specific event type directly, not a generic `&dyn Event`.
-    /// 
+    ///
     /// # Type Parameters
     /// * `E` - The event type that implements the `Event` trait
-    /// 
+    ///
     /// # Arguments
     /// * `callback` - A function that will be called with the specific event type
     pub fn register_event_listener<E, F>(&self, callback: F) -> Result<()>
@@ -88,40 +95,47 @@ impl EventHandler {
         F: Fn(&dyn Event) -> Result<()> + Send + Sync + 'static,
     {
         let mut env = get_env()?;
-        
+
         debug!("Finding required classes for {}...", event_class_name);
-        
+
         // Find needed classes - use more robust class lookups
         let listener_class = match env.find_class("net/minestom/server/event/EventListener") {
             Ok(class) => class,
             Err(e) => {
                 error!("Failed to find EventListener class: {}", e);
-                return Err(MinestomError::EventError("Failed to find EventListener class".to_string()));
+                return Err(MinestomError::EventError(
+                    "Failed to find EventListener class".to_string(),
+                ));
             }
         };
-        
+
         let event_class = match env.find_class(event_class_name) {
             Ok(class) => class,
             Err(e) => {
                 error!("Failed to find event class {}: {}", event_class_name, e);
-                return Err(MinestomError::EventError(format!("Failed to find event class {}", event_class_name)));
+                return Err(MinestomError::EventError(format!(
+                    "Failed to find event class {}",
+                    event_class_name
+                )));
             }
         };
-        
+
         let callback_class = match env.find_class("org/example/ConsumerCallback") {
             Ok(class) => class,
             Err(e) => {
                 error!("Failed to find ConsumerCallback class: {}", e);
-                return Err(MinestomError::EventError("Failed to find ConsumerCallback class".to_string()));
+                return Err(MinestomError::EventError(
+                    "Failed to find ConsumerCallback class".to_string(),
+                ));
             }
         };
-        
+
         debug!("Found all required classes");
 
         // Store the callback in our global map
         let callback_id = NEXT_CALLBACK_ID.fetch_add(1, Ordering::SeqCst);
         let callback = Arc::new(callback);
-        
+
         // Insert the callback before creating the Java objects to ensure it's available
         CALLBACKS.write().insert(callback_id, callback);
         info!("Created callback with ID: {}", callback_id);
@@ -137,7 +151,9 @@ impl EventHandler {
                 error!("Failed to create callback instance: {}", e);
                 // Remove the callback since we failed to create the Java object
                 CALLBACKS.write().remove(&callback_id);
-                return Err(MinestomError::EventError("Failed to create callback instance".to_string()));
+                return Err(MinestomError::EventError(
+                    "Failed to create callback instance".to_string(),
+                ));
             }
         };
 
@@ -149,7 +165,9 @@ impl EventHandler {
             Err(e) => {
                 error!("Failed to create global reference for callback: {}", e);
                 CALLBACKS.write().remove(&callback_id);
-                return Err(MinestomError::EventError("Failed to create global reference for callback".to_string()));
+                return Err(MinestomError::EventError(
+                    "Failed to create global reference for callback".to_string(),
+                ));
             }
         };
         let callback_obj = callback_global_ref.as_obj();
@@ -178,7 +196,9 @@ impl EventHandler {
             Err(e) => {
                 error!("Failed to get EventListener object: {}", e);
                 CALLBACKS.write().remove(&callback_id);
-                return Err(MinestomError::EventError("Failed to get EventListener object".to_string()));
+                return Err(MinestomError::EventError(
+                    "Failed to get EventListener object".to_string(),
+                ));
             }
         };
         debug!("Created event listener");
@@ -189,7 +209,9 @@ impl EventHandler {
             Err(e) => {
                 error!("Failed to create JavaObject from listener: {}", e);
                 CALLBACKS.write().remove(&callback_id);
-                return Err(MinestomError::EventError("Failed to create JavaObject from listener".to_string()));
+                return Err(MinestomError::EventError(
+                    "Failed to create JavaObject from listener".to_string(),
+                ));
             }
         };
 
@@ -202,22 +224,20 @@ impl EventHandler {
             Ok(_) => {
                 info!("Event listener added successfully");
                 Ok(())
-            },
+            }
             Err(e) => {
                 error!("Failed to add event listener: {}", e);
                 CALLBACKS.write().remove(&callback_id);
-                Err(MinestomError::EventError("Failed to add event listener".to_string()))
+                Err(MinestomError::EventError(
+                    "Failed to add event listener".to_string(),
+                ))
             }
         }
     }
 
     /// Gets the priority of this event handler.
     pub fn get_priority(&self) -> Result<i32> {
-        self.inner.call_int_method(
-            "getPriority",
-            "()I",
-            &[],
-        )
+        self.inner.call_int_method("getPriority", "()I", &[])
     }
 
     /// Sets the priority of this event handler.
@@ -245,16 +265,18 @@ pub mod player {
         pub fn player(&self) -> Result<Player> {
             let mut env = get_env()?;
             let event_obj = self.inner.as_obj()?;
-            
+
             let result = env.call_method(
                 event_obj,
                 "getPlayer",
                 "()Lnet/minestom/server/entity/Player;",
                 &[],
             )?;
-            
+
             let player_obj = result.l()?;
-            Ok(Player::new(JavaObject::new(env.new_global_ref(player_obj)?)))
+            Ok(Player::new(JavaObject::new(
+                env.new_global_ref(player_obj)?,
+            )))
         }
     }
 
@@ -262,11 +284,11 @@ pub mod player {
         fn as_any(&self) -> &dyn Any {
             self
         }
-        
+
         fn java_class_name() -> &'static str {
             "net/minestom/server/event/player/PlayerSpawnEvent"
         }
-        
+
         fn new(inner: JavaObject) -> Self {
             Self { inner }
         }
@@ -283,15 +305,15 @@ pub mod player {
         /// Sets the instance where the player will spawn.
         pub fn spawn_instance(&self, instance: &InstanceContainer) -> Result<()> {
             let mut env = get_env()?;
-            
+
             debug!("Setting spawning instance for player configuration...");
-            
+
             // Get the instance's Java object
             let instance_obj = instance.inner()?;
-            
+
             // Create a local frame to manage references
             let _frame = env.push_local_frame(16)?;
-            
+
             // Call setSpawningInstance on the event
             let result = self.inner.call_void_method(
                 "setSpawningInstance",
@@ -303,20 +325,17 @@ pub mod player {
             if env.exception_check()? {
                 let exception = env.exception_occurred()?;
                 env.exception_clear()?;
-                
+
                 // Get exception details
-                let message = if let Ok(msg) = env.call_method(
-                    &exception,
-                    "getMessage",
-                    "()Ljava/lang/String;",
-                    &[],
-                ) {
+                let message = if let Ok(msg) =
+                    env.call_method(&exception, "getMessage", "()Ljava/lang/String;", &[])
+                {
                     if let Ok(msg_obj) = msg.l() {
                         let jstring = JString::from(msg_obj);
                         let msg_str = env.get_string(&jstring);
                         match msg_str {
                             Ok(s) => s.to_string_lossy().into_owned(),
-                            Err(_) => "Unknown error".to_string()
+                            Err(_) => "Unknown error".to_string(),
                         }
                     } else {
                         "Unknown error".to_string()
@@ -324,8 +343,11 @@ pub mod player {
                 } else {
                     "Unknown error".to_string()
                 };
-                
-                error!("Exception occurred while setting spawning instance: {}", message);
+
+                error!(
+                    "Exception occurred while setting spawning instance: {}",
+                    message
+                );
                 return Err(MinestomError::EventError(format!(
                     "Failed to set spawning instance: {}",
                     message
@@ -350,31 +372,32 @@ pub mod player {
         /// Gets the player being configured.
         pub fn player(&self) -> Result<Player> {
             let mut env = get_env()?;
-            
+
             debug!("Getting player from configuration event...");
-            
+
             // Create a local frame to manage references
             let _frame = env.push_local_frame(16)?;
-            
+
             let result = self.inner.call_object_method(
                 "getPlayer",
                 "()Lnet/minestom/server/entity/Player;",
                 &[],
             )?;
-            
+
             let result_obj = result.as_obj()?;
             if result_obj.is_null() {
                 error!("getPlayer returned null");
                 return Err(MinestomError::EventError("Player is null".to_string()));
             }
-            
+
             Ok(Player::new(JavaObject::from_env(&mut env, result_obj)?))
         }
-        
+
         /// Returns true if this is the first time the player is in the configuration phase.
         pub fn is_first_config(&self) -> Result<bool> {
             debug!("Checking if this is first configuration...");
-            self.inner.call_bool_method("isFirstConfiguration", "()Z", &[])
+            self.inner
+                .call_bool_method("isFirstConfiguration", "()Z", &[])
         }
     }
 
@@ -382,11 +405,11 @@ pub mod player {
         fn as_any(&self) -> &dyn Any {
             self
         }
-        
+
         fn java_class_name() -> &'static str {
             "net/minestom/server/event/player/AsyncPlayerConfigurationEvent"
         }
-        
+
         fn new(inner: JavaObject) -> Self {
             Self { inner }
         }

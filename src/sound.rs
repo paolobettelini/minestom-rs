@@ -435,36 +435,37 @@ pub enum Source {
 impl Sound {
     pub fn sound(event: SoundEvent, source: Source, volume: f32, pitch: f32) -> Result<Self> {
         let mut env = get_env()?;
-        
+
         // Get the Sound class
         let sound_class = env.find_class("net/kyori/adventure/sound/Sound")?;
-        
+
         // Create Key from SoundEvent
         let key_class = env.find_class("net/kyori/adventure/key/Key")?;
         let namespace = "minecraft";
         let value = event.to_key_value();
-        
+
         let j_namespace = env.new_string(namespace)?;
         let j_value = env.new_string(value)?;
-        
-        let key = env.call_static_method(
-            key_class,
-            "key",
-            "(Ljava/lang/String;Ljava/lang/String;)Lnet/kyori/adventure/key/Key;",
-            &[
-                JValue::Object(&j_namespace),
-                JValue::Object(&j_value),
-            ],
-        )?.l()?;
-        
+
+        let key = env
+            .call_static_method(
+                key_class,
+                "key",
+                "(Ljava/lang/String;Ljava/lang/String;)Lnet/kyori/adventure/key/Key;",
+                &[JValue::Object(&j_namespace), JValue::Object(&j_value)],
+            )?
+            .l()?;
+
         // Get the Source enum value
         let source_class = env.find_class("net/kyori/adventure/sound/Sound$Source")?;
-        let source_obj = env.get_static_field(
-            source_class,
-            source.to_java_name(),
-            "Lnet/kyori/adventure/sound/Sound$Source;",
-        )?.l()?;
-        
+        let source_obj = env
+            .get_static_field(
+                source_class,
+                source.to_java_name(),
+                "Lnet/kyori/adventure/sound/Sound$Source;",
+            )?
+            .l()?;
+
         // Create the Sound object using the correct signature
         let sound_obj = env.call_static_method(
             sound_class,
@@ -477,7 +478,7 @@ impl Sound {
                 JValue::Float(pitch),
             ],
         )?.l()?;
-        
+
         Ok(Self {
             inner: JavaObject::from_env(&mut env, sound_obj)?,
         })
@@ -559,7 +560,7 @@ impl SoundEvent {
             SoundEvent::BlockBeaconDeactivate => "block.beacon.deactivate",
             SoundEvent::BlockBeaconPowerSelect => "block.beacon.power_select",
             // ... and so on for all other variants
-            _ => "block.note_block.bass" // Default to bass sound if no match
+            _ => "block.note_block.bass", // Default to bass sound if no match
         }
     }
 }
@@ -579,4 +580,4 @@ impl Source {
             Source::Weather => "WEATHER",
         }
     }
-} 
+}

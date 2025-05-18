@@ -1,7 +1,7 @@
 use crate::error::MinestomError;
 use crate::Result;
-use jni::{JNIEnv, JavaVM};
 use jni::objects::JString;
+use jni::{JNIEnv, JavaVM};
 use std::cell::RefCell;
 
 thread_local! {
@@ -28,8 +28,10 @@ pub fn check_exception(env: &mut JNIEnv) -> Result<()> {
     if env.exception_check()? {
         let exception = env.exception_occurred()?;
         env.exception_clear()?;
-        
-        let msg = if let Ok(msg) = env.call_method(exception, "getMessage", "()Ljava/lang/String;", &[]) {
+
+        let msg = if let Ok(msg) =
+            env.call_method(exception, "getMessage", "()Ljava/lang/String;", &[])
+        {
             if let Ok(msg) = msg.l() {
                 if let Ok(jstr) = env.get_string(&JString::from(msg)) {
                     jstr.to_string_lossy().into_owned()
@@ -42,9 +44,9 @@ pub fn check_exception(env: &mut JNIEnv) -> Result<()> {
         } else {
             "Unknown error".to_string()
         };
-        
+
         Err(MinestomError::EventError(msg))
     } else {
         Ok(())
     }
-} 
+}

@@ -19,7 +19,7 @@ impl Component {
         let mut env = get_env()?;
         let component_class = env.find_class("net/kyori/adventure/text/Component")?;
         let j_string = content.to_java(&mut env)?;
-        
+
         // Create a text component with explicit style
         let component = env.call_static_method(
             component_class,
@@ -27,7 +27,7 @@ impl Component {
             "(Ljava/lang/String;)Lnet/kyori/adventure/text/TextComponent;",
             &[j_string.as_jvalue()],
         )?;
-        
+
         Ok(Self {
             inner: JavaObject::from_env(&mut env, component.l()?)?,
         })
@@ -55,13 +55,15 @@ impl Component {
     }
 
     // Creates a new component with its own unique style
-    fn create_styled_component<F>(&self, style_fn: F) -> Result<Self> 
+    fn create_styled_component<F>(&self, style_fn: F) -> Result<Self>
     where
-        F: FnOnce(JavaObject) -> Result<JavaObject>
+        F: FnOnce(JavaObject) -> Result<JavaObject>,
     {
         // Create a copy of the component with its own style
         let styled_component = style_fn(self.inner.clone())?;
-        Ok(Self { inner: styled_component })
+        Ok(Self {
+            inner: styled_component,
+        })
     }
 
     // Color convenience methods
@@ -132,26 +134,30 @@ impl Component {
     pub fn chain(self, other: Component) -> Self {
         self.create_styled_component(|inner| {
             let mut env = get_env().expect("Failed to get JNI environment");
-            
+
             // Get the text content class
-            let component_class = env.find_class("net/kyori/adventure/text/Component")
+            let component_class = env
+                .find_class("net/kyori/adventure/text/Component")
                 .expect("Failed to find Component class");
-                
+
             // Explicitly join the components with .append() which doesn't inherit styling
             inner.call_object_method(
                 "append",
                 "(Lnet/kyori/adventure/text/Component;)Lnet/kyori/adventure/text/Component;",
-                &[other.inner.to_java(&mut env)
+                &[other
+                    .inner
+                    .to_java(&mut env)
                     .expect("Failed to convert JavaObject to JniValue")],
             )
-        }).expect("Failed to chain components")
+        })
+        .expect("Failed to chain components")
     }
-    
+
     /// Convenience method to chain with a newline in between
     pub fn chain_newline(self, other: Component) -> Self {
         self.chain(Self::newline()).chain(other)
     }
-    
+
     /// Creates a newline component that can be chained
     pub fn newline() -> Self {
         Self::text("\n").expect("Failed to create newline")
@@ -187,7 +193,8 @@ impl Component {
                     "empty",
                     "()Lnet/kyori/adventure/text/format/Style;",
                     &[],
-                )?.l()?
+                )?
+                .l()?,
             )],
         )?;
         Ok(Self { inner: result })

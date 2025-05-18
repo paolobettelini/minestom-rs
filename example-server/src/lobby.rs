@@ -1,14 +1,14 @@
 use log::{debug, error, info};
-use minestom::MinestomServer;
+use minestom::{MinestomServer, Block};
 use minestom::{
-    entity::GameMode,
     component,
+    entity::GameMode,
     event::{
         Event,
         player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent},
     },
-    text::Component,
     sound::{Sound, SoundEvent, Source},
+    text::Component,
 };
 use minestom_rs as minestom;
 
@@ -49,18 +49,15 @@ pub async fn run_server() -> minestom::Result<()> {
         if let Ok(player) = spawn_event.player() {
             let username = player.get_username()?;
 
-            let welcome_msg = component!("Welcome to the server, {}!", username).gold().bold();
+            let welcome_msg = component!("Welcome to the server, {}!", username)
+                .gold()
+                .bold();
             let info_msg = component!("Enjoy your adventure!").green().italic();
             let message = welcome_msg.chain_newline(info_msg);
-            
+
             player.send_message(&message)?;
             player.set_game_mode(GameMode::Adventure)?;
             player.teleport(spawn_x, spawn_y, spawn_z, spawn_yaw, spawn_pitch)?;
-
-            // Play a welcome sound
-            let pitch = 0.9f32 + 5.0 * 0.05;
-            let sound = Sound::sound(SoundEvent::BlockNoteBlockBass, Source::Record, 1.0, pitch)?;
-            player.play_sound(&sound)?;
         }
         Ok(())
     })?;
