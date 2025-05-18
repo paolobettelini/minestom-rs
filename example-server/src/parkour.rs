@@ -5,7 +5,12 @@ use minestom::{
     entity::GameMode,
     event::{
         Event,
-        player::{AsyncPlayerConfigurationEvent, PlayerMoveEvent, PlayerSpawnEvent},
+        player::{
+            AsyncPlayerConfigurationEvent,
+            PlayerMoveEvent,
+            PlayerSpawnEvent
+        },
+        server::ServerListPingEvent,
     },
     instance::InstanceContainer,
     sound::{Sound, SoundEvent, Source},
@@ -246,6 +251,17 @@ pub async fn run_server() -> minestom::Result<()> {
                 reset_player(&player, state)?;
             }
         }
+        Ok(())
+    })?;
+
+    event_handler.register_event_listener(move |event: &ServerListPingEvent| {
+        let response_data = event.get_response_data()?;
+
+        response_data.set_online(-1)?;
+        response_data.set_max_player(i32::MAX)?;
+        response_data.set_description(&component!("Henlo").red())?;
+        response_data.set_favicon(&crate::favicon::random_image())?;
+        
         Ok(())
     })?;
 

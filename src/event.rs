@@ -1,7 +1,7 @@
 use crate::coordinate::{Pos, Position};
 use crate::entity::Player;
 use crate::instance::InstanceContainer;
-use crate::jni_utils::{get_env, JavaObject, JniValue};
+use crate::jni_utils::{get_env, JavaObject, JniValue, ToJava};
 use crate::{MinestomError, Result};
 use jni::objects::JString;
 use log::{debug, error, info};
@@ -11,6 +11,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use crate::text::Component;
 
 // Re-export event types at the top-level
 pub use self::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent};
@@ -450,3 +451,138 @@ pub mod player {
         }
     }
 }
+
+pub mod server {
+    use super::*;
+
+    pub struct ServerListPingEvent {
+        inner: JavaObject,
+    }
+
+    impl ServerListPingEvent {
+        pub fn get_response_data(&self) -> Result<ResponseData> {
+            let mut env = get_env()?;
+            let response_data = env.call_method(
+                &self.inner.as_obj()?,
+                "getResponseData",
+                "()Lnet/minestom/server/ping/ResponseData;",
+                &[],
+            )?;
+            
+            Ok(ResponseData {
+                inner: JavaObject::from_env(&mut env, response_data.l()?)?,
+            })
+        }
+    }
+
+    impl Event for ServerListPingEvent {
+        fn as_any(&self) -> &dyn Any {
+            self
+        }
+
+        fn java_class_name() -> &'static str {
+            "net/minestom/server/event/server/ServerListPingEvent"
+        }
+
+        fn new(inner: JavaObject) -> Self {
+            Self { inner }
+        }
+    }
+}
+
+pub mod ping {
+    use super::*;
+    use crate::text::Component;
+    use crate::jni_utils::ToJava;
+
+    pub struct ResponseData {
+        pub(crate) inner: JavaObject,
+    }
+
+    impl ResponseData {
+        pub fn set_name(&self, name: &str) -> Result<()> {
+            let mut env = get_env()?;
+            let name = name.to_java(&mut env)?;
+            env.call_method(
+                &self.inner.as_obj()?,
+                "setName",
+                "(Ljava/lang/String;)V",
+                &[name.as_jvalue()],
+            )?;
+            Ok(())
+        }
+
+        pub fn set_version(&self, version: &str) -> Result<()> {
+            let mut env = get_env()?;
+            let version = version.to_java(&mut env)?;
+            env.call_method(
+                &self.inner.as_obj()?,
+                "setVersion",
+                "(Ljava/lang/String;)V",
+                &[version.as_jvalue()],
+            )?;
+            Ok(())
+        }
+
+        pub fn set_protocol(&self, protocol: i32) -> Result<()> {
+            let mut env = get_env()?;
+            env.call_method(
+                &self.inner.as_obj()?,
+                "setProtocol",
+                "(I)V",
+                &[JniValue::Int(protocol).as_jvalue()],
+            )?;
+            Ok(())
+        }
+
+        pub fn set_max_player(&self, max_player: i32) -> Result<()> {
+            let mut env = get_env()?;
+            env.call_method(
+                &self.inner.as_obj()?,
+                "setMaxPlayer",
+                "(I)V",
+                &[JniValue::Int(max_player).as_jvalue()],
+            )?;
+            Ok(())
+        }
+
+        pub fn set_online(&self, online: i32) -> Result<()> {
+            let mut env = get_env()?;
+            env.call_method(
+                &self.inner.as_obj()?,
+                "setOnline",
+                "(I)V",
+                &[JniValue::Int(online).as_jvalue()],
+            )?;
+            Ok(())
+        }
+
+        pub fn set_description(&self, description: &Component) -> Result<()> {
+            let mut env = get_env()?;
+            let description = description.as_jvalue(&mut env)?;
+            env.call_method(
+                &self.inner.as_obj()?,
+                "setDescription",
+                "(Lnet/kyori/adventure/text/Component;)V",
+                &[description.as_jvalue()],
+            )?;
+            Ok(())
+        }
+
+        pub fn set_favicon(&self, favicon: &str) -> Result<()> {
+            let mut env = get_env()?;
+            let favicon = favicon.to_java(&mut env)?;
+            env.call_method(
+                &self.inner.as_obj()?,
+                "setFavicon",
+                "(Ljava/lang/String;)V",
+                &[favicon.as_jvalue()],
+            )?;
+            Ok(())
+        }
+    }
+}
+
+// Re-export at the top level
+pub use self::server::ServerListPingEvent;
+pub use self::ping::ResponseData;
