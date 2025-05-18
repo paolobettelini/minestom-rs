@@ -2,7 +2,6 @@ use jni::JNIEnv;
 use jni::objects::JClass;
 use jni::sys::jint;
 use minestom_rs::jni_utils;
-use minestom_rs::{MinestomError, MinestomServer};
 use std::panic;
 
 mod lobby;

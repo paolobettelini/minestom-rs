@@ -1,12 +1,11 @@
 use crate::error::MinestomError;
 use crate::Result;
-use jni::objects::{GlobalRef, JObject, JString, JValue, JValueGen};
+use jni::objects::{GlobalRef, JObject, JString, JValueGen};
 use jni::{JNIEnv, JavaVM};
-use log::{debug, error, info, warn};
+use log::debug;
 use parking_lot::Mutex;
 use std::cell::RefCell;
 use std::fmt;
-use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread_local;

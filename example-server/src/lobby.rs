@@ -1,5 +1,5 @@
-use log::{debug, error, info};
-use minestom::{Block, MinestomServer};
+use log::info;
+use minestom::MinestomServer;
 use minestom::{
     component,
     entity::GameMode,
@@ -7,8 +7,6 @@ use minestom::{
         Event,
         player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent},
     },
-    sound::{Sound, SoundEvent, Source},
-    text::Component,
 };
 use minestom_rs as minestom;
 

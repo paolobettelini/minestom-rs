@@ -1,9 +1,9 @@
 use std::fmt;
 
+use crate::coordinate::Position;
 use crate::jni_utils::{get_env, JavaObject, JniValue};
 use crate::sound::Sound;
 use crate::text::Component;
-use crate::coordinate::Position;
 use crate::Result;
 use jni::objects::{JObject, JValue};
 

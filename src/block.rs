@@ -1,4 +1,4 @@
-use crate::jni_utils::{get_env, JavaObject, JniValue};
+use crate::jni_utils::{get_env, JavaObject};
 use crate::Result;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -465,7 +465,7 @@ pub enum Block {
     RespawnAnchor,
     AncientDebris,
     NetheriteBlock,
-    
+
     // End blocks
     EndStone,
     EndStoneBricks,
@@ -476,7 +476,7 @@ pub enum Block {
     PurpurBlock,
     PurpurPillar,
     EndRod,
-    
+
     // Ocean blocks
     Prismarine,
     PrismarineBricks,
@@ -487,7 +487,7 @@ pub enum Block {
     SeaPickle,
     TurtleEgg,
     DriedKelpBlock,
-    
+
     // Snow and ice
     Snow,
     SnowBlock,
@@ -495,7 +495,7 @@ pub enum Block {
     PackedIce,
     BlueIce,
     FrostedIce,
-    
+
     // Miscellaneous
     SlimeBlock,
     HoneyBlock,
@@ -529,7 +529,7 @@ pub enum Block {
     VoidAir,
     CaveAir,
     BubbleColumn,
-    
+
     // Shulker boxes
     ShulkerBox,
     WhiteShulkerBox,
@@ -586,7 +586,7 @@ impl Block {
             Block::CoarseDirt => "COARSE_DIRT",
             Block::Podzol => "PODZOL",
             Block::Cobblestone => "COBBLESTONE",
-            
+
             // Ores
             Block::GoldOre => "GOLD_ORE",
             Block::DeepslateGoldOre => "DEEPSLATE_GOLD_ORE",
@@ -1018,7 +1018,7 @@ impl Block {
             Block::RespawnAnchor => "RESPAWN_ANCHOR",
             Block::AncientDebris => "ANCIENT_DEBRIS",
             Block::NetheriteBlock => "NETHERITE_BLOCK",
-            
+
             // End blocks
             Block::EndStone => "END_STONE",
             Block::EndStoneBricks => "END_STONE_BRICKS",
@@ -1029,7 +1029,7 @@ impl Block {
             Block::PurpurBlock => "PURPUR_BLOCK",
             Block::PurpurPillar => "PURPUR_PILLAR",
             Block::EndRod => "END_ROD",
-            
+
             // Ocean blocks
             Block::Prismarine => "PRISMARINE",
             Block::PrismarineBricks => "PRISMARINE_BRICKS",
@@ -1040,7 +1040,7 @@ impl Block {
             Block::SeaPickle => "SEA_PICKLE",
             Block::TurtleEgg => "TURTLE_EGG",
             Block::DriedKelpBlock => "DRIED_KELP_BLOCK",
-            
+
             // Snow and ice
             Block::Snow => "SNOW",
             Block::SnowBlock => "SNOW_BLOCK",
@@ -1048,7 +1048,7 @@ impl Block {
             Block::PackedIce => "PACKED_ICE",
             Block::BlueIce => "BLUE_ICE",
             Block::FrostedIce => "FROSTED_ICE",
-            
+
             // Miscellaneous
             Block::SlimeBlock => "SLIME_BLOCK",
             Block::HoneyBlock => "HONEY_BLOCK",
@@ -1082,7 +1082,7 @@ impl Block {
             Block::VoidAir => "VOID_AIR",
             Block::CaveAir => "CAVE_AIR",
             Block::BubbleColumn => "BUBBLE_COLUMN",
-            
+
             // Shulker boxes
             Block::ShulkerBox => "SHULKER_BOX",
             Block::WhiteShulkerBox => "WHITE_SHULKER_BOX",

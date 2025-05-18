@@ -1,12 +1,8 @@
 use crate::command::CommandManager;
-use crate::error::MinestomError;
 use crate::event::EventHandler;
 use crate::instance::InstanceManager;
-use crate::jni_utils::{attach_jvm, get_env, JavaObject, JniValue, ToJava};
+use crate::jni_utils::{get_env, JavaObject, JniValue};
 use crate::Result;
-use jni::sys::JNIEnv;
-use log::{debug, info, warn};
-use std::path::Path;
 
 #[derive(Clone)]
 pub struct MinestomServer {
@@ -41,7 +37,7 @@ impl MinestomServer {
     }
 
     pub fn start(&self, address: &str, port: u16) -> Result<()> {
-        let mut env = get_env()?;
+        let env = get_env()?;
 
         // Convert the address to a Java string
         let address_jstring = env.new_string(address)?;

@@ -1,17 +1,16 @@
+use crate::coordinate::{Pos, Position};
 use crate::entity::Player;
 use crate::instance::InstanceContainer;
-use crate::jni_utils::{check_exception, get_env, JavaObject, JniValue};
+use crate::jni_utils::{get_env, JavaObject, JniValue};
 use crate::{MinestomError, Result};
-use jni::objects::{JObject, JString};
+use jni::objects::JString;
 use log::{debug, error, info};
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use std::any::Any;
 use std::collections::HashMap;
-use std::marker::PhantomData;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use crate::coordinate::{Pos, Position};
 
 // Re-export event types at the top-level
 pub use self::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent};
@@ -432,7 +431,8 @@ pub mod player {
         }
 
         pub fn cancel(&mut self) -> Result<()> {
-            self.inner.call_void_method("setCancelled", "(Z)V", &[JniValue::Bool(true)])
+            self.inner
+                .call_void_method("setCancelled", "(Z)V", &[JniValue::Bool(true)])
         }
     }
 

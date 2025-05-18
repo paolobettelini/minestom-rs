@@ -1,6 +1,5 @@
 use crate::jni_utils::{get_env, JavaObject, JniValue, ToJava};
 use crate::Result;
-use jni::objects::{JObject, JValueGen};
 
 #[macro_export]
 macro_rules! component {

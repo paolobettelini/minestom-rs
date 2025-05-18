@@ -1,15 +1,14 @@
-use log::{debug, error, info};
+use log::info;
 use minestom::{Block, MinestomServer, Position};
 use minestom::{
     component,
     entity::GameMode,
     event::{
         Event,
-        player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent, PlayerMoveEvent},
+        player::{AsyncPlayerConfigurationEvent, PlayerMoveEvent, PlayerSpawnEvent},
     },
     instance::InstanceContainer,
     sound::{Sound, SoundEvent, Source},
-    text::Component,
 };
 use minestom_rs as minestom;
 use rand::Rng;
@@ -54,7 +53,7 @@ struct GameState {
 
 impl GameState {
     fn new(instance: InstanceContainer) -> Self {
-        let mut state = Self {
+        let state = Self {
             blocks: VecDeque::new(),
             score: 0,
             combo: 0,
@@ -115,9 +114,13 @@ fn reset_player(player: &minestom::entity::Player, state: &mut GameState) -> min
 }
 
 fn generate_random_block(pos: &Vec3, target_y: i32) -> Vec3 {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let y = rng.gen_range(-1..=1);
-    let z = if y == 1 { rng.gen_range(1..=2) } else { rng.gen_range(2..=4) };
+    let z = if y == 1 {
+        rng.gen_range(1..=2)
+    } else {
+        rng.gen_range(2..=4)
+    };
     let x = rng.gen_range(-3..=3);
     Vec3::new(pos.x + x, pos.y + y, pos.z + z)
 }
@@ -206,8 +209,9 @@ pub async fn run_server() -> minestom::Result<()> {
     init_logging();
 
     let minecraft_server = MinestomServer::new()?;
-    
-    let player_states: Arc<Mutex<HashMap<String, GameState>>> = Arc::new(Mutex::new(HashMap::new()));
+
+    let player_states: Arc<Mutex<HashMap<String, GameState>>> =
+        Arc::new(Mutex::new(HashMap::new()));
 
     let event_handler = minecraft_server.event_handler()?;
     let server_ref = minecraft_server.clone();
@@ -261,7 +265,6 @@ pub async fn run_server() -> minestom::Result<()> {
         }
         Ok(())
     })?;
-
 
     info!("Starting server on 0.0.0.0:25565...");
     minecraft_server.start("0.0.0.0", 25565)?;

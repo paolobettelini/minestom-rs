@@ -12,9 +12,6 @@ pub mod sound;
 pub mod text;
 
 pub use error::MinestomError;
-use jni::sys::{jint, JNI_VERSION_1_8};
-use jni::JavaVM;
-use std::path::Path;
 pub type Result<T> = std::result::Result<T, MinestomError>;
 pub use block::Block;
 pub use coordinate::{Pos, Position};
@@ -27,12 +24,12 @@ use crate::event::CALLBACKS;
 use crate::jni_utils::JavaObject;
 pub use command::Command;
 pub use entity::Player;
-pub use event::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent, PlayerMoveEvent};
+pub use event::player::{AsyncPlayerConfigurationEvent, PlayerMoveEvent, PlayerSpawnEvent};
 pub use event::Event;
 pub use instance::InstanceContainer;
 use jni::objects::{JObject, JString};
 use jni::sys::{jlong, jobject, JNIEnv};
-use log::{debug, error, info};
+use log::{debug, error};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::panic::{self, AssertUnwindSafe};
@@ -98,7 +95,7 @@ pub fn init() -> Result<MinestomServer> {
     MinestomServer::new()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "system" fn Java_org_example_ConsumerCallback_invokeNativeCallback(
     env: *mut JNIEnv,
     _this: jobject,

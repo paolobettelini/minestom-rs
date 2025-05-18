@@ -1,6 +1,5 @@
 use crate::jni_utils::{get_env, JavaObject, JniValue, ToJava};
 use crate::Result;
-use jni::objects::JValueGen;
 
 pub trait Command {
     fn name(&self) -> &str;

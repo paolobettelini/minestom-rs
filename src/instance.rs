@@ -1,7 +1,7 @@
 use crate::block::Block;
 use crate::coordinate::Position;
 use crate::entity::Player;
-use crate::jni_utils::{get_env, JavaObject, JniValue, ToJava};
+use crate::jni_utils::{get_env, JavaObject, JniValue};
 use crate::MinestomError;
 use crate::Result;
 use jni::objects::JValue;
@@ -289,14 +289,11 @@ impl InstanceContainer {
 
     /// Sets the time rate of this instance.
     /// The time rate represents how fast time passes in the instance.
-    /// 
+    ///
     /// # Arguments
     /// * `rate` - The time rate (default value is 1)
     pub fn set_time_rate(&self, rate: i32) -> Result<()> {
-        self.inner.call_void_method(
-            "setTimeRate",
-            "(I)V",
-            &[JniValue::Int(rate)],
-        )
+        self.inner
+            .call_void_method("setTimeRate", "(I)V", &[JniValue::Int(rate)])
     }
 }
