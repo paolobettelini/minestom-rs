@@ -450,6 +450,38 @@ pub mod player {
             Self { inner }
         }
     }
+
+    pub struct PlayerDisconnectEvent {
+        inner: JavaObject,
+    }
+
+    impl PlayerDisconnectEvent {
+        /// Gets the player that disconnected.
+        pub fn player(&self) -> Result<Player> {
+            let mut env = get_env()?;
+            let result = self.inner.call_object_method(
+                "getPlayer",
+                "()Lnet/minestom/server/entity/Player;",
+                &[],
+            )?;
+            let java_obj = JavaObject::from_env(&mut env, result.as_obj()?)?;
+            Ok(Player::new(java_obj))
+        }
+    }
+
+    impl Event for PlayerDisconnectEvent {
+        fn as_any(&self) -> &dyn Any {
+            self
+        }
+
+        fn java_class_name() -> &'static str {
+            "net/minestom/server/event/player/PlayerDisconnectEvent"
+        }
+
+        fn new(inner: JavaObject) -> Self {
+            Self { inner }
+        }
+    }
 }
 
 pub mod server {
@@ -586,3 +618,4 @@ pub mod ping {
 // Re-export at the top level
 pub use self::server::ServerListPingEvent;
 pub use self::ping::ResponseData;
+pub use self::player::PlayerDisconnectEvent;

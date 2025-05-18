@@ -7,6 +7,7 @@ use minestom::{
         Event,
         player::{
             AsyncPlayerConfigurationEvent,
+            PlayerDisconnectEvent,
             PlayerMoveEvent,
             PlayerSpawnEvent
         },
@@ -249,6 +250,18 @@ pub async fn run_server() -> minestom::Result<()> {
             if let Some(state) = states_ref.lock().unwrap().get_mut(&username) {
                 player.set_game_mode(GameMode::Adventure)?;
                 reset_player(&player, state)?;
+            }
+        }
+        Ok(())
+    })?;
+
+    let states_ref = player_states.clone();
+    event_handler.register_event_listener(move |disconnect_event: &PlayerDisconnectEvent| {
+        info!("Player disconnect event triggered");
+        if let Ok(player) = disconnect_event.player() {
+            if let Ok(username) = player.get_username() {
+                info!("Removing game state for player {}", username);
+                states_ref.lock().unwrap().remove(&username);
             }
         }
         Ok(())
