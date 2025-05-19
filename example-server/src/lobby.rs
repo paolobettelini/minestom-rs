@@ -1,40 +1,13 @@
+use crate::commands::SpawnCommand;
 use log::info;
 use minestom::MinestomServer;
 use minestom::{
-    command::{Command, CommandSender},
+    command::{Command, CommandContext},
     component,
     entity::GameMode,
-    event::{
-        player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent},
-    },
+    event::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent},
 };
 use minestom_rs as minestom;
-
-// Define the parkour command
-struct ParkourCommand;
-
-impl Command for ParkourCommand {
-    fn name(&self) -> &str {
-        "parkour"
-    }
-
-    fn aliases(&self) -> Vec<&str> {
-        vec!["pk"]
-    }
-
-    fn execute(&self, sender: &CommandSender, _args: &[String]) -> minestom::Result<()> {
-        info!("Player used the parkour command!");
-        
-        // Create a gold, italic text component
-        let message = component!("Welcome to parkour! This feature is coming soon...")
-            .gold()
-            .italic();
-            
-        sender.send_message(&message)?;
-        
-        Ok(())
-    }
-}
 
 pub async fn run_server() -> minestom::Result<()> {
     init_logging();
@@ -50,7 +23,13 @@ pub async fn run_server() -> minestom::Result<()> {
 
     // Register commands
     let command_manager = minecraft_server.command_manager()?;
-    command_manager.register(ParkourCommand)?;
+    command_manager.register(SpawnCommand::new(
+        spawn_x,
+        spawn_y,
+        spawn_z,
+        spawn_yaw,
+        spawn_pitch,
+    ))?;
 
     let event_handler = minecraft_server.event_handler()?;
     let spawn_instance = instance.clone();

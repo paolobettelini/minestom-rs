@@ -6,10 +6,7 @@ use minestom::{
     event::{
         Event,
         player::{
-            AsyncPlayerConfigurationEvent,
-            PlayerDisconnectEvent,
-            PlayerMoveEvent,
-            PlayerSpawnEvent
+            AsyncPlayerConfigurationEvent, PlayerDisconnectEvent, PlayerMoveEvent, PlayerSpawnEvent,
         },
         server::ServerListPingEvent,
     },
@@ -223,23 +220,21 @@ pub async fn run_server() -> minestom::Result<()> {
     let server_ref = minecraft_server.clone();
     let states_ref = player_states.clone();
 
-    event_handler.listen(
-        move |config_event: &AsyncPlayerConfigurationEvent| {
-            info!("Setting spawning instance for player");
+    event_handler.listen(move |config_event: &AsyncPlayerConfigurationEvent| {
+        info!("Setting spawning instance for player");
 
-            if let Ok(player) = config_event.player() {
-                if let Ok(name) = player.get_username() {
-                    info!("Creating empty instance and game state for player");
-                    let instance = create_empty_instance(&server_ref)?;
-                    let game_state = GameState::new(instance.clone());
-                    states_ref.lock().unwrap().insert(name.clone(), game_state);
-                    config_event.spawn_instance(&instance)?;
-                }
+        if let Ok(player) = config_event.player() {
+            if let Ok(name) = player.get_username() {
+                info!("Creating empty instance and game state for player");
+                let instance = create_empty_instance(&server_ref)?;
+                let game_state = GameState::new(instance.clone());
+                states_ref.lock().unwrap().insert(name.clone(), game_state);
+                config_event.spawn_instance(&instance)?;
             }
+        }
 
-            Ok(())
-        },
-    )?;
+        Ok(())
+    })?;
 
     let states_ref = player_states.clone();
     event_handler.listen(move |spawn_event: &PlayerSpawnEvent| {
@@ -274,7 +269,7 @@ pub async fn run_server() -> minestom::Result<()> {
         response_data.set_max_player(i32::MAX)?;
         response_data.set_description(&component!("Henlo").red())?;
         response_data.set_favicon(&crate::favicon::random_image())?;
-        
+
         Ok(())
     })?;
 

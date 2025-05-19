@@ -4,9 +4,10 @@ use jni::sys::jint;
 use minestom_rs::jni_utils;
 use std::panic;
 
+mod commands;
+mod favicon;
 mod lobby;
 mod parkour;
-mod favicon;
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_org_example_Main_startServer(env: JNIEnv, class: JClass) -> jint {
@@ -36,7 +37,7 @@ pub extern "system" fn Java_org_example_Main_startServer(env: JNIEnv, class: JCl
     // Run server
     let result = panic::catch_unwind(|| {
         runtime.block_on(async {
-            match parkour::run_server().await {
+            match lobby::run_server().await {
                 Ok(_) => 0,
                 Err(e) => {
                     eprintln!("server error: {}", e);

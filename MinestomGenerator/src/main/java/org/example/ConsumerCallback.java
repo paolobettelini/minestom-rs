@@ -28,9 +28,9 @@ public class ConsumerCallback implements InvocationHandler, Consumer<Object> {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        System.out.println("invoke called for method: " + method.getName());
-        System.out.println("proxy class: " + proxy.getClass().getName());
-        System.out.println("method declaring class: " + method.getDeclaringClass().getName());
+        // System.out.println("invoke called for method: " + method.getName());
+        // System.out.println("proxy class: " + proxy.getClass().getName());
+        // System.out.println("method declaring class: " + method.getDeclaringClass().getName());
         if (args != null) {
             System.out.println("args length: " + args.length);
             for (int i = 0; i < args.length; i++) {

@@ -68,11 +68,16 @@ impl MinestomServer {
 
     /// Gets the command manager for registering and managing commands
     pub fn command_manager(&self) -> Result<CommandManager> {
-        let command_manager = self.inner.call_object_method(
+        let mut env = get_env()?;
+        let server_class = env.find_class("net/minestom/server/MinecraftServer")?;
+        let command_manager = env.call_static_method(
+            &server_class,
             "getCommandManager",
             "()Lnet/minestom/server/command/CommandManager;",
             &[],
         )?;
-        Ok(CommandManager::new(command_manager))
+        let command_manager_obj = command_manager.l()?;
+        let command_manager_global = env.new_global_ref(command_manager_obj)?;
+        Ok(CommandManager::new(JavaObject::new(command_manager_global)))
     }
 }
