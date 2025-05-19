@@ -123,10 +123,11 @@ impl Player {
         // Call teleport on the player
         let future = self.inner.call_object_method(
             "teleport",
-            "(Lnet/minestom/server/coordinate/Pos;[J)Ljava/util/concurrent/CompletableFuture;",
+            "(Lnet/minestom/server/coordinate/Pos;[JI)Ljava/util/concurrent/CompletableFuture;",
             &[
                 JniValue::Object(pos),
                 JniValue::Object(JObject::from(empty_array)),
+                JniValue::Int(0), // No special flags
             ],
         )?;
 

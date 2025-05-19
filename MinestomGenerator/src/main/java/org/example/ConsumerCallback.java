@@ -44,11 +44,11 @@ public class ConsumerCallback implements InvocationHandler, Consumer<Object> {
         }
 
         if ("accept".equals(method.getName()) && args != null && args.length > 0) {
-            System.out.println("Calling native callback with ptr: " + nativeCallbackPtr);
-            System.out.println("Event class: " + args[0].getClass().getName());
-            System.out.println("Event details: " + args[0].toString());
+            //System.out.println("Calling native callback with ptr: " + nativeCallbackPtr);
+            //System.out.println("Event class: " + args[0].getClass().getName());
+            //System.out.println("Event details: " + args[0].toString());
             invokeNativeCallback(nativeCallbackPtr, args[0]);
-            System.out.println("Native callback completed");
+            //System.out.println("Native callback completed");
         }
         return null;
     }

@@ -9,11 +9,12 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
-    maven(url = "https://jitpack.io")
+    maven("https://jitpack.io")
 }
 
 dependencies {
-    implementation("net.minestom:minestom-snapshots:7320437640")
+    // Direct implementation from GitHub main branch
+    implementation("com.github.Minestom:Minestom:master-SNAPSHOT")
 }
 
 application {
@@ -37,6 +38,6 @@ tasks.build {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 } 
