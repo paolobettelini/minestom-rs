@@ -90,6 +90,15 @@ impl Player {
         Ok(result)
     }
 
+    /// Sets whether this player is allowed to fly
+    pub fn set_allow_flying(&self, allow: bool) -> Result<()> {
+        self.inner.call_void_method(
+            "setAllowFlying",
+            "(Z)V",
+            &[JniValue::Bool(allow)],
+        )
+    }
+
     /// Teleports the player to a specific position with view angles.
     pub fn teleport(&self, x: f64, y: f64, z: f64, yaw: f32, pitch: f32) -> Result<()> {
         let mut env = get_env()?;

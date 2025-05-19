@@ -6,3 +6,6 @@ Then
 ```bash
 ./gradlew build && java -Djava.library.path=/home/paolo/Desktop/rust_target/debug -jar build/libs/app.jar 
 ```
+
+## TODO
+Event and command callbacks should be async

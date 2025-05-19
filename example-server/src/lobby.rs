@@ -63,6 +63,7 @@ pub async fn run_server() -> minestom::Result<()> {
             player.send_message(&message)?;
             player.set_game_mode(GameMode::Adventure)?;
             player.teleport(spawn_x, spawn_y, spawn_z, spawn_yaw, spawn_pitch)?;
+            player.set_allow_flying(true)?;
         }
         Ok(())
     })?;
