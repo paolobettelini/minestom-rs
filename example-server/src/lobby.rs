@@ -1,14 +1,15 @@
 use crate::commands::SpawnCommand;
+use crate::utils;
 use log::info;
 use minestom::MinestomServer;
 use minestom::{
+    attribute::Attribute,
     command::{Command, CommandContext},
     component,
     entity::GameMode,
     event::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent},
 };
 use minestom_rs as minestom;
-
 pub struct LobbyMap {
     pub anvil_path: String,
     pub spawn_x: f64,
@@ -22,7 +23,8 @@ pub async fn run_server() -> minestom::Result<()> {
     init_logging();
 
     let lobby1 = LobbyMap {
-        anvil_path: "/home/paolo/Desktop/github/minestom-rs/example-server/anvil/lobby1".to_string(),
+        anvil_path: "/home/paolo/Desktop/github/minestom-rs/example-server/anvil/lobby1"
+            .to_string(),
         spawn_x: -79.5,
         spawn_y: 153.0,
         spawn_z: -11.5,
@@ -32,8 +34,11 @@ pub async fn run_server() -> minestom::Result<()> {
 
     let lobby2 = LobbyMap {
         anvil_path: "/home/paolo/Desktop/github/minestom-rs/example-server/anvil/hub4".to_string(),
-        spawn_x: 1817.5,
-        spawn_y: 41.0,
+        //spawn_x: 1817.5,
+        //spawn_y: 41.0,
+        //spawn_z: 1044.5,
+        spawn_x: 1800.5,
+        spawn_y: 34.0,
         spawn_z: 1044.5,
         spawn_yaw: 90.0,
         spawn_pitch: 0.0,
@@ -87,8 +92,27 @@ pub async fn run_server() -> minestom::Result<()> {
 
             player.send_message(&message)?;
             player.set_game_mode(GameMode::Adventure)?;
-            player.teleport(map.spawn_x, map.spawn_y, map.spawn_z, map.spawn_yaw, map.spawn_pitch)?;
+            player.teleport(
+                map.spawn_x,
+                map.spawn_y,
+                map.spawn_z,
+                map.spawn_yaw,
+                map.spawn_pitch,
+            )?;
             player.set_allow_flying(true)?;
+
+            // https://minecraft.wiki/w/Attribute#Modifiers
+            let scale = utils::distribution(1.0, 0.1, 15.0);
+            info!("Scale: {}", scale);
+            player
+                .get_attribute(Attribute::Scale)?
+                .set_base_value(scale)?;
+            player // linear interop 1->0.42, 15->1
+                .get_attribute(Attribute::JumpStrength)?
+                .set_base_value(0.04143 * scale + 0.37857)?;
+            player
+                .get_attribute(Attribute::StepHeight)?
+                .set_base_value(0.6 * scale)?;
         }
         Ok(())
     })?;
@@ -111,7 +135,7 @@ pub async fn run_server() -> minestom::Result<()> {
 
 fn init_logging() {
     env_logger::builder()
-        .filter_level(log::LevelFilter::Debug)
+        .filter_level(log::LevelFilter::Info)
         .format_timestamp(Some(env_logger::fmt::TimestampPrecision::Millis))
         .init();
 }

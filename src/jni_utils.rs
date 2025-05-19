@@ -331,6 +331,65 @@ impl JavaObject {
         debug!("Created safe local reference from GlobalRef");
         Ok(obj)
     }
+
+    pub(crate) fn as_jvalue<'local>(
+        &self,
+        env: &mut jni::JNIEnv<'local>,
+    ) -> Result<JniValue<'local>> {
+        let obj = self.as_obj()?;
+        Ok(JniValue::Object(env.new_local_ref(&obj)?))
+    }
+
+    /// Calls a method on this object that returns a double.
+    pub fn call_double_method<'arg_local>(
+        &self,
+        name: &str,
+        sig: &str,
+        args: &[JniValue<'arg_local>],
+    ) -> Result<f64> {
+        let mut env = get_env()?;
+        let _frame = env.push_local_frame(32)?;
+        let target_obj_local = env.new_local_ref(&self.as_obj()?)?;
+
+        let mut owned_java_args: Vec<JObject> = Vec::new();
+        for arg in args.iter() {
+            match arg {
+                JniValue::Object(o) => owned_java_args.push(env.new_local_ref(o)?),
+                JniValue::String(s) => owned_java_args.push(env.new_local_ref(s)?),
+                _ => {}
+            }
+        }
+
+        let mut jvalue_args: Vec<jni::objects::JValue> = Vec::with_capacity(args.len());
+        let mut owned_java_args_iter = owned_java_args.iter();
+
+        for arg in args.iter() {
+            match arg {
+                JniValue::Object(_) => {
+                    jvalue_args.push(jni::objects::JValue::from(
+                        owned_java_args_iter.next().unwrap(),
+                    ));
+                }
+                JniValue::String(_) => {
+                    jvalue_args.push(jni::objects::JValue::from(
+                        owned_java_args_iter.next().unwrap(),
+                    ));
+                }
+                JniValue::Int(i) => jvalue_args.push(jni::objects::JValue::Int(*i)),
+                JniValue::Long(l) => jvalue_args.push(jni::objects::JValue::Long(*l)),
+                JniValue::Double(d) => jvalue_args.push(jni::objects::JValue::Double(*d)),
+                JniValue::Float(f) => jvalue_args.push(jni::objects::JValue::Float(*f)),
+                JniValue::Bool(b) => {
+                    jvalue_args.push(jni::objects::JValue::Bool(if *b { 1 } else { 0 }))
+                }
+                JniValue::Void => jvalue_args.push(jni::objects::JValue::Void),
+            }
+        }
+
+        let result = env.call_method(target_obj_local, name, sig, &jvalue_args)?;
+        check_exception(&mut env)?;
+        Ok(result.d()?)
+    }
 }
 
 impl fmt::Debug for JavaObject {

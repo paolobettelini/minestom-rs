@@ -8,6 +8,7 @@ mod commands;
 mod favicon;
 mod lobby;
 mod parkour;
+mod utils;
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_org_example_Main_startServer(env: JNIEnv, class: JClass) -> jint {

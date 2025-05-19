@@ -6,6 +6,8 @@ use crate::sound::Sound;
 use crate::text::Component;
 use crate::Result;
 use jni::objects::{JObject, JValue};
+use crate::attribute::{Attribute, AttributeInstance};
+use jni::objects::{JString};
 
 /// Represents a Minecraft game mode
 #[derive(Debug, Clone, Copy)]
@@ -162,5 +164,19 @@ impl Player {
         let z = env.call_method(&obj, "z", "()D", &[])?.d()?;
 
         Ok(Position::new(x, y, z))
+    }
+
+    /// Gets an attribute instance for the specified attribute
+    pub fn get_attribute(&self, attribute: Attribute) -> Result<AttributeInstance> {
+        let mut env = get_env()?;
+        let j_attribute = attribute.to_java_attribute()?;
+        
+        let result = self.inner.call_object_method(
+            "getAttribute",
+            "(Lnet/minestom/server/entity/attribute/Attribute;)Lnet/minestom/server/entity/attribute/AttributeInstance;",
+            &[j_attribute.as_jvalue(&mut env)?],
+        )?;
+        
+        Ok(AttributeInstance::new(JavaObject::from_env(&mut env, result.as_obj()?)?))
     }
 }

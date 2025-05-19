@@ -10,6 +10,7 @@ pub mod jni_utils;
 pub mod server;
 pub mod sound;
 pub mod text;
+pub mod attribute;
 
 pub use error::MinestomError;
 pub type Result<T> = std::result::Result<T, MinestomError>;
@@ -18,6 +19,7 @@ pub use coordinate::{Pos, Position};
 pub use server::MinestomServer;
 pub use sound::{Sound, SoundEvent, Source};
 pub use text::Component;
+pub use attribute::{Attribute, AttributeInstance};
 
 // Re-export commonly used types
 use crate::event::CALLBACKS;
