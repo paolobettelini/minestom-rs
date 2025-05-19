@@ -1,6 +1,7 @@
 use crate::jni_utils::{get_env, JavaObject, JniValue, ToJava};
 use crate::text::Component;
 use crate::Result;
+use crate::error::MinestomError;
 use jni::objects::{JString, JValue, JObject};
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
@@ -88,22 +89,18 @@ impl CommandSender {
 
     /// Returns true if this sender is a player
     pub fn is_player(&self) -> Result<bool> {
-        self.inner.call_bool_method(
-            "isPlayer",
-            "()Z",
-            &[],
-        )
+        let mut env = get_env()?;
+        let class_name = env.get_object_class(self.inner.as_obj()?)?;
+        let class_name_str = env.find_class("net/minestom/server/entity/Player")?;
+        Ok(env.is_assignable_from(&class_name, &class_name_str)?)
     }
 
     /// Converts this sender to a player if possible
     pub fn as_player(&self) -> Result<crate::entity::Player> {
-        let mut env = get_env()?;
-        let result = self.inner.call_object_method(
-            "asPlayer",
-            "()Lnet/minestom/server/entity/Player;",
-            &[],
-        )?;
-        Ok(crate::entity::Player::new(JavaObject::from_env(&mut env, result.as_obj()?)?))
+        if !self.is_player()? {
+            return Err(MinestomError::InvalidPlayer("Sender is not a player".to_string()).into());
+        }
+        Ok(crate::entity::Player::new(self.inner.clone()))
     }
 
     /// Sends a message to the command sender
