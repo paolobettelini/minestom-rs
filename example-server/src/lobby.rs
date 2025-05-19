@@ -9,26 +9,51 @@ use minestom::{
 };
 use minestom_rs as minestom;
 
+pub struct LobbyMap {
+    pub anvil_path: String,
+    pub spawn_x: f64,
+    pub spawn_y: f64,
+    pub spawn_z: f64,
+    pub spawn_yaw: f32,
+    pub spawn_pitch: f32,
+}
+
 pub async fn run_server() -> minestom::Result<()> {
     init_logging();
 
-    let anvil_path = "/home/paolo/Desktop/github/minestom-rs/example-server/anvil";
-    let (spawn_x, spawn_y, spawn_z) = (-79.5, 153.0, -11.5);
-    let (spawn_yaw, spawn_pitch) = (-90.0, 0.0);
+    let lobby1 = LobbyMap {
+        anvil_path: "/home/paolo/Desktop/github/minestom-rs/example-server/anvil/lobby1".to_string(),
+        spawn_x: -79.5,
+        spawn_y: 153.0,
+        spawn_z: -11.5,
+        spawn_yaw: -90.0,
+        spawn_pitch: 0.0,
+    };
+
+    let lobby2 = LobbyMap {
+        anvil_path: "/home/paolo/Desktop/github/minestom-rs/example-server/anvil/hub4".to_string(),
+        spawn_x: 1817.5,
+        spawn_y: 41.0,
+        spawn_z: 1044.5,
+        spawn_yaw: 90.0,
+        spawn_pitch: 0.0,
+    };
+
+    let map = lobby2;
 
     let minecraft_server = MinestomServer::new()?;
     let instance_manager = minecraft_server.instance_manager()?;
     let instance = instance_manager.create_instance_container()?;
-    instance.load_anvil_world(anvil_path)?;
+    instance.load_anvil_world(map.anvil_path)?;
 
     // Register commands
     let command_manager = minecraft_server.command_manager()?;
     command_manager.register(SpawnCommand::new(
-        spawn_x,
-        spawn_y,
-        spawn_z,
-        spawn_yaw,
-        spawn_pitch,
+        map.spawn_x,
+        map.spawn_y,
+        map.spawn_z,
+        map.spawn_yaw,
+        map.spawn_pitch,
     ))?;
 
     let event_handler = minecraft_server.event_handler()?;
@@ -62,7 +87,7 @@ pub async fn run_server() -> minestom::Result<()> {
 
             player.send_message(&message)?;
             player.set_game_mode(GameMode::Adventure)?;
-            player.teleport(spawn_x, spawn_y, spawn_z, spawn_yaw, spawn_pitch)?;
+            player.teleport(map.spawn_x, map.spawn_y, map.spawn_z, map.spawn_yaw, map.spawn_pitch)?;
             player.set_allow_flying(true)?;
         }
         Ok(())
