@@ -1,5 +1,5 @@
 use crate::coordinate::{Pos, Position};
-use crate::entity::Player;
+use crate::entity::{Player, PlayerSkin};
 use crate::instance::InstanceContainer;
 use crate::jni_utils::{get_env, JavaObject, JniValue, ToJava};
 use crate::{MinestomError, Result};
@@ -371,6 +371,49 @@ pub mod player {
 
         fn java_class_name() -> &'static str {
             "net/minestom/server/event/player/PlayerDisconnectEvent"
+        }
+
+        fn new(inner: JavaObject) -> Self {
+            Self { inner }
+        }
+    }
+
+    /// Event fired when a player's skin is being initialized.
+    pub struct PlayerSkinInitEvent {
+        inner: JavaObject,
+    }
+
+    impl PlayerSkinInitEvent {
+        /// Gets the player whose skin is being initialized.
+        pub fn player(&self) -> Result<Player> {
+            let mut env = get_env()?;
+            let result = self.inner.call_object_method(
+                "getPlayer",
+                "()Lnet/minestom/server/entity/Player;",
+                &[],
+            )?;
+            let java_obj = JavaObject::from_env(&mut env, result.as_obj()?)?;
+            Ok(Player::new(java_obj))
+        }
+
+        /// Sets the player's skin.
+        pub fn set_skin(&self, skin: &PlayerSkin) -> Result<()> {
+            let mut env = get_env()?;
+            self.inner.call_void_method(
+                "setSkin",
+                "(Lnet/minestom/server/entity/PlayerSkin;)V",
+                &[skin.inner().as_jvalue(&mut env)?],
+            )
+        }
+    }
+
+    impl Event for PlayerSkinInitEvent {
+        fn as_any(&self) -> &dyn Any {
+            self
+        }
+
+        fn java_class_name() -> &'static str {
+            "net/minestom/server/event/player/PlayerSkinInitEvent"
         }
 
         fn new(inner: JavaObject) -> Self {

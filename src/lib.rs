@@ -26,7 +26,7 @@ use crate::event::CALLBACKS;
 use crate::jni_utils::JavaObject;
 pub use command::Command;
 pub use entity::Player;
-pub use event::player::{AsyncPlayerConfigurationEvent, PlayerMoveEvent, PlayerSpawnEvent, PlayerDisconnectEvent};
+pub use event::player::{AsyncPlayerConfigurationEvent, PlayerMoveEvent, PlayerSpawnEvent, PlayerDisconnectEvent, PlayerSkinInitEvent};
 pub use event::server::ServerListPingEvent;
 pub use event::Event;
 pub use instance::InstanceContainer;
@@ -52,6 +52,7 @@ pub static EVENT_REGISTRY: Lazy<RwLock<HashMap<String, EventConstructor>>> = Laz
     register_event_type::<PlayerMoveEvent>(&mut registry);
     register_event_type::<ServerListPingEvent>(&mut registry);
     register_event_type::<PlayerDisconnectEvent>(&mut registry);
+    register_event_type::<PlayerSkinInitEvent>(&mut registry);
 
     RwLock::new(registry)
 });

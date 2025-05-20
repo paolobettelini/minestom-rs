@@ -1,5 +1,6 @@
 use std::str::Utf8Error;
 use thiserror::Error;
+use uuid::Error as UuidError;
 
 #[derive(Error, Debug)]
 pub enum MinestomError {
@@ -47,4 +48,7 @@ pub enum MinestomError {
 
     #[error("Conversion error: {0}")]
     Conversion(String),
+
+    #[error("UUID error: {0}")]
+    UuidError(#[from] UuidError),
 }

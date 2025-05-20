@@ -8,6 +8,7 @@ use crate::Result;
 use jni::objects::{JObject, JValue};
 use crate::attribute::{Attribute, AttributeInstance};
 use jni::objects::{JString};
+use uuid;
 
 /// Represents a Minecraft game mode
 #[derive(Debug, Clone, Copy)]
@@ -65,6 +66,42 @@ impl Player {
         let string_ref = jni::objects::JString::from(obj);
         let jstr = env.get_string(&string_ref)?;
         Ok(jstr.to_string_lossy().into_owned())
+    }
+
+    /// Gets the UUID of the player.
+    pub fn get_uuid(&self) -> Result<uuid::Uuid> {
+        let mut env = get_env()?;
+        
+        // First get the identity
+        let identity = self.inner.call_object_method(
+            "identity",
+            "()Lnet/kyori/adventure/identity/Identity;",
+            &[],
+        )?;
+
+        // Then get the UUID from the identity
+        let uuid_result = env.call_method(
+            identity.as_obj()?,
+            "uuid",
+            "()Ljava/util/UUID;",
+            &[],
+        )?;
+
+        let uuid_obj = uuid_result.l()?;
+
+        // Convert Java UUID to String
+        let uuid_str = env.call_method(
+            uuid_obj,
+            "toString",
+            "()Ljava/lang/String;",
+            &[],
+        )?;
+
+        let uuid_jstring = JString::from(uuid_str.l()?);
+        let uuid_rust_str = env.get_string(&uuid_jstring)?;
+        
+        // Parse the UUID string into a Rust UUID
+        Ok(uuid::Uuid::parse_str(&uuid_rust_str.to_string_lossy())?)
     }
 
     /// Sets the player's game mode.
@@ -178,5 +215,41 @@ impl Player {
         )?;
         
         Ok(AttributeInstance::new(JavaObject::from_env(&mut env, result.as_obj()?)?))
+    }
+}
+
+/// Represents a player's skin data
+#[derive(Debug, Clone)]
+pub struct PlayerSkin {
+    inner: JavaObject,
+}
+
+impl PlayerSkin {
+    pub(crate) fn new(inner: JavaObject) -> Self {
+        Self { inner }
+    }
+
+    /// Creates a new PlayerSkin instance with the given texture value and signature
+    pub fn create(texture_value: &str, signature: &str) -> Result<Self> {
+        let mut env = get_env()?;
+        let skin_class = env.find_class("net/minestom/server/entity/PlayerSkin")?;
+
+        let texture_str = env.new_string(texture_value)?;
+        let signature_str = env.new_string(signature)?;
+
+        let skin_obj = env.new_object(
+            skin_class,
+            "(Ljava/lang/String;Ljava/lang/String;)V",
+            &[
+                JValue::Object(&texture_str),
+                JValue::Object(&signature_str),
+            ],
+        )?;
+
+        Ok(Self::new(JavaObject::from_env(&mut env, skin_obj)?))
+    }
+
+    pub(crate) fn inner(&self) -> &JavaObject {
+        &self.inner
     }
 }
