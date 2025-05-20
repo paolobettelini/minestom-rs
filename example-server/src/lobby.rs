@@ -1,5 +1,7 @@
 use crate::commands::SpawnCommand;
-use crate::utils;
+use crate::magic_values::*;
+use crate::maps::LobbyMap2;
+use crate::maps::map::LobbyMap;
 use log::info;
 use minestom::MinestomServer;
 use minestom::{
@@ -10,56 +12,22 @@ use minestom::{
     event::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent},
 };
 use minestom_rs as minestom;
-pub struct LobbyMap {
-    pub anvil_path: String,
-    pub spawn_x: f64,
-    pub spawn_y: f64,
-    pub spawn_z: f64,
-    pub spawn_yaw: f32,
-    pub spawn_pitch: f32,
-}
 
 pub async fn run_server() -> minestom::Result<()> {
     init_logging();
 
-    let lobby1 = LobbyMap {
-        anvil_path: "/home/paolo/Desktop/github/minestom-rs/example-server/anvil/lobby1"
-            .to_string(),
-        spawn_x: -79.5,
-        spawn_y: 153.0,
-        spawn_z: -11.5,
-        spawn_yaw: -90.0,
-        spawn_pitch: 0.0,
-    };
-
-    let lobby2 = LobbyMap {
-        anvil_path: "/home/paolo/Desktop/github/minestom-rs/example-server/anvil/hub4".to_string(),
-        //spawn_x: 1817.5,
-        //spawn_y: 41.0,
-        //spawn_z: 1044.5,
-        spawn_x: 1800.5,
-        spawn_y: 34.0,
-        spawn_z: 1044.5,
-        spawn_yaw: 90.0,
-        spawn_pitch: 0.0,
-    };
+    let lobby2 = LobbyMap2;
 
     let map = lobby2;
 
     let minecraft_server = MinestomServer::new()?;
     let instance_manager = minecraft_server.instance_manager()?;
     let instance = instance_manager.create_instance_container()?;
-    instance.load_anvil_world(map.anvil_path)?;
+    instance.load_anvil_world(map.anvil_path())?;
 
     // Register commands
     let command_manager = minecraft_server.command_manager()?;
-    command_manager.register(SpawnCommand::new(
-        map.spawn_x,
-        map.spawn_y,
-        map.spawn_z,
-        map.spawn_yaw,
-        map.spawn_pitch,
-    ))?;
+    command_manager.register(SpawnCommand::new(map))?;
 
     let event_handler = minecraft_server.event_handler()?;
     let spawn_instance = instance.clone();
@@ -92,27 +60,23 @@ pub async fn run_server() -> minestom::Result<()> {
 
             player.send_message(&message)?;
             player.set_game_mode(GameMode::Adventure)?;
-            player.teleport(
-                map.spawn_x,
-                map.spawn_y,
-                map.spawn_z,
-                map.spawn_yaw,
-                map.spawn_pitch,
-            )?;
+
+            let (x, y, z, yaw, pitch) = map.spawn_coordinate();
+            player.teleport(x, y, z, yaw, pitch)?;
             player.set_allow_flying(true)?;
 
             // https://minecraft.wiki/w/Attribute#Modifiers
-            let scale = utils::distribution(1.0, 0.1, 15.0);
-            info!("Scale: {}", scale);
+            let scale = distribution(AVG_SCALE, MIN_SCALE, MAX_SCALE);
+            info!("Setting player scale to {}", scale);
             player
                 .get_attribute(Attribute::Scale)?
                 .set_base_value(scale)?;
-            player // linear interop 1->0.42, 15->1
+            player
                 .get_attribute(Attribute::JumpStrength)?
-                .set_base_value(0.04143 * scale + 0.37857)?;
+                .set_base_value(jump_strength_scale(scale))?;
             player
                 .get_attribute(Attribute::StepHeight)?
-                .set_base_value(0.6 * scale)?;
+                .set_base_value(step_height_scale(scale))?;
         }
         Ok(())
     })?;
