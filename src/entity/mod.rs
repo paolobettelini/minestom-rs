@@ -1,5 +1,7 @@
 use std::fmt;
 
+pub mod player;
+
 use crate::coordinate::Position;
 use crate::jni_utils::{get_env, JavaObject, JniValue};
 use crate::sound::Sound;
@@ -32,7 +34,7 @@ impl GameMode {
 
 #[derive(Clone)]
 pub struct Player {
-    inner: JavaObject,
+    pub(crate) inner: JavaObject,
 }
 
 impl fmt::Debug for Player {
@@ -252,4 +254,4 @@ impl PlayerSkin {
     pub(crate) fn inner(&self) -> &JavaObject {
         &self.inner
     }
-}
+} 

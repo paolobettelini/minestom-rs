@@ -14,6 +14,7 @@ use minestom::{
     component,
     entity::GameMode,
     event::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent, PlayerSkinInitEvent},
+    resource_pack::{ResourcePackInfo, ResourcePackRequest, ResourcePackRequestBuilder},
 };
 use minestom_rs as minestom;
 
@@ -45,6 +46,20 @@ pub async fn run_server() -> minestom::Result<()> {
             if let Ok(name) = player.get_username() {
                 info!("Player configured: {}", name);
             }
+
+            // Send resource pack
+            let uuid = uuid::Uuid::new_v4();
+            let url = "http://127.0.0.1:8080/resourcepack.zip";
+            let hash = "123456";
+
+            let pack_info = ResourcePackInfo::new(uuid, url, hash)?;
+            let request = ResourcePackRequestBuilder::new()?
+                .packs(pack_info)?
+                .prompt(&component!("Please accept the resource pack").gold())?
+                .required(true)?
+                .build()?;
+
+            player.send_resource_packs(&request)?;
         }
 
         Ok(())
@@ -71,7 +86,7 @@ pub async fn run_server() -> minestom::Result<()> {
 
             // https://minecraft.wiki/w/Attribute#Modifiers
             let scale = distribution(AVG_SCALE, MIN_SCALE, MAX_SCALE);
-            let scale = 0.2;
+            //let scale = 0.2;
             info!("Setting player scale to {}", scale);
             player
                 .get_attribute(Attribute::Scale)?
