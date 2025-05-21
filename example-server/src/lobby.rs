@@ -15,6 +15,7 @@ use minestom::{
     entity::GameMode,
     event::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent, PlayerSkinInitEvent},
     resource_pack::{ResourcePackInfo, ResourcePackRequest, ResourcePackRequestBuilder},
+    item::{ItemStack, Material, InventoryHolder},
 };
 use minestom_rs as minestom;
 
@@ -86,7 +87,7 @@ pub async fn run_server() -> minestom::Result<()> {
 
             // https://minecraft.wiki/w/Attribute#Modifiers
             let scale = distribution(AVG_SCALE, MIN_SCALE, MAX_SCALE);
-            //let scale = 0.2;
+            //let scale = 15.0;
             info!("Setting player scale to {}", scale);
             player
                 .get_attribute(Attribute::Scale)?
@@ -97,6 +98,15 @@ pub async fn run_server() -> minestom::Result<()> {
             player
                 .get_attribute(Attribute::StepHeight)?
                 .set_base_value(step_height_scale(scale))?;
+
+            // Create a diamond sombrero
+            let sombrero = ItemStack::of(Material::Diamond)?
+                .with_amount(1)?
+                .with_string_tag("custom_model_data", "sombrero")?;
+
+            // Get player's inventory and set the helmet
+            let inventory = player.get_inventory()?;
+            inventory.set_helmet(&sombrero)?;
         }
         Ok(())
     })?;

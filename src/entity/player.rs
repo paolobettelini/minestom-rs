@@ -1,6 +1,7 @@
 use crate::resource_pack::ResourcePackRequest;
 use crate::Result;
 use crate::jni_utils::{get_env, JniValue};
+use crate::item::{InventoryHolder, PlayerInventory};
 
 impl crate::entity::Player {
     /// Sends resource packs to the player
@@ -22,5 +23,18 @@ impl crate::entity::Player {
             "()V",
             &[],
         )
+    }
+}
+
+impl InventoryHolder for crate::entity::Player {
+    fn get_inventory(&self) -> Result<PlayerInventory> {
+        let mut env = get_env()?;
+        let inventory = self.inner.call_object_method(
+            "getInventory",
+            "()Lnet/minestom/server/inventory/PlayerInventory;",
+            &[],
+        )?;
+
+        PlayerInventory::from_java(inventory.as_obj()?)
     }
 } 
