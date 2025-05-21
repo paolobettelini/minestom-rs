@@ -2,24 +2,11 @@ use crate::text::Component;
 use crate::Result;
 use crate::jni_utils::{get_env, JavaObject, JniValue};
 use jni::objects::{JObject, JValue};
+use crate::material::Material;
 
 #[derive(Debug, Clone)]
 pub struct ItemStack {
     inner: JavaObject,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum Material {
-    Diamond,
-    // Add more materials as needed
-}
-
-impl Material {
-    fn to_java_name(&self) -> &'static str {
-        match self {
-            Material::Diamond => "minecraft:diamond",
-        }
-    }
 }
 
 impl ItemStack {

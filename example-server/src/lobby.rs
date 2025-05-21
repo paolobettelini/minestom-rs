@@ -8,14 +8,15 @@ use crate::mojang::get_skin_and_signature;
 use minestom_rs::ServerListPingEvent;
 use minestom::MinestomServer;
 use minestom_rs::entity::PlayerSkin;
-use minestom::{
+use minestom_rs::{
     attribute::Attribute,
     command::{Command, CommandContext},
     component,
     entity::GameMode,
     event::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent, PlayerSkinInitEvent},
     resource_pack::{ResourcePackInfo, ResourcePackRequest, ResourcePackRequestBuilder},
-    item::{ItemStack, Material, InventoryHolder},
+    item::{ItemStack, InventoryHolder},
+    material::Material,
 };
 use minestom_rs as minestom;
 

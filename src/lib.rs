@@ -13,6 +13,7 @@ pub mod text;
 pub mod attribute;
 pub mod resource_pack;
 pub mod item;
+pub mod material;
 
 pub use error::MinestomError;
 pub type Result<T> = std::result::Result<T, MinestomError>;
