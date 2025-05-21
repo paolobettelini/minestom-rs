@@ -5,6 +5,7 @@ use crate::maps::map::LobbyMap;
 use uuid::Uuid;
 use log::info;
 use crate::mojang::get_skin_and_signature;
+use minestom_rs::ServerListPingEvent;
 use minestom::MinestomServer;
 use minestom_rs::entity::PlayerSkin;
 use minestom::{
@@ -70,6 +71,7 @@ pub async fn run_server() -> minestom::Result<()> {
 
             // https://minecraft.wiki/w/Attribute#Modifiers
             let scale = distribution(AVG_SCALE, MIN_SCALE, MAX_SCALE);
+            let scale = 0.2;
             info!("Setting player scale to {}", scale);
             player
                 .get_attribute(Attribute::Scale)?
@@ -84,11 +86,16 @@ pub async fn run_server() -> minestom::Result<()> {
         Ok(())
     })?;
 
-    let uuid = "6a84864d-90bc-4f67-b7bf-27a7ff06579d";
-    let uuid = Uuid::parse_str(uuid).unwrap();
-    let (texture, signature) = get_skin_and_signature(uuid).await.unwrap();
-    info!("Texture: {}", texture);
-    info!("Signature: {}", signature);
+    event_handler.listen(move |event: &ServerListPingEvent| {
+        let response_data = event.get_response_data()?;
+
+        response_data.set_online(-1)?;
+        response_data.set_max_player(i32::MAX)?;
+        response_data.set_description(&component!("Henlo").red())?;
+        response_data.set_favicon(&crate::favicon::random_image())?;
+
+        Ok(())
+    })?;
 
     event_handler.listen(move |skin_event: &PlayerSkinInitEvent| {
         info!("Player skin init event triggered");
