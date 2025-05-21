@@ -104,6 +104,67 @@ impl ItemStack {
         Ok(Self { inner: JavaObject::new(env.new_global_ref(item.l()?)?) })
     }
 
+    pub fn with_int_tag(&self, tag: &str, value: i32) -> Result<Self> {
+        let mut env = get_env()?;
+        
+        // Create the Tag object
+        let tag_obj = env.call_static_method(
+            "net/minestom/server/tag/Tag",
+            "Integer",
+            "(Ljava/lang/String;)Lnet/minestom/server/tag/Tag;",
+            &[JValue::from(&env.new_string(tag)?)],
+        )?.l()?;
+
+        // Create the integer value
+        let int_value = env.new_object(
+            "java/lang/Integer",
+            "(I)V",
+            &[JValue::Int(value)],
+        )?;
+
+        // Call withTag
+        let item = env.call_method(
+            self.inner.as_obj()?,
+            "withTag",
+            "(Lnet/minestom/server/tag/Tag;Ljava/lang/Object;)Lnet/minestom/server/item/ItemStack;",
+            &[JValue::Object(&tag_obj), JValue::Object(&int_value)],
+        )?;
+
+        Ok(Self { inner: JavaObject::new(env.new_global_ref(item.l()?)?) })
+    }
+
+    pub fn with_custom_model_data(&self, value: &str) -> Result<Self> {
+        let mut env = get_env()?;
+        
+        // Create empty lists for floats, booleans, and colors
+        let empty_list = env.new_object("java/util/ArrayList", "()V", &[])?;
+        
+        // Create the string list with our value
+        let string_list = env.new_object("java/util/ArrayList", "()V", &[])?;
+        let jstring = env.new_string(value)?;
+        env.call_method(
+            &string_list,
+            "add",
+            "(Ljava/lang/Object;)Z",
+            &[JValue::Object(&jstring)],
+        )?;
+
+        // Call withCustomModelData
+        let item = env.call_method(
+            self.inner.as_obj()?,
+            "withCustomModelData",
+            "(Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;)Lnet/minestom/server/item/ItemStack;",
+            &[
+                JValue::Object(&empty_list), // floats
+                JValue::Object(&empty_list), // booleans
+                JValue::Object(&string_list), // strings
+                JValue::Object(&empty_list), // colors
+            ],
+        )?;
+
+        Ok(Self { inner: JavaObject::new(env.new_global_ref(item.l()?)?) })
+    }
+
     pub(crate) fn as_obj(&self) -> &JavaObject {
         &self.inner
     }
