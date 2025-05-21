@@ -103,7 +103,7 @@ pub async fn run_server() -> minestom::Result<()> {
             // Create a diamond sombrero
             let sombrero = ItemStack::of(Material::Diamond)?
                 .with_amount(1)?
-                .with_custom_model_data("sombrero")?;
+                .with_custom_model_data("piano")?;
 
             // Get player's inventory and set the helmet
             let inventory = player.get_inventory()?;

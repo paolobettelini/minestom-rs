@@ -10,6 +10,13 @@
           "type": "minecraft:model",
           "model": "thecrown:item/susso"
         }
+      },
+      {
+        "when": "piano",
+        "model": {
+          "type": "minecraft:model",
+          "model": "thecrown:item/piano"
+        }
       }
     ],
     "fallback": {
