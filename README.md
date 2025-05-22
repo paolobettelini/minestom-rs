@@ -14,4 +14,4 @@ zip -r ../resourcepack.zip *
 ```
 
 ## TODO
-Event and command callbacks should be async
+Event and command callbacks should be async. InstanceContainer, SharedInstance etc dovrebbero avere gli stessi metodi comuni.

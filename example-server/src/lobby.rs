@@ -13,7 +13,7 @@ use minestom_rs::{
     command::{Command, CommandContext},
     component,
     entity::GameMode,
-    event::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent, PlayerSkinInitEvent},
+    event::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent, PlayerSkinInitEvent, PlayerMoveEvent},
     resource_pack::{ResourcePackInfo, ResourcePackRequest, ResourcePackRequestBuilder},
     item::{ItemStack, InventoryHolder},
     material::Material,
@@ -23,18 +23,15 @@ use minestom_rs as minestom;
 pub async fn run_server() -> minestom::Result<()> {
     init_logging();
 
-    let lobby2 = LobbyMap2;
-
-    let map = lobby2;
-
     let minecraft_server = MinestomServer::new()?;
     let instance_manager = minecraft_server.instance_manager()?;
-    let instance = instance_manager.create_instance_container()?;
-    instance.load_anvil_world(map.anvil_path())?;
+
+    let map = LobbyMap2::new(&instance_manager)?;
+    let instance = map.instance();
 
     // Register commands
     let command_manager = minecraft_server.command_manager()?;
-    command_manager.register(SpawnCommand::new(map))?;
+    command_manager.register(SpawnCommand::new(map.clone()))?;
 
     let event_handler = minecraft_server.event_handler()?;
     let spawn_instance = instance.clone();
@@ -67,7 +64,7 @@ pub async fn run_server() -> minestom::Result<()> {
         Ok(())
     })?;
 
-    let welcome_instance = instance.clone();
+    let map_clone = map.clone();
     event_handler.listen(move |spawn_event: &PlayerSpawnEvent| {
         info!("Player spawn event triggered");
         if let Ok(player) = spawn_event.player() {
@@ -82,7 +79,7 @@ pub async fn run_server() -> minestom::Result<()> {
             player.send_message(&message)?;
             player.set_game_mode(GameMode::Adventure)?;
 
-            let (x, y, z, yaw, pitch) = map.spawn_coordinate();
+            let (x, y, z, yaw, pitch) = map_clone.spawn_coordinate();
             player.teleport(x, y, z, yaw, pitch)?;
             player.set_allow_flying(true)?;
 

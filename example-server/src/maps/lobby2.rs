@@ -1,13 +1,24 @@
 use crate::maps::LobbyMap;
+use minestom_rs::InstanceContainer;
+use minestom_rs::instance::InstanceManager;
 use rand::Rng;
+use minestom_rs::PlayerMoveEvent;
 
-#[derive(Copy, Clone)]
-pub struct LobbyMap2;
+#[derive(Clone)]
+pub struct LobbyMap2 {
+    pub instance: InstanceContainer,
+}
+
+impl LobbyMap2 {
+    pub fn new(instance_manager: &InstanceManager) -> minestom_rs::Result<Self> {
+        let anvil_path = String::from("/home/paolo/Desktop/github/minestom-rs/example-server/anvil/lobby2");
+        let instance = instance_manager.create_instance_container()?;
+        instance.load_anvil_world(anvil_path)?;
+        Ok(Self { instance })
+    }
+}
 
 impl LobbyMap for LobbyMap2 {
-    fn anvil_path(&self) -> String {
-        String::from("/home/paolo/Desktop/github/minestom-rs/example-server/anvil/lobby2")
-    }
 
     fn spawn_coordinate(&self) -> (f64, f64, f64, f32, f32) {
         let spawns = vec![
@@ -21,5 +32,28 @@ impl LobbyMap for LobbyMap2 {
         let mut rng = rand::thread_rng();
         let index = rng.gen_range(0..spawns.len());
         spawns[index]
+    }
+
+    fn init(&self, instance: &InstanceContainer) -> minestom_rs::Result<()> {
+        let event_node = instance.event_node()?;
+
+        let map_clone = self.clone();
+        event_node.listen(move |move_event: &PlayerMoveEvent| {
+            if let Ok(player) = move_event.player() {
+                if let Ok(pos) = player.get_position() {
+                    if pos.y < 0.0 {
+                        let (x, y, z, yaw, pitch) = map_clone.spawn_coordinate();
+                        player.teleport(x, y, z, yaw, pitch)?;
+                    }
+                }
+            }
+            Ok(())
+        })?;
+        
+        Ok(())
+    }
+
+    fn instance(&self) -> InstanceContainer {
+        self.instance.clone()   
     }
 }

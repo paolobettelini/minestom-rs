@@ -1,6 +1,7 @@
 use crate::block::Block;
 use crate::coordinate::Position;
 use crate::entity::Player;
+use crate::event::EventHandler;
 use crate::jni_utils::{get_env, JavaObject, JniValue};
 use crate::MinestomError;
 use crate::Result;
@@ -295,5 +296,16 @@ impl InstanceContainer {
     pub fn set_time_rate(&self, rate: i32) -> Result<()> {
         self.inner
             .call_void_method("setTimeRate", "(I)V", &[JniValue::Int(rate)])
+    }
+
+    /// Gets the event node for this instance.
+    /// This can be used to register event listeners specific to this instance.
+    pub fn event_node(&self) -> Result<EventHandler> {
+        let result = self.inner.call_object_method(
+            "eventNode",
+            "()Lnet/minestom/server/instance/Instance;",
+            &[],
+        )?;
+        Ok(EventHandler::new(result))
     }
 }

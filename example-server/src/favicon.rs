@@ -13,14 +13,14 @@ pub fn random_image() -> String {
     let mut rng = rand::thread_rng();
 
     // Determine how many blobs (circles) to draw.
-    let num_blobs = rng.gen_range(2..20);
+    let num_blobs = rng.random_range(2..20);
 
     for _ in 0..num_blobs {
         // Choose a random center within image boundaries.
-        let cx = rng.gen_range(0..width) as i32;
-        let cy = rng.gen_range(0..height) as i32;
+        let cx = rng.random_range(0..width) as i32;
+        let cy = rng.random_range(0..height) as i32;
         // Choose a random radius (e.g., between 5 and 15 pixels).
-        let radius = rng.gen_range(5..15) as i32;
+        let radius = rng.random_range(5..15) as i32;
         // Choose a random color.
         let color = Rgb([rng.r#gen::<u8>(), rng.r#gen::<u8>(), rng.r#gen::<u8>()]);
 
