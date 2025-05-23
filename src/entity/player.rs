@@ -1,7 +1,7 @@
-use crate::resource_pack::ResourcePackRequest;
 use crate::Result;
-use crate::jni_utils::{get_env, JniValue};
 use crate::item::{InventoryHolder, PlayerInventory};
+use crate::jni_utils::{JniValue, get_env};
+use crate::resource_pack::ResourcePackRequest;
 
 impl crate::entity::Player {
     /// Sends resource packs to the player
@@ -18,11 +18,8 @@ impl crate::entity::Player {
     /// Clears all resource packs from the player
     pub fn clear_resource_packs(&self) -> Result<()> {
         let mut env = get_env()?;
-        self.inner.call_void_method(
-            "clearResourcePacks",
-            "()V",
-            &[],
-        )
+        self.inner
+            .call_void_method("clearResourcePacks", "()V", &[])
     }
 }
 
@@ -37,4 +34,4 @@ impl InventoryHolder for crate::entity::Player {
 
         PlayerInventory::from_java(inventory.as_obj()?)
     }
-} 
+}

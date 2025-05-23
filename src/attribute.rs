@@ -1,5 +1,5 @@
-use crate::jni_utils::{get_env, JavaObject, JniValue};
 use crate::Result;
+use crate::jni_utils::{JavaObject, JniValue, get_env};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Attribute {
@@ -112,10 +112,7 @@ impl AttributeInstance {
 
     /// Sets the base value of the attribute
     pub fn set_base_value(&self, value: f64) -> Result<()> {
-        self.inner.call_void_method(
-            "setBaseValue",
-            "(D)V",
-            &[value.into()],
-        )
+        self.inner
+            .call_void_method("setBaseValue", "(D)V", &[value.into()])
     }
-} 
+}

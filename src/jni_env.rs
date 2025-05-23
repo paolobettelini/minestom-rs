@@ -1,7 +1,7 @@
-use crate::error::MinestomError;
 use crate::Result;
-use jni::objects::JString;
+use crate::error::MinestomError;
 use jni::JNIEnv;
+use jni::objects::JString;
 use std::cell::RefCell;
 
 thread_local! {

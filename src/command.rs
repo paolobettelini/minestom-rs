@@ -1,18 +1,19 @@
-use crate::jni_utils::{get_env, JavaObject, JniValue, ToJava};
-use crate::text::Component;
 use crate::Result;
 use crate::error::MinestomError;
-use jni::objects::{JString, JValue, JObject};
+use crate::jni_utils::{JavaObject, JniValue, ToJava, get_env};
+use crate::text::Component;
+use jni::objects::{JObject, JString, JValue};
+use log::{debug, error};
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::collections::HashMap;
-use log::{debug, error};
 
 // Store command callbacks
-static COMMAND_CALLBACKS: Lazy<RwLock<HashMap<u64, Arc<dyn Fn(&CommandSender, &CommandContext) -> Result<()> + Send + Sync>>>> = 
-    Lazy::new(|| RwLock::new(HashMap::new()));
+static COMMAND_CALLBACKS: Lazy<
+    RwLock<HashMap<u64, Arc<dyn Fn(&CommandSender, &CommandContext) -> Result<()> + Send + Sync>>>,
+> = Lazy::new(|| RwLock::new(HashMap::new()));
 
 static NEXT_CALLBACK_ID: AtomicU64 = AtomicU64::new(1);
 
@@ -20,12 +21,12 @@ static NEXT_CALLBACK_ID: AtomicU64 = AtomicU64::new(1);
 pub trait Command: Send + Sync + Clone + 'static {
     /// Returns the name of the command
     fn name(&self) -> &str;
-    
+
     /// Returns a list of aliases for the command
     fn aliases(&self) -> Vec<&str> {
         Vec::new()
     }
-    
+
     /// Called when the command is executed
     fn execute(&self, sender: &CommandSender, context: &CommandContext) -> Result<()>;
 }
@@ -48,7 +49,10 @@ impl CommandContext {
             "()Lnet/minestom/server/command/CommandSender;",
             &[],
         )?;
-        Ok(CommandSender::new(JavaObject::from_env(&mut env, result.as_obj()?)?))
+        Ok(CommandSender::new(JavaObject::from_env(
+            &mut env,
+            result.as_obj()?,
+        )?))
     }
 
     /// Gets the command arguments
@@ -69,11 +73,8 @@ impl CommandContext {
     pub fn get_integer(&self, name: &str) -> Result<i32> {
         let mut env = get_env()?;
         let j_name = name.to_java(&mut env)?;
-        self.inner.call_int_method(
-            "getInteger",
-            "(Ljava/lang/String;)I",
-            &[j_name],
-        )
+        self.inner
+            .call_int_method("getInteger", "(Ljava/lang/String;)I", &[j_name])
     }
 }
 
@@ -107,7 +108,7 @@ impl CommandSender {
     pub fn send_message(&self, message: &Component) -> Result<()> {
         let mut env = get_env()?;
         let j_message = message.as_jvalue(&mut env)?;
-        
+
         self.inner.call_void_method(
             "sendMessage",
             "(Lnet/kyori/adventure/text/Component;)V",
@@ -119,12 +120,9 @@ impl CommandSender {
     pub fn has_permission(&self, permission: &str) -> Result<bool> {
         let mut env = get_env()?;
         let j_permission = permission.to_java(&mut env)?;
-        
-        self.inner.call_bool_method(
-            "hasPermission",
-            "(Ljava/lang/String;)Z",
-            &[j_permission],
-        )
+
+        self.inner
+            .call_bool_method("hasPermission", "(Ljava/lang/String;)Z", &[j_permission])
     }
 }
 
@@ -141,18 +139,15 @@ impl CommandManager {
     /// Registers a new command with the command manager
     pub fn register<T: Command + 'static>(&self, command: T) -> Result<CommandBuilder> {
         let mut env = get_env()?;
-        
+
         // Create the Java command object
         let command_class = env.find_class("net/minestom/server/command/builder/Command")?;
         let j_name = command.name().to_java(&mut env)?;
-        
+
         // Create the aliases array
         let aliases = command.aliases();
-        let aliases_array = env.new_object_array(
-            aliases.len() as i32,
-            "java/lang/String",
-            JObject::null(),
-        )?;
+        let aliases_array =
+            env.new_object_array(aliases.len() as i32, "java/lang/String", JObject::null())?;
         for (i, alias) in aliases.iter().enumerate() {
             let j_alias = env.new_string(alias)?;
             env.set_object_array_element(&aliases_array, i as i32, j_alias)?;
@@ -173,14 +168,11 @@ impl CommandManager {
             command.execute(sender, context)
         });
         COMMAND_CALLBACKS.write().insert(callback_id, callback);
-        
+
         // Create the command executor
         let executor_class = env.find_class("org/example/CommandExecutorCallback")?;
-        let executor = env.new_object(
-            executor_class,
-            "(J)V",
-            &[JValue::Long(callback_id as i64)],
-        )?;
+        let executor =
+            env.new_object(executor_class, "(J)V", &[JValue::Long(callback_id as i64)])?;
 
         // Add the executor to the command
         env.call_method(
@@ -189,10 +181,10 @@ impl CommandManager {
             "(Lnet/minestom/server/command/builder/CommandExecutor;)V",
             &[JValue::Object(&executor)],
         )?;
-        
+
         // Create a global reference for the command object
         let global_command = env.new_global_ref(&command_obj)?;
-        
+
         // Register the command with Minestom
         let local_command = env.new_local_ref(&command_obj)?;
         self.inner.call_void_method(
@@ -200,7 +192,7 @@ impl CommandManager {
             "(Lnet/minestom/server/command/builder/Command;)V",
             &[JniValue::Object(local_command)],
         )?;
-        
+
         Ok(CommandBuilder::new(JavaObject::new(global_command)))
     }
 
@@ -208,12 +200,9 @@ impl CommandManager {
     pub fn unregister(&self, name: &str) -> Result<()> {
         let mut env = get_env()?;
         let j_name = name.to_java(&mut env)?;
-        
-        self.inner.call_void_method(
-            "unregister",
-            "(Ljava/lang/String;)V",
-            &[j_name],
-        )
+
+        self.inner
+            .call_void_method("unregister", "(Ljava/lang/String;)V", &[j_name])
     }
 }
 
@@ -231,13 +220,13 @@ impl CommandBuilder {
     pub fn add_string_arg(&self, name: &str) -> Result<&Self> {
         let mut env = get_env()?;
         let j_name = name.to_java(&mut env)?;
-        
+
         self.inner.call_void_method(
             "addSyntax",
             "(Lnet/minestom/server/command/builder/arguments/ArgumentString;)Lnet/minestom/server/command/builder/Command;",
             &[j_name],
         )?;
-        
+
         Ok(self)
     }
 
@@ -245,13 +234,13 @@ impl CommandBuilder {
     pub fn add_integer_arg(&self, name: &str) -> Result<&Self> {
         let mut env = get_env()?;
         let j_name = name.to_java(&mut env)?;
-        
+
         self.inner.call_void_method(
             "addSyntax",
             "(Lnet/minestom/server/command/builder/arguments/ArgumentInteger;)Lnet/minestom/server/command/builder/Command;",
             &[j_name],
         )?;
-        
+
         Ok(self)
     }
 
@@ -261,7 +250,7 @@ impl CommandBuilder {
         F: Fn(&CommandSender) -> Result<bool> + Send + Sync + 'static,
     {
         let mut env = get_env()?;
-        
+
         // Create a new callback ID for the condition
         let callback_id = NEXT_CALLBACK_ID.fetch_add(1, Ordering::SeqCst);
         let condition = Arc::new(move |sender: &CommandSender, _context: &CommandContext| {
@@ -272,14 +261,11 @@ impl CommandBuilder {
             }
         });
         COMMAND_CALLBACKS.write().insert(callback_id, condition);
-        
+
         // Create the condition executor
         let condition_class = env.find_class("org/example/CommandConditionCallback")?;
-        let condition_obj = env.new_object(
-            condition_class,
-            "(J)V",
-            &[JValue::Long(callback_id as i64)],
-        )?;
+        let condition_obj =
+            env.new_object(condition_class, "(J)V", &[JValue::Long(callback_id as i64)])?;
 
         // Set the condition
         self.inner.call_void_method(
@@ -287,7 +273,7 @@ impl CommandBuilder {
             "(Lnet/minestom/server/command/builder/condition/CommandCondition;)Lnet/minestom/server/command/builder/Command;",
             &[JniValue::Object(condition_obj)],
         )?;
-        
+
         Ok(self)
     }
 }

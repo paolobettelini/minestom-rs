@@ -1,7 +1,8 @@
 use crate::coordinate::{Pos, Position};
 use crate::entity::{Player, PlayerSkin};
 use crate::instance::InstanceContainer;
-use crate::jni_utils::{get_env, JavaObject, JniValue, ToJava};
+use crate::jni_utils::{JavaObject, JniValue, ToJava, get_env};
+use crate::text::Component;
 use crate::{MinestomError, Result};
 use jni::objects::JString;
 use log::{debug, error, info};
@@ -9,9 +10,10 @@ use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use std::any::Any;
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::future::Future;
 use std::sync::Arc;
-use crate::text::Component;
+use std::sync::atomic::{AtomicU64, Ordering};
+use tokio::runtime::{Builder, Handle, Runtime};
 
 // Re-export event types at the top-level
 pub use self::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent};
@@ -59,7 +61,11 @@ impl EventHandler {
     }
 
     /// Creates a new event listener with optional priority
-    pub fn listen_with_priority<E: Event + 'static>(&self, priority: Option<i32>, callback: impl Fn(&E) -> Result<()> + Send + Sync + 'static) -> Result<()> {
+    pub fn listen_with_priority<E: Event + 'static>(
+        &self,
+        priority: Option<i32>,
+        callback: impl Fn(&E) -> Result<()> + Send + Sync + 'static,
+    ) -> Result<()> {
         // Create wrapper that handles priority if set
         let wrapper = move |event: &dyn Event| -> Result<()> {
             if let Some(e) = event.as_any().downcast_ref::<E>() {
@@ -78,13 +84,18 @@ impl EventHandler {
         // Find event class
         let event_class = env.find_class(E::java_class_name()).map_err(|e| {
             error!("Failed to find event class {}: {}", E::java_class_name(), e);
-            MinestomError::EventError(format!("Failed to find event class {}", E::java_class_name()))
+            MinestomError::EventError(format!(
+                "Failed to find event class {}",
+                E::java_class_name()
+            ))
         })?;
 
-        let callback_class = env.find_class("org/example/ConsumerCallback").map_err(|e| {
-            error!("Failed to find ConsumerCallback class: {}", e);
-            MinestomError::EventError("Failed to find ConsumerCallback class".to_string())
-        })?;
+        let callback_class = env
+            .find_class("org/example/ConsumerCallback")
+            .map_err(|e| {
+                error!("Failed to find ConsumerCallback class: {}", e);
+                MinestomError::EventError("Failed to find ConsumerCallback class".to_string())
+            })?;
 
         // Store callback
         let callback_id = NEXT_CALLBACK_ID.fetch_add(1, Ordering::SeqCst);
@@ -92,15 +103,17 @@ impl EventHandler {
         CALLBACKS.write().insert(callback_id, callback);
 
         // Create callback instance
-        let callback_instance = env.new_object(
-            &callback_class,
-            "(J)V",
-            &[JniValue::Long(callback_id as i64).as_jvalue()],
-        ).map_err(|e| {
-            error!("Failed to create callback instance: {}", e);
-            CALLBACKS.write().remove(&callback_id);
-            MinestomError::EventError("Failed to create callback instance".to_string())
-        })?;
+        let callback_instance = env
+            .new_object(
+                &callback_class,
+                "(J)V",
+                &[JniValue::Long(callback_id as i64).as_jvalue()],
+            )
+            .map_err(|e| {
+                error!("Failed to create callback instance: {}", e);
+                CALLBACKS.write().remove(&callback_id);
+                MinestomError::EventError("Failed to create callback instance".to_string())
+            })?;
 
         let callback_global_ref = env.new_global_ref(callback_instance).map_err(|e| {
             error!("Failed to create global reference for callback: {}", e);
@@ -127,9 +140,35 @@ impl EventHandler {
     }
 
     /// Convenience method to register a listener without priority
-    pub fn listen<E: Event + 'static>(&self, callback: impl Fn(&E) -> Result<()> + Send + Sync + 'static) -> Result<()> {
+    pub fn listen<E: Event + 'static>(
+        &self,
+        callback: impl Fn(&E) -> Result<()> + Send + Sync + 'static,
+    ) -> Result<()> {
         self.listen_with_priority::<E>(None, callback)
     }
+
+    /*pub fn listen_async<E, F, Fut>(&self, callback: F) -> Result<()>
+    where
+        E: Event + Send + Clone + 'static,
+        F: Fn(E) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = Result<()>> + Send + 'static,
+    {
+        // Wrap the callback in an Arc so we can clone it inside the sync closure
+        let callback = Arc::new(callback);
+        // Create a sync callback for listen_with_priority
+        let sync_cb = move |e: &E| -> Result<()> {
+            let owned = e.clone();
+            let cb = callback.clone();
+            crate::TOKIO_HANDLE.spawn(async move {
+                if let Err(err) = (cb)(owned).await {
+                    error!("async handler error: {}", err);
+                }
+            });
+            Ok(())
+        };
+        // Delegate to the existing sync listener
+        self.listen_with_priority::<E>(None, sync_cb)
+    }*/
 
     /// Gets the priority of this event handler.
     pub fn get_priority(&self) -> Result<i32> {
@@ -379,6 +418,7 @@ pub mod player {
     }
 
     /// Event fired when a player's skin is being initialized.
+    #[derive(Clone)]
     pub struct PlayerSkinInitEvent {
         inner: JavaObject,
     }
@@ -438,7 +478,7 @@ pub mod server {
                 "()Lnet/minestom/server/ping/ResponseData;",
                 &[],
             )?;
-            
+
             Ok(ResponseData {
                 inner: JavaObject::from_env(&mut env, response_data.l()?)?,
             })
@@ -462,8 +502,8 @@ pub mod server {
 
 pub mod ping {
     use super::*;
-    use crate::text::Component;
     use crate::jni_utils::ToJava;
+    use crate::text::Component;
 
     pub struct ResponseData {
         pub(crate) inner: JavaObject,
@@ -554,6 +594,6 @@ pub mod ping {
 }
 
 // Re-export at the top level
-pub use self::server::ServerListPingEvent;
 pub use self::ping::ResponseData;
 pub use self::player::PlayerDisconnectEvent;
+pub use self::server::ServerListPingEvent;

@@ -1,8 +1,8 @@
 use crate::maps::LobbyMap;
 use minestom_rs::InstanceContainer;
+use minestom_rs::PlayerMoveEvent;
 use minestom_rs::instance::InstanceManager;
 use rand::Rng;
-use minestom_rs::PlayerMoveEvent;
 
 #[derive(Clone)]
 pub struct LobbyMap2 {
@@ -11,7 +11,8 @@ pub struct LobbyMap2 {
 
 impl LobbyMap2 {
     pub fn new(instance_manager: &InstanceManager) -> minestom_rs::Result<Self> {
-        let anvil_path = String::from("/home/paolo/Desktop/github/minestom-rs/example-server/anvil/lobby2");
+        let anvil_path =
+            String::from("/home/paolo/Desktop/github/minestom-rs/example-server/anvil/lobby2");
         let instance = instance_manager.create_instance_container()?;
         instance.load_anvil_world(anvil_path)?;
         Ok(Self { instance })
@@ -19,7 +20,6 @@ impl LobbyMap2 {
 }
 
 impl LobbyMap for LobbyMap2 {
-
     fn spawn_coordinate(&self) -> (f64, f64, f64, f32, f32) {
         let spawns = vec![
             (1794.5, 41.0, 1066.5, 180.0, 0.0),
@@ -49,11 +49,11 @@ impl LobbyMap for LobbyMap2 {
             }
             Ok(())
         })?;
-        
+
         Ok(())
     }
 
     fn instance(&self) -> InstanceContainer {
-        self.instance.clone()   
+        self.instance.clone()
     }
 }

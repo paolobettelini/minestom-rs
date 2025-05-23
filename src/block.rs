@@ -1,5 +1,5 @@
-use crate::jni_utils::{get_env, JavaObject};
 use crate::Result;
+use crate::jni_utils::{JavaObject, get_env};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Block {

@@ -1,5 +1,5 @@
-use crate::jni_utils::{get_env, JavaObject, JniValue};
 use crate::Result;
+use crate::jni_utils::{JavaObject, JniValue, get_env};
 use jni::objects::JValue;
 
 #[derive(Debug, Clone)]

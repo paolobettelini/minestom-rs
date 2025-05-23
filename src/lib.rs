@@ -1,3 +1,4 @@
+pub mod attribute;
 pub mod block;
 pub mod command;
 pub mod coordinate;
@@ -5,41 +6,60 @@ pub mod entity;
 pub mod error;
 pub mod event;
 pub mod instance;
+pub mod item;
 pub mod jni_env;
 pub mod jni_utils;
+pub mod material;
+pub mod resource_pack;
 pub mod server;
 pub mod sound;
 pub mod text;
-pub mod attribute;
-pub mod resource_pack;
-pub mod item;
-pub mod material;
 
 pub use error::MinestomError;
 pub type Result<T> = std::result::Result<T, MinestomError>;
+pub use attribute::{Attribute, AttributeInstance};
 pub use block::Block;
 pub use coordinate::{Pos, Position};
 pub use server::MinestomServer;
 pub use sound::{Sound, SoundEvent, Source};
 pub use text::Component;
-pub use attribute::{Attribute, AttributeInstance};
+use tokio::runtime::Handle;
 
 // Re-export commonly used types
 use crate::event::CALLBACKS;
 use crate::jni_utils::JavaObject;
 pub use command::Command;
 pub use entity::Player;
-pub use event::player::{AsyncPlayerConfigurationEvent, PlayerMoveEvent, PlayerSpawnEvent, PlayerDisconnectEvent, PlayerSkinInitEvent};
-pub use event::server::ServerListPingEvent;
 pub use event::Event;
+pub use event::player::{
+    AsyncPlayerConfigurationEvent, PlayerDisconnectEvent, PlayerMoveEvent, PlayerSkinInitEvent,
+    PlayerSpawnEvent,
+};
+pub use event::server::ServerListPingEvent;
 pub use instance::InstanceContainer;
 use jni::objects::{JObject, JString};
-use jni::sys::{jlong, jobject, JNIEnv};
+use jni::sys::{JNIEnv, jlong, jobject};
 use log::{debug, error};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
+use std::future::Future;
 use std::panic::{self, AssertUnwindSafe};
 use std::sync::RwLock;
+use tokio::runtime::{Builder, Runtime};
+
+pub static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
+    Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .expect("failed to build Tokio runtime")
+});
+
+pub static TOKIO_HANDLE: Lazy<Handle> = Lazy::new(|| RUNTIME.handle().clone());
+
+pub fn init_runtime() {
+    Lazy::force(&RUNTIME);
+    Lazy::force(&TOKIO_HANDLE);
+}
 
 /// Type alias for event constructor functions that create event instances from JavaObjects
 pub type EventConstructor = fn(JavaObject) -> Box<dyn Event>;

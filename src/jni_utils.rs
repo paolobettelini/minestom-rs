@@ -1,13 +1,13 @@
-use crate::error::MinestomError;
 use crate::Result;
+use crate::error::MinestomError;
 use jni::objects::{GlobalRef, JObject, JString, JValueGen};
 use jni::{JNIEnv, JavaVM};
 use log::debug;
 use parking_lot::Mutex;
 use std::cell::RefCell;
 use std::fmt;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread_local;
 
 lazy_static::lazy_static! {
@@ -427,7 +427,7 @@ impl<'local> JniValue<'local> {
             _ => {
                 return Err(MinestomError::JvmInit(
                     "Unsupported JValue type".to_string(),
-                ))
+                ));
             }
         })
     }

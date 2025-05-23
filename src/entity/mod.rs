@@ -2,14 +2,14 @@ use std::fmt;
 
 pub mod player;
 
+use crate::Result;
+use crate::attribute::{Attribute, AttributeInstance};
 use crate::coordinate::Position;
-use crate::jni_utils::{get_env, JavaObject, JniValue};
+use crate::jni_utils::{JavaObject, JniValue, get_env};
 use crate::sound::Sound;
 use crate::text::Component;
-use crate::Result;
+use jni::objects::JString;
 use jni::objects::{JObject, JValue};
-use crate::attribute::{Attribute, AttributeInstance};
-use jni::objects::{JString};
 use uuid;
 
 /// Represents a Minecraft game mode
@@ -73,7 +73,7 @@ impl Player {
     /// Gets the UUID of the player.
     pub fn get_uuid(&self) -> Result<uuid::Uuid> {
         let mut env = get_env()?;
-        
+
         // First get the identity
         let identity = self.inner.call_object_method(
             "identity",
@@ -82,26 +82,16 @@ impl Player {
         )?;
 
         // Then get the UUID from the identity
-        let uuid_result = env.call_method(
-            identity.as_obj()?,
-            "uuid",
-            "()Ljava/util/UUID;",
-            &[],
-        )?;
+        let uuid_result = env.call_method(identity.as_obj()?, "uuid", "()Ljava/util/UUID;", &[])?;
 
         let uuid_obj = uuid_result.l()?;
 
         // Convert Java UUID to String
-        let uuid_str = env.call_method(
-            uuid_obj,
-            "toString",
-            "()Ljava/lang/String;",
-            &[],
-        )?;
+        let uuid_str = env.call_method(uuid_obj, "toString", "()Ljava/lang/String;", &[])?;
 
         let uuid_jstring = JString::from(uuid_str.l()?);
         let uuid_rust_str = env.get_string(&uuid_jstring)?;
-        
+
         // Parse the UUID string into a Rust UUID
         Ok(uuid::Uuid::parse_str(&uuid_rust_str.to_string_lossy())?)
     }
@@ -133,11 +123,8 @@ impl Player {
 
     /// Sets whether this player is allowed to fly
     pub fn set_allow_flying(&self, allow: bool) -> Result<()> {
-        self.inner.call_void_method(
-            "setAllowFlying",
-            "(Z)V",
-            &[JniValue::Bool(allow)],
-        )
+        self.inner
+            .call_void_method("setAllowFlying", "(Z)V", &[JniValue::Bool(allow)])
     }
 
     /// Teleports the player to a specific position with view angles.
@@ -209,14 +196,17 @@ impl Player {
     pub fn get_attribute(&self, attribute: Attribute) -> Result<AttributeInstance> {
         let mut env = get_env()?;
         let j_attribute = attribute.to_java_attribute()?;
-        
+
         let result = self.inner.call_object_method(
             "getAttribute",
             "(Lnet/minestom/server/entity/attribute/Attribute;)Lnet/minestom/server/entity/attribute/AttributeInstance;",
             &[j_attribute.as_jvalue(&mut env)?],
         )?;
-        
-        Ok(AttributeInstance::new(JavaObject::from_env(&mut env, result.as_obj()?)?))
+
+        Ok(AttributeInstance::new(JavaObject::from_env(
+            &mut env,
+            result.as_obj()?,
+        )?))
     }
 }
 
@@ -242,10 +232,7 @@ impl PlayerSkin {
         let skin_obj = env.new_object(
             skin_class,
             "(Ljava/lang/String;Ljava/lang/String;)V",
-            &[
-                JValue::Object(&texture_str),
-                JValue::Object(&signature_str),
-            ],
+            &[JValue::Object(&texture_str), JValue::Object(&signature_str)],
         )?;
 
         Ok(Self::new(JavaObject::from_env(&mut env, skin_obj)?))
@@ -254,4 +241,4 @@ impl PlayerSkin {
     pub(crate) fn inner(&self) -> &JavaObject {
         &self.inner
     }
-} 
+}

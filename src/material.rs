@@ -1526,7 +1526,9 @@ impl Material {
             Material::BlueTerracotta => "minecraft:blue_terracotta",
             Material::BlueWool => "minecraft:blue_wool",
             Material::BoggedSpawnEgg => "minecraft:bogged_spawn_egg",
-            Material::BoltArmorTrimSmithingTemplate => "minecraft:bolt_armor_trim_smithing_template",
+            Material::BoltArmorTrimSmithingTemplate => {
+                "minecraft:bolt_armor_trim_smithing_template"
+            }
             Material::Bone => "minecraft:bone",
             Material::BoneBlock => "minecraft:bone_block",
             Material::BoneMeal => "minecraft:bone_meal",
@@ -1638,7 +1640,9 @@ impl Material {
             Material::CoalBlock => "minecraft:coal_block",
             Material::CoalOre => "minecraft:coal_ore",
             Material::CoarseDirt => "minecraft:coarse_dirt",
-            Material::CoastArmorTrimSmithingTemplate => "minecraft:coast_armor_trim_smithing_template",
+            Material::CoastArmorTrimSmithingTemplate => {
+                "minecraft:coast_armor_trim_smithing_template"
+            }
             Material::CobbledDeepslate => "minecraft:cobbled_deepslate",
             Material::CobbledDeepslateSlab => "minecraft:cobbled_deepslate_slab",
             Material::CobbledDeepslateStairs => "minecraft:cobbled_deepslate_stairs",
@@ -1678,7 +1682,9 @@ impl Material {
             Material::CrackedDeepslateBricks => "minecraft:cracked_deepslate_bricks",
             Material::CrackedDeepslateTiles => "minecraft:cracked_deepslate_tiles",
             Material::CrackedNetherBricks => "minecraft:cracked_nether_bricks",
-            Material::CrackedPolishedBlackstoneBricks => "minecraft:cracked_polished_blackstone_bricks",
+            Material::CrackedPolishedBlackstoneBricks => {
+                "minecraft:cracked_polished_blackstone_bricks"
+            }
             Material::CrackedStoneBricks => "minecraft:cracked_stone_bricks",
             Material::Crafter => "minecraft:crafter",
             Material::CraftingTable => "minecraft:crafting_table",
@@ -1817,7 +1823,9 @@ impl Material {
             Material::DripstoneBlock => "minecraft:dripstone_block",
             Material::Dropper => "minecraft:dropper",
             Material::DrownedSpawnEgg => "minecraft:drowned_spawn_egg",
-            Material::DuneArmorTrimSmithingTemplate => "minecraft:dune_armor_trim_smithing_template",
+            Material::DuneArmorTrimSmithingTemplate => {
+                "minecraft:dune_armor_trim_smithing_template"
+            }
             Material::EchoShard => "minecraft:echo_shard",
             Material::Egg => "minecraft:egg",
             Material::ElderGuardianSpawnEgg => "minecraft:elder_guardian_spawn_egg",
@@ -1871,7 +1879,9 @@ impl Material {
             Material::FletchingTable => "minecraft:fletching_table",
             Material::Flint => "minecraft:flint",
             Material::FlintAndSteel => "minecraft:flint_and_steel",
-            Material::FlowArmorTrimSmithingTemplate => "minecraft:flow_armor_trim_smithing_template",
+            Material::FlowArmorTrimSmithingTemplate => {
+                "minecraft:flow_armor_trim_smithing_template"
+            }
             Material::FlowBannerPattern => "minecraft:flow_banner_pattern",
             Material::FlowPotterySherd => "minecraft:flow_pottery_sherd",
             Material::FlowerBannerPattern => "minecraft:flower_banner_pattern",
@@ -1974,7 +1984,9 @@ impl Material {
             Material::HornCoralBlock => "minecraft:horn_coral_block",
             Material::HornCoralFan => "minecraft:horn_coral_fan",
             Material::HorseSpawnEgg => "minecraft:horse_spawn_egg",
-            Material::HostArmorTrimSmithingTemplate => "minecraft:host_armor_trim_smithing_template",
+            Material::HostArmorTrimSmithingTemplate => {
+                "minecraft:host_armor_trim_smithing_template"
+            }
             Material::HowlPotterySherd => "minecraft:howl_pottery_sherd",
             Material::HuskSpawnEgg => "minecraft:husk_spawn_egg",
             Material::Ice => "minecraft:ice",
@@ -2210,7 +2222,9 @@ impl Material {
             Material::NetheriteScrap => "minecraft:netherite_scrap",
             Material::NetheriteShovel => "minecraft:netherite_shovel",
             Material::NetheriteSword => "minecraft:netherite_sword",
-            Material::NetheriteUpgradeSmithingTemplate => "minecraft:netherite_upgrade_smithing_template",
+            Material::NetheriteUpgradeSmithingTemplate => {
+                "minecraft:netherite_upgrade_smithing_template"
+            }
             Material::Netherrack => "minecraft:netherrack",
             Material::NetworkType => "minecraft:network_type",
             Material::NoteBlock => "minecraft:note_block",
@@ -2335,7 +2349,9 @@ impl Material {
             Material::PolishedBlackstoneBrickWall => "minecraft:polished_blackstone_brick_wall",
             Material::PolishedBlackstoneBricks => "minecraft:polished_blackstone_bricks",
             Material::PolishedBlackstoneButton => "minecraft:polished_blackstone_button",
-            Material::PolishedBlackstonePressurePlate => "minecraft:polished_blackstone_pressure_plate",
+            Material::PolishedBlackstonePressurePlate => {
+                "minecraft:polished_blackstone_pressure_plate"
+            }
             Material::PolishedBlackstoneSlab => "minecraft:polished_blackstone_slab",
             Material::PolishedBlackstoneStairs => "minecraft:polished_blackstone_stairs",
             Material::PolishedBlackstoneWall => "minecraft:polished_blackstone_wall",
@@ -2406,7 +2422,9 @@ impl Material {
             Material::RabbitSpawnEgg => "minecraft:rabbit_spawn_egg",
             Material::RabbitStew => "minecraft:rabbit_stew",
             Material::Rail => "minecraft:rail",
-            Material::RaiserArmorTrimSmithingTemplate => "minecraft:raiser_armor_trim_smithing_template",
+            Material::RaiserArmorTrimSmithingTemplate => {
+                "minecraft:raiser_armor_trim_smithing_template"
+            }
             Material::RavagerSpawnEgg => "minecraft:ravager_spawn_egg",
             Material::RawCopper => "minecraft:raw_copper",
             Material::RawCopperBlock => "minecraft:raw_copper_block",
@@ -2480,8 +2498,12 @@ impl Material {
             Material::SeaLantern => "minecraft:sea_lantern",
             Material::SeaPickle => "minecraft:sea_pickle",
             Material::Seagrass => "minecraft:seagrass",
-            Material::SentryArmorTrimSmithingTemplate => "minecraft:sentry_armor_trim_smithing_template",
-            Material::ShaperArmorTrimSmithingTemplate => "minecraft:shaper_armor_trim_smithing_template",
+            Material::SentryArmorTrimSmithingTemplate => {
+                "minecraft:sentry_armor_trim_smithing_template"
+            }
+            Material::ShaperArmorTrimSmithingTemplate => {
+                "minecraft:shaper_armor_trim_smithing_template"
+            }
             Material::SheafPotterySherd => "minecraft:sheaf_pottery_sherd",
             Material::Shears => "minecraft:shears",
             Material::SheepSpawnEgg => "minecraft:sheep_spawn_egg",
@@ -2492,7 +2514,9 @@ impl Material {
             Material::ShulkerBox => "minecraft:shulker_box",
             Material::ShulkerShell => "minecraft:shulker_shell",
             Material::ShulkerSpawnEgg => "minecraft:shulker_spawn_egg",
-            Material::SilenceArmorTrimSmithingTemplate => "minecraft:silence_armor_trim_smithing_template",
+            Material::SilenceArmorTrimSmithingTemplate => {
+                "minecraft:silence_armor_trim_smithing_template"
+            }
             Material::SilverfishSpawnEgg => "minecraft:silverfish_spawn_egg",
             Material::SkeletonHorseSpawnEgg => "minecraft:skeleton_horse_spawn_egg",
             Material::SkeletonSkull => "minecraft:skeleton_skull",
@@ -2521,7 +2545,9 @@ impl Material {
             Material::SnifferEgg => "minecraft:sniffer_egg",
             Material::SnifferSpawnEgg => "minecraft:sniffer_spawn_egg",
             Material::SnortPotterySherd => "minecraft:snort_pottery_sherd",
-            Material::SnoutArmorTrimSmithingTemplate => "minecraft:snout_armor_trim_smithing_template",
+            Material::SnoutArmorTrimSmithingTemplate => {
+                "minecraft:snout_armor_trim_smithing_template"
+            }
             Material::Snow => "minecraft:snow",
             Material::SnowBlock => "minecraft:snow_block",
             Material::SnowGolemSpawnEgg => "minecraft:snow_golem_spawn_egg",
@@ -2535,7 +2561,9 @@ impl Material {
             Material::SpectralArrow => "minecraft:spectral_arrow",
             Material::SpiderEye => "minecraft:spider_eye",
             Material::SpiderSpawnEgg => "minecraft:spider_spawn_egg",
-            Material::SpireArmorTrimSmithingTemplate => "minecraft:spire_armor_trim_smithing_template",
+            Material::SpireArmorTrimSmithingTemplate => {
+                "minecraft:spire_armor_trim_smithing_template"
+            }
             Material::SplashPotion => "minecraft:splash_potion",
             Material::Sponge => "minecraft:sponge",
             Material::SporeBlossom => "minecraft:spore_blossom",
@@ -2615,7 +2643,9 @@ impl Material {
             Material::TallGrass => "minecraft:tall_grass",
             Material::Target => "minecraft:target",
             Material::Terracotta => "minecraft:terracotta",
-            Material::TideArmorTrimSmithingTemplate => "minecraft:tide_armor_trim_smithing_template",
+            Material::TideArmorTrimSmithingTemplate => {
+                "minecraft:tide_armor_trim_smithing_template"
+            }
             Material::TintedGlass => "minecraft:tinted_glass",
             Material::TippedArrow => "minecraft:tipped_arrow",
             Material::Tnt => "minecraft:tnt",
@@ -2657,7 +2687,9 @@ impl Material {
             Material::VindicatorSpawnEgg => "minecraft:vindicator_spawn_egg",
             Material::Vine => "minecraft:vine",
             Material::WanderingTraderSpawnEgg => "minecraft:wandering_trader_spawn_egg",
-            Material::WardArmorTrimSmithingTemplate => "minecraft:ward_armor_trim_smithing_template",
+            Material::WardArmorTrimSmithingTemplate => {
+                "minecraft:ward_armor_trim_smithing_template"
+            }
             Material::WardenSpawnEgg => "minecraft:warden_spawn_egg",
             Material::WarpedButton => "minecraft:warped_button",
             Material::WarpedDoor => "minecraft:warped_door",
@@ -2713,8 +2745,12 @@ impl Material {
             Material::WaxedWeatheredCopperTrapdoor => "minecraft:waxed_weathered_copper_trapdoor",
             Material::WaxedWeatheredCutCopper => "minecraft:waxed_weathered_cut_copper",
             Material::WaxedWeatheredCutCopperSlab => "minecraft:waxed_weathered_cut_copper_slab",
-            Material::WaxedWeatheredCutCopperStairs => "minecraft:waxed_weathered_cut_copper_stairs",
-            Material::WayfinderArmorTrimSmithingTemplate => "minecraft:wayfinder_armor_trim_smithing_template",
+            Material::WaxedWeatheredCutCopperStairs => {
+                "minecraft:waxed_weathered_cut_copper_stairs"
+            }
+            Material::WayfinderArmorTrimSmithingTemplate => {
+                "minecraft:wayfinder_armor_trim_smithing_template"
+            }
             Material::WeatheredChiseledCopper => "minecraft:weathered_chiseled_copper",
             Material::WeatheredCopper => "minecraft:weathered_copper",
             Material::WeatheredCopperBulb => "minecraft:weathered_copper_bulb",
@@ -2743,7 +2779,9 @@ impl Material {
             Material::WhiteTerracotta => "minecraft:white_terracotta",
             Material::WhiteTulip => "minecraft:white_tulip",
             Material::WhiteWool => "minecraft:white_wool",
-            Material::WildArmorTrimSmithingTemplate => "minecraft:wild_armor_trim_smithing_template",
+            Material::WildArmorTrimSmithingTemplate => {
+                "minecraft:wild_armor_trim_smithing_template"
+            }
             Material::WindCharge => "minecraft:wind_charge",
             Material::WitchSpawnEgg => "minecraft:witch_spawn_egg",
             Material::WitherRose => "minecraft:wither_rose",
@@ -2781,4 +2819,4 @@ impl Material {
             Material::ZombifiedPiglinSpawnEgg => "minecraft:zombified_piglin_spawn_egg",
         }
     }
-} 
+}

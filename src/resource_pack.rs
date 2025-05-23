@@ -1,9 +1,9 @@
-use crate::text::Component;
 use crate::Result;
-use crate::jni_utils::{get_env, JavaObject, JniValue};
-use uuid::Uuid;
+use crate::jni_utils::{JavaObject, JniValue, get_env};
+use crate::text::Component;
 use jni::objects::{JObject, JValue};
 use std::str::FromStr;
+use uuid::Uuid;
 
 pub struct ResourcePackInfo {
     info: JavaObject,
@@ -12,12 +12,14 @@ pub struct ResourcePackInfo {
 impl ResourcePackInfo {
     pub fn new(uuid: Uuid, url: &str, hash: &str) -> Result<Self> {
         let mut env = get_env()?;
-        let url_uri = env.call_static_method(
-            "java/net/URI",
-            "create",
-            "(Ljava/lang/String;)Ljava/net/URI;",
-            &[JValue::from(&env.new_string(url)?)],
-        )?.l()?;
+        let url_uri = env
+            .call_static_method(
+                "java/net/URI",
+                "create",
+                "(Ljava/lang/String;)Ljava/net/URI;",
+                &[JValue::from(&env.new_string(url)?)],
+            )?
+            .l()?;
 
         // Create a builder
         let builder = env.call_static_method(
@@ -30,35 +32,43 @@ impl ResourcePackInfo {
         let builder_obj = builder.l()?;
 
         // Set the UUID
-        let uuid_obj = env.call_static_method(
-            "java/util/UUID",
-            "fromString",
-            "(Ljava/lang/String;)Ljava/util/UUID;",
-            &[JValue::from(&env.new_string(uuid.to_string())?)],
-        )?.l()?;
+        let uuid_obj = env
+            .call_static_method(
+                "java/util/UUID",
+                "fromString",
+                "(Ljava/lang/String;)Ljava/util/UUID;",
+                &[JValue::from(&env.new_string(uuid.to_string())?)],
+            )?
+            .l()?;
 
-        let builder_obj = env.call_method(
-            builder_obj,
-            "id",
-            "(Ljava/util/UUID;)Lnet/kyori/adventure/resource/ResourcePackInfo$Builder;",
-            &[JValue::Object(&uuid_obj)],
-        )?.l()?;
+        let builder_obj = env
+            .call_method(
+                builder_obj,
+                "id",
+                "(Ljava/util/UUID;)Lnet/kyori/adventure/resource/ResourcePackInfo$Builder;",
+                &[JValue::Object(&uuid_obj)],
+            )?
+            .l()?;
 
         // Set the URL
-        let builder_obj = env.call_method(
-            builder_obj,
-            "uri",
-            "(Ljava/net/URI;)Lnet/kyori/adventure/resource/ResourcePackInfo$Builder;",
-            &[JValue::Object(&url_uri)],
-        )?.l()?;
+        let builder_obj = env
+            .call_method(
+                builder_obj,
+                "uri",
+                "(Ljava/net/URI;)Lnet/kyori/adventure/resource/ResourcePackInfo$Builder;",
+                &[JValue::Object(&url_uri)],
+            )?
+            .l()?;
 
         // Set the hash
-        let builder_obj = env.call_method(
-            builder_obj,
-            "hash",
-            "(Ljava/lang/String;)Lnet/kyori/adventure/resource/ResourcePackInfo$Builder;",
-            &[JValue::from(&env.new_string(hash)?)],
-        )?.l()?;
+        let builder_obj = env
+            .call_method(
+                builder_obj,
+                "hash",
+                "(Ljava/lang/String;)Lnet/kyori/adventure/resource/ResourcePackInfo$Builder;",
+                &[JValue::from(&env.new_string(hash)?)],
+            )?
+            .l()?;
 
         // Build the ResourcePackInfo
         let info = env.call_method(
@@ -68,7 +78,9 @@ impl ResourcePackInfo {
             &[],
         )?;
 
-        Ok(Self { info: JavaObject::new(env.new_global_ref(info.l()?)?) })
+        Ok(Self {
+            info: JavaObject::new(env.new_global_ref(info.l()?)?),
+        })
     }
 
     pub fn as_obj(&self) -> &JavaObject {
@@ -94,7 +106,9 @@ impl ResourcePackRequestBuilder {
             &[],
         )?;
 
-        Ok(Self { builder: JavaObject::new(env.new_global_ref(builder.l()?)?) })
+        Ok(Self {
+            builder: JavaObject::new(env.new_global_ref(builder.l()?)?),
+        })
     }
 
     pub fn packs(self, pack: ResourcePackInfo) -> Result<Self> {
@@ -113,7 +127,9 @@ impl ResourcePackRequestBuilder {
             &[JValue::Object(&pack_obj), JValue::Object(&empty_array)],
         )?;
 
-        Ok(Self { builder: JavaObject::new(env.new_global_ref(builder.l()?)?) })
+        Ok(Self {
+            builder: JavaObject::new(env.new_global_ref(builder.l()?)?),
+        })
     }
 
     pub fn prompt(self, message: &Component) -> Result<Self> {
@@ -126,7 +142,9 @@ impl ResourcePackRequestBuilder {
             &[jvalue.as_jvalue()],
         )?;
 
-        Ok(Self { builder: JavaObject::new(env.new_global_ref(builder.l()?)?) })
+        Ok(Self {
+            builder: JavaObject::new(env.new_global_ref(builder.l()?)?),
+        })
     }
 
     pub fn required(self, required: bool) -> Result<Self> {
@@ -138,7 +156,9 @@ impl ResourcePackRequestBuilder {
             &[JValue::Bool(if required { 1 } else { 0 })],
         )?;
 
-        Ok(Self { builder: JavaObject::new(env.new_global_ref(builder.l()?)?) })
+        Ok(Self {
+            builder: JavaObject::new(env.new_global_ref(builder.l()?)?),
+        })
     }
 
     pub fn build(self) -> Result<ResourcePackRequest> {
@@ -150,7 +170,9 @@ impl ResourcePackRequestBuilder {
             &[],
         )?;
 
-        Ok(ResourcePackRequest { request: JavaObject::new(env.new_global_ref(request.l()?)?) })
+        Ok(ResourcePackRequest {
+            request: JavaObject::new(env.new_global_ref(request.l()?)?),
+        })
     }
 }
 
@@ -158,4 +180,4 @@ impl ResourcePackRequest {
     pub fn as_obj(&self) -> &JavaObject {
         &self.request
     }
-} 
+}

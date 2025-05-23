@@ -1,10 +1,10 @@
+use crate::MinestomError;
+use crate::Result;
 use crate::block::Block;
 use crate::coordinate::Position;
 use crate::entity::Player;
 use crate::event::EventHandler;
-use crate::jni_utils::{get_env, JavaObject, JniValue};
-use crate::MinestomError;
-use crate::Result;
+use crate::jni_utils::{JavaObject, JniValue, get_env};
 use jni::objects::JValue;
 use jni::objects::{JObject, JObjectArray};
 use log::{debug, error, info};

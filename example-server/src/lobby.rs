@@ -2,23 +2,37 @@ use crate::commands::SpawnCommand;
 use crate::magic_values::*;
 use crate::maps::LobbyMap2;
 use crate::maps::map::LobbyMap;
-use uuid::Uuid;
-use log::info;
 use crate::mojang::get_skin_and_signature;
-use minestom_rs::ServerListPingEvent;
+use log::info;
 use minestom::MinestomServer;
+use minestom_rs as minestom;
+use minestom_rs::ServerListPingEvent;
+use minestom_rs::TOKIO_HANDLE;
 use minestom_rs::entity::PlayerSkin;
 use minestom_rs::{
     attribute::Attribute,
     command::{Command, CommandContext},
     component,
     entity::GameMode,
-    event::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent, PlayerSkinInitEvent, PlayerMoveEvent},
-    resource_pack::{ResourcePackInfo, ResourcePackRequest, ResourcePackRequestBuilder},
-    item::{ItemStack, InventoryHolder},
+    event::player::{
+        AsyncPlayerConfigurationEvent, PlayerMoveEvent, PlayerSkinInitEvent, PlayerSpawnEvent,
+    },
+    item::{InventoryHolder, ItemStack},
     material::Material,
+    resource_pack::{ResourcePackInfo, ResourcePackRequest, ResourcePackRequestBuilder},
 };
-use minestom_rs as minestom;
+use once_cell::sync::Lazy;
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::{Mutex, RwLock};
+use uuid::Uuid;
+
+pub static PLAYER_SERVER: Lazy<Arc<RwLock<HashMap<Uuid, String>>>> =
+    Lazy::new(|| Arc::new(RwLock::new(HashMap::new())));
+
+//pub static SERVERS: Lazy<Arc<Mutex<HashMap<Uuid, Arc<Server>>>>> = Lazy::new(|| {
+//    Arc::new(Mutex::new(HashMap::new()))
+//});
 
 pub async fn run_server() -> minestom::Result<()> {
     init_logging();
@@ -127,7 +141,10 @@ pub async fn run_server() -> minestom::Result<()> {
                 let texture = "ewogICJ0aW1lc3RhbXAiIDogMTc0Nzc3NjEwNjQ3OSwKICAicHJvZmlsZUlkIiA6ICI2YTg0ODY0ZDkwYmM0ZjY3YjdiZjI3YTdmZjA2NTc5ZCIsCiAgInByb2ZpbGVOYW1lIiA6ICJIeXBlUGF1bCIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9jNWY0MDhjZmVkM2I3YzI5MjlkZmI3YTkxY2RlZGU3NmI0NzFhOTAzODgwNmIyZGI1YWMyNGU5NDY1MmQ3Y2Y5IgogICAgfQogIH0KfQ==";
                 let signature = "bUaJDR96Rvg+E3KP6ErWEK4K+SIGDA/3Cd5wAFkTZ6XBS8FtEMcKglRrvg8BCe4Djs3oFSK4dSx4tOI3uGxjmf8sAkKG7YvBie43A65PJQHZxsIqWVTb3n22wOW4SRsv0vW9hTyf2UxuLNpquldTXtUmRq6e+c4eR0qFBwA3cyv9zJbQwD3oonlluvc9mgv9qOZ85LJJXybW5mbHqVO16/S/z6m3url3qGMBER8hf99Pl8MeVBgT2khO/rEhLKHkEKRxjvqgQLRUztumTGvgLG8egU6sNWqTKmlpf4IdDqQ7KnVQdxnGa40c24hKjEne+TybH9JZIUZYctDxEcs+TWi6x6upwAQhjd11BgGCzJ8WmVnuqFxEeCZl53QynxkMzMYxjVVRqVZ1k+1C74loNmjRJ2TNzanpIqvAO+xSPp8SC7FWc/toxa98svGTLx9FCyr0Dz5W6S173WKRaUlMIhPATx/2PTNNrclVUcBfzj0TBO9cs350yq9n00jbyOXodHDlIS6zGT0RGpHHqNW/bnUSCqx/SVystXbAsUvAMf6K8kC4IRgPaawm8Hg79Frv8DXcRfyhi7WapuWV+TvxnZTw2k1sbRNF+cwh0fi2PAq3XiSRN5aIE5RZZfhgpFG/XvndhAOasg2qmrEmIhN6UIqGHE6nNS15EASW+4TjxLU=";
                 //let (skin_url, signature) = get_skin_and_signature(uuid).await?;
-                let skin = PlayerSkin::create(texture, signature)?;
+                let (texture, signature) = TOKIO_HANDLE.block_on(async {
+                    get_skin_and_signature(uuid).await
+                }).unwrap();
+                let skin = PlayerSkin::create(&texture, &signature)?;
                 skin_event.set_skin(&skin)?;
             }
         }

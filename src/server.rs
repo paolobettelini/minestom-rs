@@ -1,8 +1,8 @@
+use crate::Result;
 use crate::command::CommandManager;
 use crate::event::EventHandler;
 use crate::instance::InstanceManager;
-use crate::jni_utils::{get_env, JavaObject};
-use crate::Result;
+use crate::jni_utils::{JavaObject, get_env};
 
 #[derive(Clone)]
 pub struct MinestomServer {
@@ -49,7 +49,9 @@ impl MinestomServer {
         )?;
         let instance_manager_obj = instance_manager.l()?;
         let instance_manager_global = env.new_global_ref(instance_manager_obj)?;
-        Ok(InstanceManager::new(JavaObject::new(instance_manager_global)))
+        Ok(InstanceManager::new(JavaObject::new(
+            instance_manager_global,
+        )))
     }
 
     pub fn event_handler(&self) -> Result<EventHandler> {

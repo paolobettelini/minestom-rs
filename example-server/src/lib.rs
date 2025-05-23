@@ -2,18 +2,23 @@ use jni::JNIEnv;
 use jni::objects::JClass;
 use jni::sys::jint;
 use minestom_rs::jni_utils;
+use minestom_rs::{RUNTIME, init_runtime};
+use once_cell::sync::Lazy;
 use std::panic;
+use tokio::runtime::{Builder, Handle};
 
 mod commands;
 mod favicon;
 mod lobby;
 mod magic_values;
 mod maps;
-mod parkour;
 mod mojang;
+mod parkour;
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_org_example_Main_startServer(env: JNIEnv, class: JClass) -> jint {
+    init_runtime();
+
     // Attach JVM to the current thread
     let res = jni_utils::attach_jvm(&env);
 
@@ -25,21 +30,9 @@ pub extern "system" fn Java_org_example_Main_startServer(env: JNIEnv, class: JCl
         }
     }
 
-    // Build tokio runtime
-    let runtime = match tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-    {
-        Ok(rt) => rt,
-        Err(e) => {
-            eprintln!("failed to build tokio runtime: {}", e);
-            return -1;
-        }
-    };
-
-    // Run server
     let result = panic::catch_unwind(|| {
-        runtime.block_on(async {
+        // RUNTIME is the Lazy<Runtime> from your library
+        RUNTIME.block_on(async {
             match lobby::run_server().await {
                 Ok(_) => 0,
                 Err(e) => {

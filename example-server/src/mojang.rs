@@ -1,6 +1,6 @@
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use reqwest::Client;
 use serde::Deserialize;
-use base64::{engine::general_purpose::STANDARD, Engine as _};
 use uuid::Uuid;
 
 #[derive(Deserialize)]
@@ -47,7 +47,9 @@ struct Metadata {
 /// # Returns
 ///
 /// A tuple containing the Base64 texture `value` and its `signature`.
-pub async fn get_skin_and_signature(uuid: Uuid) -> Result<(String, String), Box<dyn std::error::Error>> {
+pub async fn get_skin_and_signature(
+    uuid: Uuid,
+) -> Result<(String, String), Box<dyn std::error::Error>> {
     // Mojang expects UUID without hyphens (simple format)
     let id = uuid.simple().to_string();
     let url = format!(
