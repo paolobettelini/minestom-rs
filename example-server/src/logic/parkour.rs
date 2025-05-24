@@ -1,5 +1,6 @@
 use crate::server::Server;
 use log::info;
+use log::error;
 use minestom::{Block, MinestomServer, Position};
 use minestom::{
     component,
@@ -18,7 +19,8 @@ use minestom_rs as minestom;
 use minestom_rs::event::EventNode;
 use rand::Rng;
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, Mutex};
+use parking_lot::RwLock;
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
@@ -104,7 +106,7 @@ impl Server for ParkourServer {
                 
                 // Store player in the HashMap
                 if let Ok(uuid) = player.get_uuid() {
-                    self.player_uuids.write().unwrap().insert(uuid, player);
+                    self.player_uuids.write().insert(uuid, player);
                 }
                 
                 config_event.spawn_instance(&instance)?;
@@ -120,7 +122,7 @@ impl Server for ParkourServer {
 
         let event_node = EventNode::create_player_filter("parkour", move |player| {
             if let Ok(uuid) = player.get_uuid() {
-                uuids_ref.read().unwrap().contains_key(&uuid)
+                uuids_ref.read().contains_key(&uuid)
             } else {
                 false
             }
@@ -136,10 +138,10 @@ impl Server for ParkourServer {
             let player = event.player()?;
             let raw_msg = event.raw_message()?;
             let username = player.get_username()?;
-            let formatted = component!("[{}] {}", username, raw_msg);
+            let formatted = component!("[{}] {}, comunque siamo nel parkour.", username, raw_msg);
             
             // Send to all players
-            let players = uuids_ref.read().unwrap();
+            let players = uuids_ref.read();
             for player in players.values() {
                 player.send_message(&formatted)?;
             }
@@ -166,16 +168,26 @@ impl Server for ParkourServer {
             info!("Player disconnect event triggered");
             if let Ok(player) = disconnect_event.player() {
                 if let Ok(username) = player.get_username() {
-                    info!("Removing game state for player {}", username);
+                    info!("Player disconnected, removing game state");
+                    // Remove the player's game state
                     states_ref.lock().unwrap().remove(&username);
-                    
-                    // Remove player from the HashMap
+                    info!("Game state removed for {}", username);
+
+                    // Remove from players map
                     if let Ok(uuid) = player.get_uuid() {
-                        uuids_ref.write().unwrap().remove(&uuid);
+                        uuids_ref.write().remove(&uuid);
+                        info!("Player removed from players map");
                     }
+
+                    Ok(())
+                } else {
+                    error!("Failed to get player username");
+                    Ok(())
                 }
+            } else {
+                error!("Failed to get player from event");
+                Ok(())
             }
-            Ok(())
         })?;
 
         event_node.listen(move |event: &ServerListPingEvent| {

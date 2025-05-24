@@ -6,6 +6,7 @@ use crate::mojang::get_skin_and_signature;
 use crate::server::Server;
 use log::{error, info};
 use minestom::MinestomServer;
+use minestom_rs::Player;
 use minestom_rs as minestom;
 use minestom_rs::InstanceContainer;
 use minestom_rs::ServerListPingEvent;
@@ -17,26 +18,29 @@ use minestom_rs::{
     component,
     entity::GameMode,
     event::player::{
-        AsyncPlayerConfigurationEvent, PlayerMoveEvent, PlayerSkinInitEvent, PlayerSpawnEvent,
+        AsyncPlayerConfigurationEvent, PlayerChatEvent, PlayerDisconnectEvent, PlayerMoveEvent, 
+        PlayerSkinInitEvent, PlayerSpawnEvent,
     },
     item::{InventoryHolder, ItemStack},
     material::Material,
     resource_pack::{ResourcePackInfo, ResourcePackRequest, ResourcePackRequestBuilder},
 };
-use parking_lot::Mutex as ParkingMutex;
+use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::sync::LazyLock;
-use std::sync::{Mutex, RwLock};
 use uuid::Uuid;
 
 pub struct LobbyServer<T: LobbyMap> {
     map: T,
+    players: Arc<RwLock<HashMap<Uuid, Player>>>,
 }
 
 impl<T: LobbyMap> LobbyServer<T> {
     pub fn new(map: T) -> minestom::Result<Self> {
-        Ok(LobbyServer { map })
+        Ok(LobbyServer { 
+            map,
+            players: Arc::new(RwLock::new(HashMap::new())),
+        })
     }
 }
 
@@ -64,11 +68,19 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
         let event_handler = instance.event_node()?;
         let spawn_instance = instance.clone();
 
+        // Clone Arc for event handlers
+        let players = self.players.clone();
+
+        // Handle player spawn
         let map_clone = self.map.clone();
         event_handler.listen(move |spawn_event: &PlayerSpawnEvent| {
             info!("Player spawn event triggered");
             if let Ok(player) = spawn_event.player() {
                 let username = player.get_username()?;
+
+                // Add player to the players map
+                let uuid = player.get_uuid()?;
+                players.write().insert(uuid, player.clone());
 
                 let welcome_msg = component!("Welcome to the server, {}!", username)
                     .gold()
@@ -83,9 +95,7 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
                 player.teleport(x, y, z, yaw, pitch)?;
                 player.set_allow_flying(true)?;
 
-                // https://minecraft.wiki/w/Attribute#Modifiers
                 let scale = distribution(AVG_SCALE, MIN_SCALE, MAX_SCALE);
-                //let scale = 15.0;
                 info!("Setting player scale to {}", scale);
                 player
                     .get_attribute(Attribute::Scale)?
@@ -106,6 +116,37 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
                 let inventory = player.get_inventory()?;
                 inventory.set_helmet(&sombrero)?;
             }
+            Ok(())
+        })?;
+
+        // Handle player disconnect
+        let players_disconnect = self.players.clone();
+        event_handler.listen(move |event: &PlayerDisconnectEvent| {
+            if let Ok(player) = event.player() {
+                if let Ok(uuid) = player.get_uuid() {
+                    players_disconnect.write().remove(&uuid);
+                    info!("Player disconnected and removed from players map");
+                }
+            }
+            Ok(())
+        })?;
+
+        // Handle chat messages
+        let players_ref = self.players.clone();
+        event_handler.listen(move |event: &PlayerChatEvent| {
+            event.set_cancelled(true)?;
+
+            let player = event.player()?;
+            let raw_msg = event.raw_message()?;
+            let username = player.get_username()?;
+            let formatted = component!("[{}] {}, comunque siamo nella lobby.", username, raw_msg);
+            
+            // Send to all players
+            let players = players_ref.read();
+            for player in players.values() {
+                player.send_message(&formatted)?;
+            }
+
             Ok(())
         })?;
 
