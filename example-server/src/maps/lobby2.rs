@@ -17,7 +17,9 @@ impl LobbyMap2 {
         let instance = instance_manager.create_instance_container()?;
         let instance = Arc::new(instance);
         instance.load_anvil_world(anvil_path)?;
-        Ok(Self { instance: instance.clone() })
+        Ok(Self {
+            instance: instance.clone(),
+        })
     }
 }
 

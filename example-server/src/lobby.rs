@@ -38,6 +38,7 @@ pub async fn run_server() -> minestom::Result<()> {
     init_logging();
 
     let minecraft_server = MinestomServer::new()?;
+    let scheduler = minecraft_server.scheduler_manager()?;
     let instance_manager = minecraft_server.instance_manager()?;
 
     let map = LobbyMap2::new(&instance_manager)?;
@@ -134,7 +135,7 @@ pub async fn run_server() -> minestom::Result<()> {
         Ok(())
     })?;
 
-    event_handler.listen(move |skin_event: &PlayerSkinInitEvent| {
+    /*event_handler.listen(move |skin_event: &PlayerSkinInitEvent| {
         info!("Player skin init event triggered");
         if let Ok(player) = skin_event.player() {
             if let Ok(uuid) = player.get_uuid() {
@@ -143,11 +144,37 @@ pub async fn run_server() -> minestom::Result<()> {
                     std::thread::sleep(std::time::Duration::from_secs(10));
                     get_skin_and_signature(uuid).await
                 }).unwrap();
+
                 let skin = PlayerSkin::create(&texture, &signature)?;
                 skin_event.set_skin(&skin)?;
             }
         }
         Ok(())
+    })?;*/
+
+    let scheduler = scheduler.clone();
+    event_handler.listen_async(move |skin_event: PlayerSkinInitEvent| {
+        let scheduler = scheduler.clone();
+        async move {
+            info!("Player skin init event triggered");
+            if let Ok(player) = skin_event.player() {
+                if let Ok(uuid) = player.get_uuid() {
+                    // wait 3 seconds
+                    std::thread::sleep(std::time::Duration::from_secs(10));
+                    let (texture, signature) = get_skin_and_signature(uuid).await.unwrap();
+
+                    scheduler
+                        .build_task(move || {
+                            let skin = PlayerSkin::create(&texture, &signature)?;
+                            skin_event.set_skin(&skin)?;
+                            Ok(())
+                        })?
+                        .delay(100)?
+                        .schedule()?;
+                }
+            }
+            Ok(())
+        }
     })?;
 
     info!("Starting server on 0.0.0.0:25565...");

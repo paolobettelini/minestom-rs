@@ -418,6 +418,7 @@ pub mod player {
     }
 
     /// Event fired when a player's skin is being initialized.
+    #[derive(Clone)]
     pub struct PlayerSkinInitEvent {
         inner: JavaObject,
     }

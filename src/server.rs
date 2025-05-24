@@ -3,6 +3,7 @@ use crate::command::CommandManager;
 use crate::event::EventHandler;
 use crate::instance::InstanceManager;
 use crate::jni_utils::{JavaObject, get_env};
+use crate::scheduler::SchedulerManager;
 
 #[derive(Clone)]
 pub struct MinestomServer {
@@ -81,5 +82,20 @@ impl MinestomServer {
         let command_manager_obj = command_manager.l()?;
         let command_manager_global = env.new_global_ref(command_manager_obj)?;
         Ok(CommandManager::new(JavaObject::new(command_manager_global)))
+    }
+
+    /// Gets the scheduler manager for scheduling tasks
+    pub fn scheduler_manager(&self) -> Result<SchedulerManager> {
+        let mut env = get_env()?;
+        let server_class = env.find_class("net/minestom/server/MinecraftServer")?;
+        let scheduler_manager = env.call_static_method(
+            &server_class,
+            "getSchedulerManager",
+            "()Lnet/minestom/server/timer/SchedulerManager;",
+            &[],
+        )?;
+        let scheduler_manager_obj = scheduler_manager.l()?;
+        let scheduler_manager_global = env.new_global_ref(scheduler_manager_obj)?;
+        Ok(SchedulerManager::new(JavaObject::new(scheduler_manager_global)))
     }
 }
