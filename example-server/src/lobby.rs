@@ -135,47 +135,42 @@ pub async fn run_server() -> minestom::Result<()> {
         Ok(())
     })?;
 
-    /*event_handler.listen(move |skin_event: &PlayerSkinInitEvent| {
+    event_handler.listen(move |skin_event: &PlayerSkinInitEvent| {
         info!("Player skin init event triggered");
         if let Ok(player) = skin_event.player() {
             if let Ok(uuid) = player.get_uuid() {
                 let (texture, signature) = TOKIO_HANDLE.block_on(async {
-                    // wait 3 seconds
-                    std::thread::sleep(std::time::Duration::from_secs(10));
                     get_skin_and_signature(uuid).await
                 }).unwrap();
-
+                info!("Username: {}", player.get_username()?);
                 let skin = PlayerSkin::create(&texture, &signature)?;
-                skin_event.set_skin(&skin)?;
+                player.set_skin(&skin)?;
             }
         }
         Ok(())
-    })?;*/
+    })?;
 
-    let scheduler = scheduler.clone();
+    /*let scheduler = scheduler.clone();
     event_handler.listen_async(move |skin_event: PlayerSkinInitEvent| {
         let scheduler = scheduler.clone();
         async move {
             info!("Player skin init event triggered");
             if let Ok(player) = skin_event.player() {
                 if let Ok(uuid) = player.get_uuid() {
-                    // wait 3 seconds
-                    std::thread::sleep(std::time::Duration::from_secs(10));
                     let (texture, signature) = get_skin_and_signature(uuid).await.unwrap();
-
+                    
                     scheduler
-                        .build_task(move || {
+                    .build_task(move || {
                             let skin = PlayerSkin::create(&texture, &signature)?;
-                            skin_event.set_skin(&skin)?;
+                            player.set_skin(&skin)?;
                             Ok(())
                         })?
-                        .delay(100)?
                         .schedule()?;
                 }
             }
             Ok(())
         }
-    })?;
+    })?;*/
 
     info!("Starting server on 0.0.0.0:25565...");
     minecraft_server.start("0.0.0.0", 25565)?;

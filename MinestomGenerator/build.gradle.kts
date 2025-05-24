@@ -14,7 +14,7 @@ repositories {
 
 dependencies {
     // Direct implementation from GitHub main branch
-    implementation("com.github.Minestom:Minestom:master-SNAPSHOT")
+    implementation("com.github.Minestom:Minestom:f62abc722f")
 }
 
 application {

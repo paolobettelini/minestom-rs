@@ -2,8 +2,19 @@ use crate::Result;
 use crate::item::{InventoryHolder, PlayerInventory};
 use crate::jni_utils::{JniValue, get_env};
 use crate::resource_pack::ResourcePackRequest;
+use crate::entity::PlayerSkin;
 
 impl crate::entity::Player {
+    /// Sets the player's skin
+    pub fn set_skin(&self, skin: &PlayerSkin) -> Result<()> {
+        let mut env = get_env()?;
+        self.inner.call_void_method(
+            "setSkin",
+            "(Lnet/minestom/server/entity/PlayerSkin;)V",
+            &[skin.inner().as_jvalue(&mut env)?],
+        )
+    }
+
     /// Sends resource packs to the player
     pub fn send_resource_packs(&self, request: &ResourcePackRequest) -> Result<()> {
         let mut env = get_env()?;
