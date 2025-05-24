@@ -2,8 +2,9 @@ use crate::coordinate::{Pos, Position};
 use crate::entity::{Player, PlayerSkin};
 use crate::instance::InstanceContainer;
 use crate::jni_utils::{JavaObject, JniValue, get_env};
+use crate::text::Component;
 use crate::{MinestomError, Result};
-use jni::objects::JString;
+use jni::objects::{JObject, JObjectArray, JString};
 use log::{debug, error};
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
@@ -518,6 +519,119 @@ pub mod player {
 
         fn java_class_name() -> &'static str {
             "net/minestom/server/event/player/PlayerSkinInitEvent"
+        }
+
+        fn new(inner: JavaObject) -> Self {
+            Self { inner }
+        }
+    }
+
+    /// Event fired when a player sends a chat message.
+    pub struct PlayerChatEvent {
+        inner: JavaObject,
+    }
+
+    impl PlayerChatEvent {
+        /// Gets the player who sent the message.
+        pub fn player(&self) -> Result<Player> {
+            let mut env = get_env()?;
+            let result = self.inner.call_object_method(
+                "getPlayer",
+                "()Lnet/minestom/server/entity/Player;",
+                &[],
+            )?;
+            let java_obj = JavaObject::from_env(&mut env, result.as_obj()?)?;
+            Ok(Player::new(java_obj))
+        }
+
+        /// Gets the raw message sent by the player.
+        pub fn raw_message(&self) -> Result<String> {
+            let mut env = get_env()?;
+            let result = self.inner.call_object_method(
+                "getRawMessage",
+                "()Ljava/lang/String;",
+                &[],
+            )?;
+            let java_obj = result.as_obj()?;
+            let jstring = JString::from(java_obj);
+            let java_str = env.get_string(&jstring)?;
+            Ok(java_str.to_string_lossy().into_owned())
+        }
+
+        /// Gets the formatted message that will be displayed in chat.
+        pub fn formatted_message(&self) -> Result<Component> {
+            let mut env = get_env()?;
+            let result = self.inner.call_object_method(
+                "getFormattedMessage",
+                "()Lnet/kyori/adventure/text/Component;",
+                &[],
+            )?;
+            let java_obj = JavaObject::from_env(&mut env, result.as_obj()?)?;
+            Ok(Component::from_java_object(java_obj))
+        }
+
+        /// Sets the formatted message that will be displayed in chat.
+        pub fn set_formatted_message(&self, message: &Component) -> Result<()> {
+            let mut env = get_env()?;
+            self.inner.call_void_method(
+                "setFormattedMessage",
+                "(Lnet/kyori/adventure/text/Component;)V",
+                &[message.as_jvalue(&mut env)?],
+            )
+        }
+
+        /// Gets whether the event is cancelled.
+        pub fn is_cancelled(&self) -> Result<bool> {
+            self.inner.call_bool_method("isCancelled", "()Z", &[])
+        }
+
+        /// Sets whether the event is cancelled.
+        pub fn set_cancelled(&self, cancelled: bool) -> Result<()> {
+            self.inner.call_void_method(
+                "setCancelled",
+                "(Z)V",
+                &[JniValue::Bool(cancelled)]
+            )
+        }
+
+        /// Gets the recipients of this chat message.
+        pub fn recipients(&self) -> Result<Vec<Player>> {
+            let mut env = get_env()?;
+            let result = self.inner.call_object_method(
+                "getRecipients",
+                "()Ljava/util/Collection;",
+                &[],
+            )?;
+            let collection = result.as_obj()?;
+            
+            // Convert to array
+            let array = env.call_method(
+                collection,
+                "toArray",
+                "()[Ljava/lang/Object;",
+                &[],
+            )?.l()?;
+
+            let array = JObjectArray::from(array);
+            let length = env.get_array_length(&array)?;
+            let mut players = Vec::with_capacity(length as usize);
+
+            for i in 0..length {
+                let player_obj = env.get_object_array_element(&array, i)?;
+                players.push(Player::new(JavaObject::from_env(&mut env, player_obj)?));
+            }
+
+            Ok(players)
+        }
+    }
+
+    impl Event for PlayerChatEvent {
+        fn as_any(&self) -> &dyn Any {
+            self
+        }
+
+        fn java_class_name() -> &'static str {
+            "net/minestom/server/event/player/PlayerChatEvent"
         }
 
         fn new(inner: JavaObject) -> Self {

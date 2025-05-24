@@ -33,7 +33,7 @@ pub use command::Command;
 pub use entity::Player;
 pub use event::Event;
 pub use event::player::{
-    AsyncPlayerConfigurationEvent, PlayerDisconnectEvent, PlayerMoveEvent, PlayerSkinInitEvent,
+    AsyncPlayerConfigurationEvent, PlayerChatEvent, PlayerDisconnectEvent, PlayerMoveEvent, PlayerSkinInitEvent,
     PlayerSpawnEvent,
 };
 pub use event::server::ServerListPingEvent;
@@ -76,6 +76,7 @@ pub static EVENT_REGISTRY: Lazy<RwLock<HashMap<String, EventConstructor>>> = Laz
     register_event_type::<ServerListPingEvent>(&mut registry);
     register_event_type::<PlayerDisconnectEvent>(&mut registry);
     register_event_type::<PlayerSkinInitEvent>(&mut registry);
+    register_event_type::<PlayerChatEvent>(&mut registry);
 
     RwLock::new(registry)
 });

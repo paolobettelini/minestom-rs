@@ -14,6 +14,10 @@ pub struct Component {
 }
 
 impl Component {
+    pub(crate) fn from_java_object(inner: JavaObject) -> Self {
+        Self { inner }
+    }
+
     pub fn text(content: &str) -> Result<Self> {
         let mut env = get_env()?;
         let component_class = env.find_class("net/kyori/adventure/text/Component")?;

@@ -3,11 +3,11 @@ use log::info;
 use minestom::{Block, MinestomServer, Position};
 use minestom::{
     component,
-    entity::GameMode,
+    entity::{GameMode, Player},
     event::{
         Event,
         player::{
-            AsyncPlayerConfigurationEvent, PlayerDisconnectEvent, PlayerMoveEvent, PlayerSpawnEvent,
+            AsyncPlayerConfigurationEvent, PlayerChatEvent, PlayerDisconnectEvent, PlayerMoveEvent, PlayerSpawnEvent,
         },
         server::ServerListPingEvent,
     },
@@ -74,14 +74,14 @@ impl GameState {
 
 pub struct ParkourServer {
     player_states: Arc<Mutex<HashMap<String, GameState>>>,
-    player_uuids: Arc<RwLock<HashSet<Uuid>>>,
+    player_uuids: Arc<RwLock<HashMap<Uuid, Player>>>,
 }
 
 impl Default for ParkourServer {
     fn default() -> Self {
         Self {
             player_states: Arc::new(Mutex::new(HashMap::new())),
-            player_uuids: Arc::new(RwLock::new(HashSet::new())),
+            player_uuids: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 }
@@ -102,9 +102,9 @@ impl Server for ParkourServer {
                     .unwrap()
                     .insert(name.clone(), game_state);
                 
-                // Add player UUID to the set
+                // Store player in the HashMap
                 if let Ok(uuid) = player.get_uuid() {
-                    self.player_uuids.write().unwrap().insert(uuid);
+                    self.player_uuids.write().unwrap().insert(uuid, player);
                 }
                 
                 config_event.spawn_instance(&instance)?;
@@ -120,7 +120,7 @@ impl Server for ParkourServer {
 
         let event_node = EventNode::create_player_filter("parkour", move |player| {
             if let Ok(uuid) = player.get_uuid() {
-                uuids_ref.read().unwrap().contains(&uuid)
+                uuids_ref.read().unwrap().contains_key(&uuid)
             } else {
                 false
             }
@@ -129,6 +129,24 @@ impl Server for ParkourServer {
         let event_handler = minecraft_server.event_handler()?;
         event_handler.add_child(&event_node)?;
 
+        let uuids_ref = self.player_uuids.clone();
+        event_node.listen(move |event: &PlayerChatEvent| {
+            event.set_cancelled(true)?;
+            
+            let player = event.player()?;
+            let raw_msg = event.raw_message()?;
+            let username = player.get_username()?;
+            let formatted = component!("[{}] {}", username, raw_msg);
+            
+            // Send to all players
+            let players = uuids_ref.read().unwrap();
+            for player in players.values() {
+                player.send_message(&formatted)?;
+            }
+            
+            Ok(())
+        })?;
+        
         event_node.listen(move |spawn_event: &PlayerSpawnEvent| {
             info!("Player spawn event triggered");
             if let Ok(player) = spawn_event.player() {
@@ -151,7 +169,7 @@ impl Server for ParkourServer {
                     info!("Removing game state for player {}", username);
                     states_ref.lock().unwrap().remove(&username);
                     
-                    // Remove player UUID from the set
+                    // Remove player from the HashMap
                     if let Ok(uuid) = player.get_uuid() {
                         uuids_ref.write().unwrap().remove(&uuid);
                     }
