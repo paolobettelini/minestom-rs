@@ -1,23 +1,20 @@
 use crate::Result;
+use crate::event::EventNode;
 use crate::jni_utils::{JavaObject, JniValue, get_env};
+use jni::JNIEnv;
+use log::{debug, error};
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use std::collections::HashMap;
+use std::fs::OpenOptions;
+use std::io::Write;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use log::{debug, error};
-use jni::JNIEnv;
-use jni::errors::Error as JNIError;
-use jni::objects::JObject;
-use jni::objects::JValue;
-use std::io::Write;
-use std::fs::OpenOptions;
-use std::path::PathBuf;
 
 // Store task callbacks
-static TASK_CALLBACKS: Lazy<
-    RwLock<HashMap<u64, Arc<dyn Fn() -> Result<()> + Send + Sync>>>,
-> = Lazy::new(|| RwLock::new(HashMap::new()));
+static TASK_CALLBACKS: Lazy<RwLock<HashMap<u64, Arc<dyn Fn() -> Result<()> + Send + Sync>>>> =
+    Lazy::new(|| RwLock::new(HashMap::new()));
 
 static NEXT_CALLBACK_ID: AtomicU64 = AtomicU64::new(1);
 
@@ -47,16 +44,22 @@ impl SchedulerManager {
         let callback = Arc::new(task);
         TASK_CALLBACKS.write().insert(callback_id, callback);
 
-        debug!("[RUST-SCHEDULER] Creating task executor with id: {}", callback_id);
+        debug!(
+            "[RUST-SCHEDULER] Creating task executor with id: {}",
+            callback_id
+        );
 
         // Create the task executor
         let executor_class = match env.find_class("org/example/TaskExecutorCallback") {
             Ok(class) => {
                 debug!("[RUST-SCHEDULER] Found TaskExecutorCallback class");
                 class
-            },
+            }
             Err(e) => {
-                error!("[RUST-SCHEDULER] Failed to find TaskExecutorCallback class: {}", e);
+                error!(
+                    "[RUST-SCHEDULER] Failed to find TaskExecutorCallback class: {}",
+                    e
+                );
                 if let Ok(exception) = env.exception_occurred() {
                     if !exception.is_null() {
                         env.exception_describe()?;
@@ -75,9 +78,12 @@ impl SchedulerManager {
             Ok(obj) => {
                 debug!("[RUST-SCHEDULER] Created TaskExecutorCallback instance");
                 obj
-            },
+            }
             Err(e) => {
-                error!("[RUST-SCHEDULER] Failed to create TaskExecutorCallback instance: {}", e);
+                error!(
+                    "[RUST-SCHEDULER] Failed to create TaskExecutorCallback instance: {}",
+                    e
+                );
                 if let Ok(exception) = env.exception_occurred() {
                     if !exception.is_null() {
                         env.exception_describe()?;
@@ -96,7 +102,7 @@ impl SchedulerManager {
             Ok(class) => {
                 debug!("[RUST-SCHEDULER] Found ExecutionType class");
                 class
-            },
+            }
             Err(e) => {
                 error!("[RUST-SCHEDULER] Failed to find ExecutionType class: {}", e);
                 if let Ok(exception) = env.exception_occurred() {
@@ -117,9 +123,12 @@ impl SchedulerManager {
             Ok(field) => {
                 debug!("[RUST-SCHEDULER] Got TICK_START execution type");
                 field.l()?
-            },
+            }
             Err(e) => {
-                error!("[RUST-SCHEDULER] Failed to get TICK_START execution type: {}", e);
+                error!(
+                    "[RUST-SCHEDULER] Failed to get TICK_START execution type: {}",
+                    e
+                );
                 if let Ok(exception) = env.exception_occurred() {
                     if !exception.is_null() {
                         env.exception_describe()?;
@@ -135,9 +144,12 @@ impl SchedulerManager {
             Ok(class) => {
                 debug!("[RUST-SCHEDULER] Found TaskScheduleSupplier class");
                 class
-            },
+            }
             Err(e) => {
-                error!("[RUST-SCHEDULER] Failed to find TaskScheduleSupplier class: {}", e);
+                error!(
+                    "[RUST-SCHEDULER] Failed to find TaskScheduleSupplier class: {}",
+                    e
+                );
                 if let Ok(exception) = env.exception_occurred() {
                     if !exception.is_null() {
                         env.exception_describe()?;
@@ -156,9 +168,12 @@ impl SchedulerManager {
             Ok(obj) => {
                 debug!("[RUST-SCHEDULER] Created TaskScheduleSupplier instance");
                 obj
-            },
+            }
             Err(e) => {
-                error!("[RUST-SCHEDULER] Failed to create TaskScheduleSupplier instance: {}", e);
+                error!(
+                    "[RUST-SCHEDULER] Failed to create TaskScheduleSupplier instance: {}",
+                    e
+                );
                 if let Ok(exception) = env.exception_occurred() {
                     if !exception.is_null() {
                         env.exception_describe()?;
@@ -217,8 +232,8 @@ impl TaskBuilder {
 
     /// Sets the delay before the task starts executing
     pub fn delay(&self, ticks: i64) -> Result<&Self> {
-        let mut env = get_env()?;
-        
+        let env = get_env()?;
+
         // First get the TaskScheduleSupplier from the task
         let supplier = self.inner.call_object_method(
             "getScheduler",
@@ -227,11 +242,7 @@ impl TaskBuilder {
         )?;
 
         // Call setDelay on the supplier
-        supplier.call_object_method(
-            "setDelay",
-            "(J)V",
-            &[JniValue::Long(ticks)],
-        )?;
+        supplier.call_object_method("setDelay", "(J)V", &[JniValue::Long(ticks)])?;
 
         Ok(self)
     }
@@ -239,7 +250,7 @@ impl TaskBuilder {
     /// Sets the task to repeat with the given interval
     pub fn repeat(&self, ticks: i64) -> Result<&Self> {
         let mut env = get_env()?;
-        
+
         // First get the TaskScheduleSupplier from the task
         let supplier = self.inner.call_object_method(
             "getScheduler",
@@ -248,11 +259,7 @@ impl TaskBuilder {
         )?;
 
         // Call setRepeat on the supplier
-        supplier.call_void_method(
-            "setRepeat",
-            "(J)V",
-            &[JniValue::Long(ticks)],
-        )?;
+        supplier.call_void_method("setRepeat", "(J)V", &[JniValue::Long(ticks)])?;
 
         Ok(self)
     }
@@ -266,6 +273,16 @@ impl TaskBuilder {
             &[JniValue::Bool(iterative)],
         )?;
         Ok(self)
+    }
+
+    pub fn event_node(&self) -> Result<EventNode> {
+        let mut env = get_env()?;
+        let event_node = self.inner.call_object_method(
+            "eventNode",
+            "()Lnet/minestom/server/event/EventNode;",
+            &[],
+        )?;
+        Ok(EventNode::from(event_node))
     }
 }
 
@@ -288,8 +305,11 @@ pub unsafe extern "system" fn Java_org_example_TaskExecutorCallback_executeTask(
     _this: jni::objects::JObject,
     callback_id: jni::sys::jlong,
 ) {
-    eprintln!("[DEBUG-RUST] Starting executeTask with callback_id: {}", callback_id);
-    
+    eprintln!(
+        "[DEBUG-RUST] Starting executeTask with callback_id: {}",
+        callback_id
+    );
+
     // Get project root directory for logging
     let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     eprintln!("[DEBUG-RUST] Current directory: {:?}", current_dir);
@@ -301,27 +321,33 @@ pub unsafe extern "system" fn Java_org_example_TaskExecutorCallback_executeTask(
         Ok(_) => eprintln!("[DEBUG-RUST] Successfully created/verified logs directory"),
         Err(e) => eprintln!("[DEBUG-RUST] Error creating logs directory: {}", e),
     }
-    
+
     let log_path = logs_dir.join("error_log.txt");
     eprintln!("[DEBUG-RUST] Opening log file at: {:?}", log_path);
 
-    let mut log_file = match OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&log_path) {
-            Ok(file) => {
-                eprintln!("[DEBUG-RUST] Successfully opened log file");
-                file
-            },
-            Err(e) => {
-                eprintln!("[DEBUG-RUST] Failed to open log file at {:?}: {}", log_path, e);
-                return;
-            }
-        };
+    let mut log_file = match OpenOptions::new().create(true).append(true).open(&log_path) {
+        Ok(file) => {
+            eprintln!("[DEBUG-RUST] Successfully opened log file");
+            file
+        }
+        Err(e) => {
+            eprintln!(
+                "[DEBUG-RUST] Failed to open log file at {:?}: {}",
+                log_path, e
+            );
+            return;
+        }
+    };
 
-    writeln!(log_file, "\n=== RUST TASK EXECUTION START ===").unwrap_or_else(|e| eprintln!("[DEBUG-RUST] Error writing to log file: {}", e));
-    writeln!(log_file, "[RUST] Starting task execution for callback id: {}", callback_id).unwrap_or_else(|e| eprintln!("[DEBUG-RUST] Error writing to log file: {}", e));
-    
+    writeln!(log_file, "\n=== RUST TASK EXECUTION START ===")
+        .unwrap_or_else(|e| eprintln!("[DEBUG-RUST] Error writing to log file: {}", e));
+    writeln!(
+        log_file,
+        "[RUST] Starting task execution for callback id: {}",
+        callback_id
+    )
+    .unwrap_or_else(|e| eprintln!("[DEBUG-RUST] Error writing to log file: {}", e));
+
     // Update panic hook to use the same logs directory
     let logs_dir_clone = logs_dir.clone();
     std::panic::set_hook(Box::new(move |panic_info| {
@@ -335,9 +361,20 @@ pub unsafe extern "system" fn Java_org_example_TaskExecutorCallback_executeTask(
         writeln!(log_file, "\n!!! RUST PANIC !!!").unwrap_or_default();
         writeln!(log_file, "Panic info: {:?}", panic_info).unwrap_or_default();
         if let Some(location) = panic_info.location() {
-            writeln!(log_file, "Panic occurred in file '{}' at line {}", location.file(), location.line()).unwrap_or_default();
+            writeln!(
+                log_file,
+                "Panic occurred in file '{}' at line {}",
+                location.file(),
+                location.line()
+            )
+            .unwrap_or_default();
         }
-        writeln!(log_file, "Backtrace:\n{:?}", std::backtrace::Backtrace::capture()).unwrap_or_default();
+        writeln!(
+            log_file,
+            "Backtrace:\n{:?}",
+            std::backtrace::Backtrace::capture()
+        )
+        .unwrap_or_default();
     }));
 
     // Convert the raw JNIEnv pointer to a safe wrapper
@@ -345,7 +382,12 @@ pub unsafe extern "system" fn Java_org_example_TaskExecutorCallback_executeTask(
         Ok(env) => env,
         Err(e) => {
             writeln!(log_file, "[RUST-ERROR] Failed to get JNIEnv: {}", e).unwrap_or_default();
-            writeln!(log_file, "Backtrace:\n{:?}", std::backtrace::Backtrace::capture()).unwrap_or_default();
+            writeln!(
+                log_file,
+                "Backtrace:\n{:?}",
+                std::backtrace::Backtrace::capture()
+            )
+            .unwrap_or_default();
             return;
         }
     };
@@ -354,8 +396,14 @@ pub unsafe extern "system" fn Java_org_example_TaskExecutorCallback_executeTask(
     let _frame = match env.push_local_frame(16) {
         Ok(frame) => frame,
         Err(e) => {
-            writeln!(log_file, "[RUST-ERROR] Failed to create local frame: {}", e).unwrap_or_default();
-            writeln!(log_file, "Backtrace:\n{:?}", std::backtrace::Backtrace::capture()).unwrap_or_default();
+            writeln!(log_file, "[RUST-ERROR] Failed to create local frame: {}", e)
+                .unwrap_or_default();
+            writeln!(
+                log_file,
+                "Backtrace:\n{:?}",
+                std::backtrace::Backtrace::capture()
+            )
+            .unwrap_or_default();
             return;
         }
     };
@@ -366,17 +414,25 @@ pub unsafe extern "system" fn Java_org_example_TaskExecutorCallback_executeTask(
         match callbacks.get(&(callback_id as u64)) {
             Some(callback) => callback.clone(),
             None => {
-                writeln!(log_file, "[RUST-ERROR] No callback found for id: {}", callback_id).unwrap_or_default();
-                writeln!(log_file, "Available callbacks: {:?}", callbacks.keys().collect::<Vec<_>>()).unwrap_or_default();
+                writeln!(
+                    log_file,
+                    "[RUST-ERROR] No callback found for id: {}",
+                    callback_id
+                )
+                .unwrap_or_default();
+                writeln!(
+                    log_file,
+                    "Available callbacks: {:?}",
+                    callbacks.keys().collect::<Vec<_>>()
+                )
+                .unwrap_or_default();
                 return;
             }
         }
     };
 
     // Execute the callback
-    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        callback()
-    })) {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| callback())) {
         Ok(result) => {
             match result {
                 Ok(_) => {
@@ -384,49 +440,101 @@ pub unsafe extern "system" fn Java_org_example_TaskExecutorCallback_executeTask(
                 }
                 Err(e) => {
                     writeln!(log_file, "\n!!! RUST TASK ERROR !!!").unwrap_or_default();
-                    writeln!(log_file, "[RUST-ERROR] Error executing task: {}", e).unwrap_or_default();
-                    writeln!(log_file, "Backtrace:\n{:?}", std::backtrace::Backtrace::capture()).unwrap_or_default();
-                    
+                    writeln!(log_file, "[RUST-ERROR] Error executing task: {}", e)
+                        .unwrap_or_default();
+                    writeln!(
+                        log_file,
+                        "Backtrace:\n{:?}",
+                        std::backtrace::Backtrace::capture()
+                    )
+                    .unwrap_or_default();
+
                     // First check for any pending exception
                     if let Ok(exception) = env.exception_occurred() {
                         if !exception.is_null() {
-                            writeln!(log_file, "\n=== JAVA EXCEPTION DETAILS (from Rust) ===").unwrap_or_default();
-                            
+                            writeln!(log_file, "\n=== JAVA EXCEPTION DETAILS (from Rust) ===")
+                                .unwrap_or_default();
+
                             // Force print the exception immediately
                             let _ = env.exception_describe();
-                            
+
                             // Get the exception class and name
                             if let Ok(exception_class) = env.get_object_class(&exception) {
-                                if let Ok(class_name) = env.call_method(exception_class, "getName", "()Ljava/lang/String;", &[]) {
+                                if let Ok(class_name) = env.call_method(
+                                    exception_class,
+                                    "getName",
+                                    "()Ljava/lang/String;",
+                                    &[],
+                                ) {
                                     if let Ok(class_name_obj) = class_name.l() {
-                                        if let Ok(class_name_str) = env.get_string(&class_name_obj.into()) {
-                                            writeln!(log_file, "Exception class: {}", class_name_str.to_string_lossy()).unwrap_or_default();
+                                        if let Ok(class_name_str) =
+                                            env.get_string(&class_name_obj.into())
+                                        {
+                                            writeln!(
+                                                log_file,
+                                                "Exception class: {}",
+                                                class_name_str.to_string_lossy()
+                                            )
+                                            .unwrap_or_default();
                                         }
                                     }
                                 }
                             }
 
                             // Get the exception message
-                            if let Ok(msg) = env.call_method(&exception, "getMessage", "()Ljava/lang/String;", &[]) {
+                            if let Ok(msg) = env.call_method(
+                                &exception,
+                                "getMessage",
+                                "()Ljava/lang/String;",
+                                &[],
+                            ) {
                                 if let Ok(msg_obj) = msg.l() {
                                     if let Ok(msg_str) = env.get_string(&msg_obj.into()) {
-                                        writeln!(log_file, "Exception message: {}", msg_str.to_string_lossy()).unwrap_or_default();
+                                        writeln!(
+                                            log_file,
+                                            "Exception message: {}",
+                                            msg_str.to_string_lossy()
+                                        )
+                                        .unwrap_or_default();
                                     }
                                 }
                             }
 
                             // Get and print the stack trace
-                            if let Ok(stack_trace) = env.call_method(&exception, "getStackTrace", "()[Ljava/lang/StackTraceElement;", &[]) {
+                            if let Ok(stack_trace) = env.call_method(
+                                &exception,
+                                "getStackTrace",
+                                "()[Ljava/lang/StackTraceElement;",
+                                &[],
+                            ) {
                                 if let Ok(stack_trace_array) = stack_trace.l() {
-                                    let array = unsafe { jni::objects::JObjectArray::from_raw(stack_trace_array.as_raw()) };
+                                    let array = unsafe {
+                                        jni::objects::JObjectArray::from_raw(
+                                            stack_trace_array.as_raw(),
+                                        )
+                                    };
                                     if let Ok(length) = env.get_array_length(&array) {
                                         writeln!(log_file, "\nStack trace:").unwrap_or_default();
                                         for i in 0..length {
-                                            if let Ok(element) = env.get_object_array_element(&array, i) {
-                                                if let Ok(str_result) = env.call_method(element, "toString", "()Ljava/lang/String;", &[]) {
+                                            if let Ok(element) =
+                                                env.get_object_array_element(&array, i)
+                                            {
+                                                if let Ok(str_result) = env.call_method(
+                                                    element,
+                                                    "toString",
+                                                    "()Ljava/lang/String;",
+                                                    &[],
+                                                ) {
                                                     if let Ok(str_obj) = str_result.l() {
-                                                        if let Ok(str_val) = env.get_string(&str_obj.into()) {
-                                                            writeln!(log_file, "    at {}", str_val.to_string_lossy()).unwrap_or_default();
+                                                        if let Ok(str_val) =
+                                                            env.get_string(&str_obj.into())
+                                                        {
+                                                            writeln!(
+                                                                log_file,
+                                                                "    at {}",
+                                                                str_val.to_string_lossy()
+                                                            )
+                                                            .unwrap_or_default();
                                                         }
                                                     }
                                                 }
@@ -436,13 +544,16 @@ pub unsafe extern "system" fn Java_org_example_TaskExecutorCallback_executeTask(
                                 }
                             }
 
-                            writeln!(log_file, "=== END JAVA EXCEPTION DETAILS ===\n").unwrap_or_default();
+                            writeln!(log_file, "=== END JAVA EXCEPTION DETAILS ===\n")
+                                .unwrap_or_default();
 
                             // Clear the exception after we've printed all details
                             let _ = env.exception_clear();
 
                             // Throw a new exception with our gathered details
-                            if let Ok(exception_class) = env.find_class("java/lang/RuntimeException") {
+                            if let Ok(exception_class) =
+                                env.find_class("java/lang/RuntimeException")
+                            {
                                 let message = format!("Task execution failed - Error: {}", e);
                                 let _ = env.throw_new(exception_class, &message);
                             }
@@ -450,16 +561,27 @@ pub unsafe extern "system" fn Java_org_example_TaskExecutorCallback_executeTask(
                             writeln!(log_file, "[RUST-ERROR] No Java exception found, but task failed with error: {}", e).unwrap_or_default();
                         }
                     } else {
-                        writeln!(log_file, "[RUST-ERROR] Failed to check for Java exception").unwrap_or_default();
+                        writeln!(log_file, "[RUST-ERROR] Failed to check for Java exception")
+                            .unwrap_or_default();
                     }
                 }
             }
         }
         Err(e) => {
             writeln!(log_file, "\n!!! RUST PANIC IN CALLBACK !!!").unwrap_or_default();
-            writeln!(log_file, "[RUST-ERROR] Panic occurred in task callback: {:?}", e).unwrap_or_default();
-            writeln!(log_file, "Backtrace:\n{:?}", std::backtrace::Backtrace::capture()).unwrap_or_default();
-            
+            writeln!(
+                log_file,
+                "[RUST-ERROR] Panic occurred in task callback: {:?}",
+                e
+            )
+            .unwrap_or_default();
+            writeln!(
+                log_file,
+                "Backtrace:\n{:?}",
+                std::backtrace::Backtrace::capture()
+            )
+            .unwrap_or_default();
+
             // Create a RuntimeException with the panic message
             if let Ok(exception_class) = env.find_class("java/lang/RuntimeException") {
                 let message = format!("Rust panic in task {}: {:?}", callback_id, e);
@@ -470,8 +592,13 @@ pub unsafe extern "system" fn Java_org_example_TaskExecutorCallback_executeTask(
 
     // Clean up the callback after execution
     TASK_CALLBACKS.write().remove(&(callback_id as u64));
-    writeln!(log_file, "[RUST] Task cleanup completed for callback id: {}", callback_id).unwrap_or_default();
+    writeln!(
+        log_file,
+        "[RUST] Task cleanup completed for callback id: {}",
+        callback_id
+    )
+    .unwrap_or_default();
     writeln!(log_file, "=== RUST TASK EXECUTION END ===\n").unwrap_or_default();
 
     // The frame will be automatically popped when _frame is dropped
-} 
+}

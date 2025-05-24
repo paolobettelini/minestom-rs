@@ -1,7 +1,6 @@
 use crate::Result;
-use crate::jni_utils::{JavaObject, JniValue, get_env};
+use crate::jni_utils::{JavaObject, get_env};
 use crate::material::Material;
-use crate::text::Component;
 use jni::objects::{JObject, JValue};
 
 #[derive(Debug, Clone)]
@@ -183,7 +182,7 @@ pub struct PlayerInventory {
 
 impl PlayerInventory {
     pub(crate) fn from_java(obj: JObject) -> Result<Self> {
-        let mut env = get_env()?;
+        let env = get_env()?;
         Ok(Self {
             inner: JavaObject::new(env.new_global_ref(obj)?),
         })

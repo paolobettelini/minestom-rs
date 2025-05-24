@@ -2,7 +2,6 @@ use crate::Result;
 use crate::error::MinestomError;
 use jni::objects::{GlobalRef, JObject, JString, JValueGen};
 use jni::{JNIEnv, JavaVM};
-use log::debug;
 use parking_lot::Mutex;
 use std::cell::RefCell;
 use std::fmt;

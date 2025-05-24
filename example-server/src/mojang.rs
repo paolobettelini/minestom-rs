@@ -24,7 +24,7 @@ struct TexturePayload {
 
 #[derive(Deserialize)]
 struct Textures {
-    SKIN: Option<SkinInfo>,
+    skin: Option<SkinInfo>,
 }
 
 #[derive(Deserialize)]

@@ -3,7 +3,7 @@ use crate::Result;
 use crate::block::Block;
 use crate::coordinate::Position;
 use crate::entity::Player;
-use crate::event::EventHandler;
+use crate::event::EventNode;
 use crate::jni_utils::{JavaObject, JniValue, get_env};
 use jni::objects::JValue;
 use jni::objects::{JObject, JObjectArray};
@@ -187,7 +187,7 @@ impl InstanceContainer {
 
         // First, let's try to list the available methods on ConnectionManager to debug the issue
         debug!("Getting ConnectionManager class");
-        let connection_manager_class =
+        let _connection_manager_class =
             env.find_class("net/minestom/server/network/ConnectionManager")?;
 
         debug!("Finding MinecraftServer class");
@@ -300,12 +300,13 @@ impl InstanceContainer {
 
     /// Gets the event node for this instance.
     /// This can be used to register event listeners specific to this instance.
-    pub fn event_node(&self) -> Result<EventHandler> {
+    pub fn event_node(&self) -> Result<EventNode> {
+        let _env = get_env()?;
         let result = self.inner.call_object_method(
             "eventNode",
-            "()Lnet/minestom/server/instance/Instance;",
+            "()Lnet/minestom/server/event/EventNode;",
             &[],
         )?;
-        Ok(EventHandler::new(result))
+        Ok(EventNode::from(result))
     }
 }

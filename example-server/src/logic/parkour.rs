@@ -1,5 +1,6 @@
 use log::info;
 use minestom::{Block, MinestomServer, Position};
+use crate::server::Server;
 use minestom::{
     component,
     entity::GameMode,
@@ -66,6 +67,89 @@ impl GameState {
         };
         state.instance.set_time_rate(0).unwrap();
         state
+    }
+}
+
+#[derive(Default)]
+pub struct ParkourServer {
+    player_states: Arc<Mutex<HashMap<String, GameState>>>,
+}
+
+impl Server for ParkourServer {
+    fn init_player(&self, minecraft_server: &MinestomServer, config_event: &AsyncPlayerConfigurationEvent) -> minestom::Result<()> {
+        if let Ok(player) = config_event.player() {
+            if let Ok(name) = player.get_username() {
+                info!("Creating empty instance and game state for player");
+                let instance = create_empty_instance(&minecraft_server)?;
+                let game_state = GameState::new(instance.clone());
+                self.player_states.lock().unwrap().insert(name.clone(), game_state);
+                config_event.spawn_instance(&instance)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn init(&self, minecraft_server: &MinestomServer) -> minestom::Result<()> {
+        let states_ref = self.player_states.clone();
+        
+        // TODO: questo ??? da dove lo prendo il nodo
+        let event_node = minecraft_server.event_handler()?;
+
+        event_node.listen(move |spawn_event: &PlayerSpawnEvent| {
+            info!("Player spawn event triggered");
+            if let Ok(player) = spawn_event.player() {
+                let username = player.get_username()?;
+
+                if let Some(state) = states_ref.lock().unwrap().get_mut(&username) {
+                    player.set_game_mode(GameMode::Adventure)?;
+                    reset_player(&player, state)?;
+                }
+            }
+            Ok(())
+        })?;
+
+        let states_ref = self.player_states.clone();
+        event_node.listen(move |disconnect_event: &PlayerDisconnectEvent| {
+            info!("Player disconnect event triggered");
+            if let Ok(player) = disconnect_event.player() {
+                if let Ok(username) = player.get_username() {
+                    info!("Removing game state for player {}", username);
+                    states_ref.lock().unwrap().remove(&username);
+                }
+            }
+            Ok(())
+        })?;
+
+        event_node.listen(move |event: &ServerListPingEvent| {
+            let response_data = event.get_response_data()?;
+
+            response_data.set_online(-1)?;
+            response_data.set_max_player(i32::MAX)?;
+            response_data.set_description(&component!("Henlo").red())?;
+            response_data.set_favicon(&crate::favicon::random_image())?;
+
+            Ok(())
+        })?;
+
+        let states_ref = self.player_states.clone();
+        event_node.listen(move |spawn_event: &PlayerMoveEvent| {
+            if let Ok(player) = spawn_event.player() {
+                if let Ok(name) = player.get_username() {
+                    if let Some(state) = states_ref.lock().unwrap().get_mut(&name) {
+                        let pos = player.get_position()?;
+                        if pos.y < START_POS.1 as f64 - 32.0 {
+                            reset_player(&player, state)?;
+                        } else {
+                            manage_blocks(&player, &pos, state)?;
+                        }
+                    }
+                }
+            }
+            Ok(())
+        })?;
+
+        Ok(())
     }
 }
 
@@ -236,59 +320,7 @@ pub async fn run_server() -> minestom::Result<()> {
         Ok(())
     })?;
 
-    let states_ref = player_states.clone();
-    event_handler.listen(move |spawn_event: &PlayerSpawnEvent| {
-        info!("Player spawn event triggered");
-        if let Ok(player) = spawn_event.player() {
-            let username = player.get_username()?;
-
-            if let Some(state) = states_ref.lock().unwrap().get_mut(&username) {
-                player.set_game_mode(GameMode::Adventure)?;
-                reset_player(&player, state)?;
-            }
-        }
-        Ok(())
-    })?;
-
-    let states_ref = player_states.clone();
-    event_handler.listen(move |disconnect_event: &PlayerDisconnectEvent| {
-        info!("Player disconnect event triggered");
-        if let Ok(player) = disconnect_event.player() {
-            if let Ok(username) = player.get_username() {
-                info!("Removing game state for player {}", username);
-                states_ref.lock().unwrap().remove(&username);
-            }
-        }
-        Ok(())
-    })?;
-
-    event_handler.listen(move |event: &ServerListPingEvent| {
-        let response_data = event.get_response_data()?;
-
-        response_data.set_online(-1)?;
-        response_data.set_max_player(i32::MAX)?;
-        response_data.set_description(&component!("Henlo").red())?;
-        response_data.set_favicon(&crate::favicon::random_image())?;
-
-        Ok(())
-    })?;
-
-    let states_ref = player_states.clone();
-    event_handler.listen(move |spawn_event: &PlayerMoveEvent| {
-        if let Ok(player) = spawn_event.player() {
-            if let Ok(name) = player.get_username() {
-                if let Some(state) = states_ref.lock().unwrap().get_mut(&name) {
-                    let pos = player.get_position()?;
-                    if pos.y < START_POS.1 as f64 - 32.0 {
-                        reset_player(&player, state)?;
-                    } else {
-                        manage_blocks(&player, &pos, state)?;
-                    }
-                }
-            }
-        }
-        Ok(())
-    })?;
+    
 
     info!("Starting server on 0.0.0.0:25565...");
     minecraft_server.start("0.0.0.0", 25565)?;

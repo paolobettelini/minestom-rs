@@ -1,10 +1,10 @@
 use crate::Result;
 use crate::command::CommandManager;
-use crate::event::EventHandler;
+use crate::entity::Player;
+use crate::event::EventNode;
 use crate::instance::InstanceManager;
 use crate::jni_utils::{JavaObject, get_env};
 use crate::scheduler::SchedulerManager;
-use crate::entity::Player;
 use jni::objects::JValue;
 use uuid::Uuid;
 
@@ -35,7 +35,7 @@ impl MinestomServer {
     /// Gets a player by their UUID
     pub fn get_player_by_uuid(&self, uuid: Uuid) -> Result<Option<Player>> {
         let mut env = get_env()?;
-        
+
         // Convert Rust UUID to Java UUID
         let uuid_class = env.find_class("java/util/UUID")?;
         let uuid_str = uuid.to_string();
@@ -71,7 +71,9 @@ impl MinestomServer {
         if player_obj.is_null() {
             Ok(None)
         } else {
-            Ok(Some(Player::new(JavaObject::new(env.new_global_ref(player_obj)?))))
+            Ok(Some(Player::new(JavaObject::new(
+                env.new_global_ref(player_obj)?,
+            ))))
         }
     }
 
@@ -101,18 +103,24 @@ impl MinestomServer {
         )))
     }
 
-    pub fn event_handler(&self) -> Result<EventHandler> {
+    pub fn event_handler(&self) -> Result<EventNode> {
         let mut env = get_env()?;
+
+        // Get the MinecraftServer class
         let server_class = env.find_class("net/minestom/server/MinecraftServer")?;
+
+        // Call the static method
         let event_handler = env.call_static_method(
-            &server_class,
+            server_class,
             "getGlobalEventHandler",
             "()Lnet/minestom/server/event/GlobalEventHandler;",
             &[],
         )?;
+
+        // Convert to JavaObject and create EventNode
         let event_handler_obj = event_handler.l()?;
         let event_handler_global = env.new_global_ref(event_handler_obj)?;
-        Ok(EventHandler::new(JavaObject::new(event_handler_global)))
+        Ok(EventNode::from(JavaObject::new(event_handler_global)))
     }
 
     /// Gets the command manager for registering and managing commands
@@ -142,6 +150,8 @@ impl MinestomServer {
         )?;
         let scheduler_manager_obj = scheduler_manager.l()?;
         let scheduler_manager_global = env.new_global_ref(scheduler_manager_obj)?;
-        Ok(SchedulerManager::new(JavaObject::new(scheduler_manager_global)))
+        Ok(SchedulerManager::new(JavaObject::new(
+            scheduler_manager_global,
+        )))
     }
 }

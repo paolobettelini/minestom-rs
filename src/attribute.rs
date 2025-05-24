@@ -1,5 +1,5 @@
 use crate::Result;
-use crate::jni_utils::{JavaObject, JniValue, get_env};
+use crate::jni_utils::{JavaObject, get_env};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Attribute {

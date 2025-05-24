@@ -1,11 +1,10 @@
 use crate::coordinate::{Pos, Position};
 use crate::entity::{Player, PlayerSkin};
 use crate::instance::InstanceContainer;
-use crate::jni_utils::{JavaObject, JniValue, ToJava, get_env};
-use crate::text::Component;
+use crate::jni_utils::{JavaObject, JniValue, get_env};
 use crate::{MinestomError, Result};
 use jni::objects::JString;
-use log::{debug, error, info};
+use log::{debug, error};
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use std::any::Any;
@@ -13,7 +12,6 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use tokio::runtime::{Builder, Handle, Runtime};
 
 // Re-export event types at the top-level
 pub use self::player::{AsyncPlayerConfigurationEvent, PlayerSpawnEvent};
@@ -25,36 +23,13 @@ pub(crate) static CALLBACKS: Lazy<
 static NEXT_CALLBACK_ID: AtomicU64 = AtomicU64::new(1);
 
 /// Represents Minestom's EventNode that can be used to register event listeners.
-/// This is the root event node that receives all server events.
 #[derive(Clone)]
-pub struct EventHandler {
+pub struct EventNode {
     inner: Arc<JavaObject>,
 }
 
-/// Trait implemented by all Minestom events.
-///
-/// This trait is used to provide a common interface for all events and enable
-/// dynamic dispatch in event handlers. It also implements `Any` to allow downcasting
-/// to concrete event types.
-pub trait Event: Any {
-    /// Returns a reference to self as `Any` to enable downcasting.
-    fn as_any(&self) -> &dyn Any;
-
-    /// Returns the Java class name of this event.
-    /// This is used to register event listeners.
-    fn java_class_name() -> &'static str
-    where
-        Self: Sized;
-
-    /// Creates a new instance of this event from a JavaObject.
-    /// This is used by the event registry to create events dynamically.
-    fn new(java_obj: JavaObject) -> Self
-    where
-        Self: Sized;
-}
-
-impl EventHandler {
-    pub(crate) fn new(inner: JavaObject) -> Self {
+impl EventNode {
+    pub(crate) fn from(inner: JavaObject) -> Self {
         Self {
             inner: Arc::new(inner),
         }
@@ -185,6 +160,28 @@ impl EventHandler {
         )?;
         Ok(())
     }
+}
+
+/// Trait implemented by all Minestom events.
+///
+/// This trait is used to provide a common interface for all events and enable
+/// dynamic dispatch in event handlers. It also implements `Any` to allow downcasting
+/// to concrete event types.
+pub trait Event: Any {
+    /// Returns a reference to self as `Any` to enable downcasting.
+    fn as_any(&self) -> &dyn Any;
+
+    /// Returns the Java class name of this event.
+    /// This is used to register event listeners.
+    fn java_class_name() -> &'static str
+    where
+        Self: Sized;
+
+    /// Creates a new instance of this event from a JavaObject.
+    /// This is used by the event registry to create events dynamically.
+    fn new(java_obj: JavaObject) -> Self
+    where
+        Self: Sized;
 }
 
 pub mod player {

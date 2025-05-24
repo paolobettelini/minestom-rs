@@ -1,8 +1,7 @@
 use crate::Result;
-use crate::jni_utils::{JavaObject, JniValue, get_env};
+use crate::jni_utils::{JavaObject, get_env};
 use crate::text::Component;
 use jni::objects::{JObject, JValue};
-use std::str::FromStr;
 use uuid::Uuid;
 
 pub struct ResourcePackInfo {

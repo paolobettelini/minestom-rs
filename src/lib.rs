@@ -11,8 +11,8 @@ pub mod jni_env;
 pub mod jni_utils;
 pub mod material;
 pub mod resource_pack;
-pub mod server;
 pub mod scheduler;
+pub mod server;
 pub mod sound;
 pub mod text;
 
@@ -43,7 +43,6 @@ use jni::sys::{JNIEnv, jlong, jobject};
 use log::{debug, error};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::future::Future;
 use std::panic::{self, AssertUnwindSafe};
 use std::sync::RwLock;
 use tokio::runtime::{Builder, Runtime};

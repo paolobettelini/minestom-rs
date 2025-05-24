@@ -9,11 +9,11 @@ use tokio::runtime::{Builder, Handle};
 
 mod commands;
 mod favicon;
-mod lobby;
 mod magic_values;
 mod maps;
 mod mojang;
-mod parkour;
+mod logic;
+mod server;
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_org_example_Main_startServer(env: JNIEnv, class: JClass) -> jint {
@@ -33,7 +33,7 @@ pub extern "system" fn Java_org_example_Main_startServer(env: JNIEnv, class: JCl
     let result = panic::catch_unwind(|| {
         // RUNTIME is the Lazy<Runtime> from your library
         RUNTIME.block_on(async {
-            match lobby::run_server().await {
+            match server::run_server().await {
                 Ok(_) => 0,
                 Err(e) => {
                     eprintln!("server error: {}", e);

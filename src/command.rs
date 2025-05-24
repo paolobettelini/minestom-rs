@@ -298,7 +298,7 @@ pub unsafe extern "system" fn Java_org_example_CommandExecutorCallback_executeCo
         };
 
         // Create a mutable reference to the environment
-        let mut env = env_wrapper;
+        let env = env_wrapper;
 
         // Create a frame to automatically delete local references when we're done
         let _frame = match env.push_local_frame(64) {
