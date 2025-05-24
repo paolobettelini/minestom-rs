@@ -1,10 +1,10 @@
 {
 	"credit": "Made with Blockbench",
 	"textures": {
-		"1": "thecrown:item/Plank",
+		"1": "thecrown:item/plank",
 		"2": "thecrown:item/alimer",
 		"3": "thecrown:item/wool_colored_red",
-		"4": "thecrown:item/Black_Wool"
+		"4": "thecrown:item/black_wool"
 	},
 	"elements": [
 		{

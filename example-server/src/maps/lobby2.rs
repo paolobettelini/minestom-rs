@@ -41,11 +41,15 @@ impl LobbyMap for LobbyMap2 {
     fn init(&self) -> minestom_rs::Result<()> {
         let event_node = self.instance.event_node()?;
 
+
+        log::info!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAa");
+
         let map = self.clone();
         event_node.listen(move |move_event: &PlayerMoveEvent| {
             if let Ok(player) = move_event.player() {
                 if let Ok(pos) = player.get_position() {
                     if pos.y < 0.0 {
+                        log::info!("XXXXXXXXXXXXX");
                         let (x, y, z, yaw, pitch) = map.spawn_coordinate();
                         player.teleport(x, y, z, yaw, pitch)?;
                     }

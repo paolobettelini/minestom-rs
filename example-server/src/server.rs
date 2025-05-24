@@ -67,20 +67,11 @@ pub async fn run_server() -> minestom::Result<()> {
         .insert(server_name.clone(), Arc::new(server));
     // create lobby server
     let map = LobbyMap2::new(&instance_manager)?;
+    map.init();
     let server = LobbyServer::new(map)?;
     server.init(&minecraft_server)?;
     let server = Box::new(server);
     let server_name = String::from("lobbysrv1");
-    SERVERS
-        .lock()
-        .unwrap()
-        .insert(server_name.clone(), Arc::new(server));
-    // create lobby server
-    let map = LobbyMap2::new(&instance_manager)?;
-    let server = LobbyServer::new(map)?;
-    server.init(&minecraft_server)?;
-    let server = Box::new(server);
-    let server_name = String::from("lobbysrv2");
     SERVERS
         .lock()
         .unwrap()
@@ -99,7 +90,7 @@ pub async fn run_server() -> minestom::Result<()> {
                 info!("Player configured: {}", name);
 
                 // FAKE: the player needs to be sent to lobbysrv1
-                let servers = vec!["lobbysrv1", "lobbysrv2", "parkour"];
+                let servers = vec!["lobbysrv1", "parkour"];
                 let server_name = servers[rand::thread_rng().gen_range(0..servers.len())];
                 log::info!("Sending player {} to server: {}", name, server_name);
                 SERVERS
@@ -116,8 +107,8 @@ pub async fn run_server() -> minestom::Result<()> {
 
                 // Send resource pack
                 let uuid = uuid::Uuid::new_v4();
-                let url = "http://127.0.0.1:8080/resourcepack.zip";
-                let hash = "123456";
+                let url = "https://github.com/paolobettelini/minestom-rs/raw/refs/heads/main/example-server/resourcepack.zip";
+                let hash = "2176cdd9c46aba882a4386b92c43d68dcc966256";
 
                 let pack_info = ResourcePackInfo::new(uuid, url, hash)?;
                 let request = ResourcePackRequestBuilder::new()?
