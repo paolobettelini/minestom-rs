@@ -4,6 +4,9 @@ use crate::event::EventHandler;
 use crate::instance::InstanceManager;
 use crate::jni_utils::{JavaObject, get_env};
 use crate::scheduler::SchedulerManager;
+use crate::entity::Player;
+use jni::objects::JValue;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct MinestomServer {
@@ -27,6 +30,49 @@ impl MinestomServer {
         Ok(Self {
             inner: JavaObject::new(server_ref),
         })
+    }
+
+    /// Gets a player by their UUID
+    pub fn get_player_by_uuid(&self, uuid: Uuid) -> Result<Option<Player>> {
+        let mut env = get_env()?;
+        
+        // Convert Rust UUID to Java UUID
+        let uuid_class = env.find_class("java/util/UUID")?;
+        let uuid_str = uuid.to_string();
+        let uuid_jstring = env.new_string(&uuid_str)?;
+        let uuid_obj = env.call_static_method(
+            uuid_class,
+            "fromString",
+            "(Ljava/lang/String;)Ljava/util/UUID;",
+            &[JValue::Object(&uuid_jstring)],
+        )?;
+
+        // Get the connection manager
+        let server_class = env.find_class("net/minestom/server/MinecraftServer")?;
+        let connection_manager = env.call_static_method(
+            server_class,
+            "getConnectionManager",
+            "()Lnet/minestom/server/network/ConnectionManager;",
+            &[],
+        )?;
+
+        let connection_manager_obj = connection_manager.l()?;
+        let uuid_obj = uuid_obj.l()?;
+
+        // Get the player
+        let player = env.call_method(
+            &connection_manager_obj,
+            "getPlayer",
+            "(Ljava/util/UUID;)Lnet/minestom/server/entity/Player;",
+            &[JValue::Object(&uuid_obj)],
+        )?;
+
+        let player_obj = player.l()?;
+        if player_obj.is_null() {
+            Ok(None)
+        } else {
+            Ok(Some(Player::new(JavaObject::new(env.new_global_ref(player_obj)?))))
+        }
     }
 
     pub fn start(&self, address: &str, port: u16) -> Result<()> {

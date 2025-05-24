@@ -135,22 +135,22 @@ pub async fn run_server() -> minestom::Result<()> {
         Ok(())
     })?;
 
-    event_handler.listen(move |skin_event: &PlayerSkinInitEvent| {
+    /*event_handler.listen(move |skin_event: &PlayerSkinInitEvent| {
         info!("Player skin init event triggered");
         if let Ok(player) = skin_event.player() {
             if let Ok(uuid) = player.get_uuid() {
                 let (texture, signature) = TOKIO_HANDLE.block_on(async {
                     get_skin_and_signature(uuid).await
                 }).unwrap();
-                info!("Username: {}", player.get_username()?);
+
                 let skin = PlayerSkin::create(&texture, &signature)?;
-                player.set_skin(&skin)?;
+                skin_event.set_skin(&skin)?;
             }
         }
         Ok(())
-    })?;
+    })?;*/
 
-    /*let scheduler = scheduler.clone();
+    let scheduler = scheduler.clone();
     event_handler.listen_async(move |skin_event: PlayerSkinInitEvent| {
         let scheduler = scheduler.clone();
         async move {
@@ -161,8 +161,8 @@ pub async fn run_server() -> minestom::Result<()> {
                     
                     scheduler
                     .build_task(move || {
-                            let skin = PlayerSkin::create(&texture, &signature)?;
-                            player.set_skin(&skin)?;
+                            //let skin = PlayerSkin::create(&texture, &signature)?;
+                            //skin_event.set_skin(&skin)?;
                             Ok(())
                         })?
                         .schedule()?;
@@ -170,7 +170,7 @@ pub async fn run_server() -> minestom::Result<()> {
             }
             Ok(())
         }
-    })?;*/
+    })?;
 
     info!("Starting server on 0.0.0.0:25565...");
     minecraft_server.start("0.0.0.0", 25565)?;
