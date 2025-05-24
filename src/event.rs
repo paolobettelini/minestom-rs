@@ -147,7 +147,7 @@ impl EventHandler {
         self.listen_with_priority::<E>(None, callback)
     }
 
-    /*pub fn listen_async<E, F, Fut>(&self, callback: F) -> Result<()>
+    pub fn listen_async<E, F, Fut>(&self, callback: F) -> Result<()>
     where
         E: Event + Send + Clone + 'static,
         F: Fn(E) -> Fut + Send + Sync + 'static,
@@ -168,7 +168,7 @@ impl EventHandler {
         };
         // Delegate to the existing sync listener
         self.listen_with_priority::<E>(None, sync_cb)
-    }*/
+    }
 
     /// Gets the priority of this event handler.
     pub fn get_priority(&self) -> Result<i32> {
@@ -418,7 +418,6 @@ pub mod player {
     }
 
     /// Event fired when a player's skin is being initialized.
-    #[derive(Clone)]
     pub struct PlayerSkinInitEvent {
         inner: JavaObject,
     }

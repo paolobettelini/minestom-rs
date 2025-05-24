@@ -3,10 +3,11 @@ use minestom_rs::InstanceContainer;
 use minestom_rs::PlayerMoveEvent;
 use minestom_rs::instance::InstanceManager;
 use rand::Rng;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct LobbyMap2 {
-    pub instance: InstanceContainer,
+    pub instance: Arc<InstanceContainer>,
 }
 
 impl LobbyMap2 {
@@ -14,8 +15,9 @@ impl LobbyMap2 {
         let anvil_path =
             String::from("/home/paolo/Desktop/github/minestom-rs/example-server/anvil/lobby2");
         let instance = instance_manager.create_instance_container()?;
+        let instance = Arc::new(instance);
         instance.load_anvil_world(anvil_path)?;
-        Ok(Self { instance })
+        Ok(Self { instance: instance.clone() })
     }
 }
 
@@ -34,15 +36,15 @@ impl LobbyMap for LobbyMap2 {
         spawns[index]
     }
 
-    fn init(&self, instance: &InstanceContainer) -> minestom_rs::Result<()> {
-        let event_node = instance.event_node()?;
+    fn init(&self) -> minestom_rs::Result<()> {
+        let event_node = self.instance.event_node()?;
 
-        let map_clone = self.clone();
+        let map = self.clone();
         event_node.listen(move |move_event: &PlayerMoveEvent| {
             if let Ok(player) = move_event.player() {
                 if let Ok(pos) = player.get_position() {
                     if pos.y < 0.0 {
-                        let (x, y, z, yaw, pitch) = map_clone.spawn_coordinate();
+                        let (x, y, z, yaw, pitch) = map.spawn_coordinate();
                         player.teleport(x, y, z, yaw, pitch)?;
                     }
                 }
@@ -53,7 +55,7 @@ impl LobbyMap for LobbyMap2 {
         Ok(())
     }
 
-    fn instance(&self) -> InstanceContainer {
+    fn instance(&self) -> Arc<InstanceContainer> {
         self.instance.clone()
     }
 }
