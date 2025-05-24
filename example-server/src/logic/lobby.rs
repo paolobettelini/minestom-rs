@@ -61,6 +61,7 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
     fn init(&self, minecraft_server: &MinestomServer) -> minestom::Result<()> {
         let scheduler = minecraft_server.scheduler_manager()?;
         let instance_manager = minecraft_server.instance_manager()?;
+        let command_manager = minecraft_server.command_manager()?;
 
         // TODO use ShareInstance from a static instance
         let instance = self.map.instance();
@@ -68,10 +69,12 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
         let event_handler = instance.event_node()?;
         let spawn_instance = instance.clone();
 
-        // Clone Arc for event handlers
         let players = self.players.clone();
 
-        // Handle player spawn
+        // Register commands
+        let spawn_command = SpawnCommand::new(self.map.clone(), players.clone());
+        spawn_command.register(&command_manager)?;
+
         let map_clone = self.map.clone();
         event_handler.listen(move |spawn_event: &PlayerSpawnEvent| {
             info!("Player spawn event triggered");

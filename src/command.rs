@@ -15,6 +15,11 @@ static COMMAND_CALLBACKS: Lazy<
     RwLock<HashMap<u64, Arc<dyn Fn(&CommandSender, &CommandContext) -> Result<()> + Send + Sync>>>,
 > = Lazy::new(|| RwLock::new(HashMap::new()));
 
+// Store condition callbacks
+static CONDITION_CALLBACKS: Lazy<
+    RwLock<HashMap<u64, Arc<dyn Fn(&CommandSender) -> Result<bool> + Send + Sync>>>,
+> = Lazy::new(|| RwLock::new(HashMap::new()));
+
 static NEXT_CALLBACK_ID: AtomicU64 = AtomicU64::new(1);
 
 /// Represents a command that can be registered with the command manager
@@ -137,60 +142,50 @@ impl CommandManager {
     }
 
     /// Registers a new command with the command manager
-    pub fn register<T: Command + 'static>(&self, command: T) -> Result<CommandBuilder> {
+    pub fn register<T: Command + Send + Sync + 'static>(&self, command: T) -> Result<CommandBuilder> {
+        let command = Arc::new(command);
+        let command_name = command.name();
+
         let mut env = get_env()?;
 
-        // Create the Java command object
-        let command_class = env.find_class("net/minestom/server/command/builder/Command")?;
-        let j_name = command.name().to_java(&mut env)?;
-
-        // Create the aliases array
-        let aliases = command.aliases();
-        let aliases_array =
-            env.new_object_array(aliases.len() as i32, "java/lang/String", JObject::null())?;
-        for (i, alias) in aliases.iter().enumerate() {
-            let j_alias = env.new_string(alias)?;
-            env.set_object_array_element(&aliases_array, i as i32, j_alias)?;
-        }
-
-        let command_obj = env.new_object(
-            command_class,
-            "(Ljava/lang/String;[Ljava/lang/String;)V",
-            &[j_name.as_jvalue(), JValue::Object(&aliases_array).into()],
-        )?;
-
-        // Clone command before moving it
-        let command = Arc::new(command.clone());
-
-        // Store the command callback
+        // Create the command executor
         let callback_id = NEXT_CALLBACK_ID.fetch_add(1, Ordering::SeqCst);
+        let command_clone = command.clone();
         let callback = Arc::new(move |sender: &CommandSender, context: &CommandContext| {
-            command.execute(sender, context)
+            command_clone.execute(sender, context)
         });
         COMMAND_CALLBACKS.write().insert(callback_id, callback);
 
         // Create the command executor
-        let executor_class = env.find_class("org/example/CommandExecutorCallback")?;
-        let executor =
-            env.new_object(executor_class, "(J)V", &[JValue::Long(callback_id as i64)])?;
+        let callback_class = env.find_class("org/example/CommandExecutorCallback")?;
+        let callback_obj =
+            env.new_object(callback_class, "(J)V", &[JValue::Long(callback_id as i64)])?;
 
-        // Add the executor to the command
+        // Create the command
+        let command_class = env.find_class("net/minestom/server/command/builder/Command")?;
+        let j_name = env.new_string(command_name)?;
+        let command_obj = env.new_object(
+            command_class,
+            "(Ljava/lang/String;)V",
+            &[JValue::Object(&j_name)],
+        )?;
+
+        // Set the default executor
         env.call_method(
             &command_obj,
             "setDefaultExecutor",
             "(Lnet/minestom/server/command/builder/CommandExecutor;)V",
-            &[JValue::Object(&executor)],
+            &[JValue::Object(&callback_obj)],
         )?;
 
         // Create a global reference for the command object
         let global_command = env.new_global_ref(&command_obj)?;
 
-        // Register the command with Minestom
-        let local_command = env.new_local_ref(&command_obj)?;
+        // Register the command
         self.inner.call_void_method(
             "register",
             "(Lnet/minestom/server/command/builder/Command;)V",
-            &[JniValue::Object(local_command)],
+            &[JniValue::Object(command_obj)],
         )?;
 
         Ok(CommandBuilder::new(JavaObject::new(global_command)))
@@ -245,22 +240,16 @@ impl CommandBuilder {
     }
 
     /// Sets a condition that must be met for the command to execute
-    pub fn set_condition<F>(&self, condition: F) -> Result<&Self>
+    pub fn set_condition<F>(&self, condition: F) -> Result<()>
     where
         F: Fn(&CommandSender) -> Result<bool> + Send + Sync + 'static,
     {
         let mut env = get_env()?;
 
-        // Create a new callback ID for the condition
+        // Store the condition callback
         let callback_id = NEXT_CALLBACK_ID.fetch_add(1, Ordering::SeqCst);
-        let condition = Arc::new(move |sender: &CommandSender, _context: &CommandContext| {
-            match condition(sender) {
-                Ok(true) => Ok(()),
-                Ok(false) => Ok(()),
-                Err(e) => Err(e),
-            }
-        });
-        COMMAND_CALLBACKS.write().insert(callback_id, condition);
+        let condition = Arc::new(condition);
+        CONDITION_CALLBACKS.write().insert(callback_id, condition);
 
         // Create the condition executor
         let condition_class = env.find_class("org/example/CommandConditionCallback")?;
@@ -270,11 +259,11 @@ impl CommandBuilder {
         // Set the condition
         self.inner.call_void_method(
             "setCondition",
-            "(Lnet/minestom/server/command/builder/condition/CommandCondition;)Lnet/minestom/server/command/builder/Command;",
+            "(Lnet/minestom/server/command/builder/condition/CommandCondition;)V",
             &[JniValue::Object(condition_obj)],
         )?;
 
-        Ok(self)
+        Ok(())
     }
 }
 
@@ -356,5 +345,86 @@ pub unsafe extern "system" fn Java_org_example_CommandExecutorCallback_executeCo
 
     if let Err(e) = result {
         error!("Panic occurred in command callback: {:?}", e);
+    }
+}
+
+#[unsafe(no_mangle)]
+unsafe extern "system" fn Java_org_example_CommandConditionCallback_checkCondition(
+    env: *mut jni::sys::JNIEnv,
+    _class: jni::objects::JClass,
+    callback_id: jni::sys::jlong,
+    sender: jni::objects::JObject,
+) -> jni::sys::jboolean {
+    unsafe {
+        // Catch any panic to prevent unwinding into Java
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            // Convert the raw JNIEnv pointer to a safe JNIEnv wrapper
+            let env_wrapper = match jni::JNIEnv::from_raw(env) {
+                Ok(env) => env,
+                Err(e) => {
+                    error!("Failed to get JNIEnv: {}", e);
+                    return 0;
+                }
+            };
+
+            // Create a mutable reference to the environment
+            let env = env_wrapper;
+
+            // Create a frame to automatically delete local references when we're done
+            let _frame = match env.push_local_frame(64) {
+                Ok(frame) => frame,
+                Err(e) => {
+                    error!("Failed to create local frame: {}", e);
+                    return 0;
+                }
+            };
+
+            // Create global reference to ensure the object stays alive
+            let global_sender = match env.new_global_ref(&sender) {
+                Ok(global) => global,
+                Err(e) => {
+                    error!("Failed to create global reference for sender: {}", e);
+                    return 0;
+                }
+            };
+
+            // Create JavaObject from the global reference
+            let sender_obj = JavaObject::new(global_sender);
+
+            // Create the command sender
+            let sender = CommandSender::new(sender_obj);
+
+            // Get the callback from our global map
+            let callback = {
+                let callbacks = CONDITION_CALLBACKS.read();
+                match callbacks.get(&(callback_id as u64)) {
+                    Some(callback) => callback.clone(),
+                    None => {
+                        error!("No callback found for id: {}", callback_id);
+                        return 0;
+                    }
+                }
+            };
+
+            debug!("Executing command condition callback...");
+
+            // Execute the callback
+            match callback(&sender) {
+                Ok(true) => 1,
+                Ok(false) => 0,
+                Err(e) => {
+                    error!("Error in command condition: {}", e);
+                    0
+                }
+            }
+        }));
+
+        match result {
+            Ok(result) => result,
+            Err(e) => {
+                error!("Panic occurred in command condition callback: {:?}", e);
+                0
+            }
+        }
     }
 }

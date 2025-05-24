@@ -15,9 +15,7 @@ public class CommandConditionCallback implements CommandCondition {
     public boolean canUse(CommandSender sender, String commandString) {
         System.out.println("Checking command condition with callback id: " + callbackId);
         System.out.println("Command string: " + commandString);
-        boolean result = checkCondition(callbackId, sender);
-        System.out.println("Command condition check completed, result: " + result);
-        return result;
+        return checkCondition(callbackId, sender);
     }
 
     // Native method that will be implemented in Rust

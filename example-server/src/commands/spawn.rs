@@ -6,15 +6,38 @@ use minestom::{
     component,
 };
 use minestom_rs as minestom;
+use minestom_rs::Player;
+use std::sync::Arc;
+use std::collections::HashMap;
+use uuid::Uuid;
+use parking_lot::RwLock;
 
 #[derive(Debug, Clone)]
 pub struct SpawnCommand<T: LobbyMap> {
     pub map: T,
+    pub players: Arc<RwLock<HashMap<Uuid, Player>>>,
 }
 
 impl<T: LobbyMap> SpawnCommand<T> {
-    pub fn new(map: T) -> Self {
-        Self { map }
+    pub fn new(map: T, players: Arc<RwLock<HashMap<Uuid, Player>>>) -> Self {
+        Self { map, players }
+    }
+
+    pub fn register(&self, command_manager: &minestom::command::CommandManager) -> minestom::Result<()> {
+        let builder = command_manager.register(self.clone())?;
+        
+        // Add a condition that always returns true
+        builder.set_condition(|sender| {
+            if let Ok(player) = sender.as_player() {
+                let players = self.players.read();
+                if players.contains_key(&player.get_uuid()?) {
+                    return Ok(true);
+                }
+            }
+            Ok(false)
+        })?;
+        
+        Ok(())
     }
 }
 

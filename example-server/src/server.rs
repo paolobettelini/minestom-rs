@@ -77,9 +77,6 @@ pub async fn run_server() -> minestom::Result<()> {
         .unwrap()
         .insert(server_name.clone(), Arc::new(server));
 
-    // Register commands
-    // command_manager.register(SpawnCommand::new(map.clone()))?;
-
     let event_handler = minecraft_server.event_handler()?;
     let minecraft_server_clone = minecraft_server.clone();
 

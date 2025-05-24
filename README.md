@@ -15,3 +15,4 @@ zip -r ../resourcepack.zip *
 
 ## TODO
 Event and command callbacks should be async. InstanceContainer, SharedInstance etc dovrebbero avere gli stessi metodi comuni.
+Lo scheduler non funziona,dà errore JNI.
