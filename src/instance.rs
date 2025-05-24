@@ -301,7 +301,7 @@ impl InstanceContainer {
     /// Gets the event node for this instance.
     /// This can be used to register event listeners specific to this instance.
     pub fn event_node(&self) -> Result<EventNode> {
-        let _env = get_env()?;
+        let mut env = get_env()?;
         let result = self.inner.call_object_method(
             "eventNode",
             "()Lnet/minestom/server/event/EventNode;",

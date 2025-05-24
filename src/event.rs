@@ -20,6 +20,10 @@ pub(crate) static CALLBACKS: Lazy<
     RwLock<HashMap<u64, Arc<dyn Fn(&dyn Event) -> Result<()> + Send + Sync>>>,
 > = Lazy::new(|| RwLock::new(HashMap::new()));
 
+pub(crate) static FILTER_CALLBACKS: Lazy<
+    RwLock<HashMap<u64, Arc<dyn Fn(&Player) -> bool + Send + Sync>>>,
+> = Lazy::new(|| RwLock::new(HashMap::new()));
+
 static NEXT_CALLBACK_ID: AtomicU64 = AtomicU64::new(1);
 
 /// Represents Minestom's EventNode that can be used to register event listeners.
@@ -159,6 +163,69 @@ impl EventNode {
             &[JniValue::Int(priority)],
         )?;
         Ok(())
+    }
+
+    /// Creates a new event node with a custom condition for player events
+    pub fn create_player_filter<F>(name: &str, filter: F) -> Result<Self> 
+    where
+        F: Fn(&Player) -> bool + Send + Sync + 'static,
+    {
+        let mut env = get_env()?;
+
+        // Store the filter callback
+        let callback_id = NEXT_CALLBACK_ID.fetch_add(1, Ordering::SeqCst);
+        let filter = Arc::new(filter);
+        FILTER_CALLBACKS.write().insert(callback_id, filter);
+
+        // Create the Java predicate
+        let predicate_class = env.find_class("org/example/PredicateCallback")?;
+        let predicate = env.new_object(
+            predicate_class,
+            "(J)V",
+            &[(callback_id as i64).into()],
+        )?;
+        let predicate_global = env.new_global_ref(predicate)?;
+
+        // Get the PLAYER filter
+        let event_filter_class = env.find_class("net/minestom/server/event/EventFilter")?;
+        let player_filter = env.get_static_field(
+            event_filter_class,
+            "PLAYER",
+            "Lnet/minestom/server/event/EventFilter;",
+        )?.l()?;
+        let player_filter_global = env.new_global_ref(player_filter)?;
+
+        // Create name string
+        let name_jstring = env.new_string(name)?;
+
+        // Call the static value method to create the EventNode
+        let event_node_class = env.find_class("net/minestom/server/event/EventNode")?;
+        let result = env.call_static_method(
+            event_node_class,
+            "value",
+            "(Ljava/lang/String;Lnet/minestom/server/event/EventFilter;Ljava/util/function/Predicate;)Lnet/minestom/server/event/EventNode;",
+            &[
+                (&name_jstring).into(),
+                (&*player_filter_global).into(),
+                (&*predicate_global).into(),
+            ],
+        )?;
+
+        let node = result.l()?;
+        let node_global = env.new_global_ref(node)?;
+        Ok(Self::from(JavaObject::new(node_global)))
+    }
+
+    /// Adds a child node to this event node.
+    /// Children take the condition of their parent and are able to append to it.
+    pub fn add_child(&self, child: &EventNode) -> Result<EventNode> {
+        let mut env = get_env()?;
+        let result = self.inner.call_object_method(
+            "addChild",
+            "(Lnet/minestom/server/event/EventNode;)Lnet/minestom/server/event/EventNode;",
+            &[JniValue::Object(child.inner.as_obj()?).into()],
+        )?;
+        Ok(EventNode::from(result))
     }
 }
 
@@ -594,3 +661,54 @@ pub mod ping {
 pub use self::ping::ResponseData;
 pub use self::player::PlayerDisconnectEvent;
 pub use self::server::ServerListPingEvent;
+
+#[unsafe(no_mangle)]
+pub unsafe extern "system" fn Java_org_example_PredicateCallback_testPlayer(
+    env: *mut jni::sys::JNIEnv,
+    _this: jni::objects::JObject,
+    callback_id: jni::sys::jlong,
+    player_obj: jni::objects::JObject,
+) -> jni::sys::jboolean {
+    unsafe {
+        // Convert the raw JNIEnv pointer to a safe wrapper
+        let mut env = match jni::JNIEnv::from_raw(env) {
+            Ok(env) => env,
+            Err(_) => return 0,
+        };
+
+        // Create a frame to manage local references
+        let _frame = match env.push_local_frame(16) {
+            Ok(frame) => frame,
+            Err(_) => return 0,
+        };
+
+        // Get the filter callback from our global map
+        let filter = {
+            let callbacks = FILTER_CALLBACKS.read();
+            match callbacks.get(&(callback_id as u64)) {
+                Some(callback) => callback.clone(),
+                None => return 0,
+            }
+        };
+
+        // Create a Player instance from the JObject
+        let player_obj_global = match env.new_global_ref(player_obj) {
+            Ok(global) => global,
+            Err(_) => return 0,
+        };
+
+        let player = Player::new(JavaObject::new(player_obj_global));
+
+        // Execute the filter callback
+        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            if filter(&player) {
+                1
+            } else {
+                0
+            }
+        })) {
+            Ok(1) => 1,
+            _ => 0,
+        }
+    }
+}

@@ -232,7 +232,7 @@ impl TaskBuilder {
 
     /// Sets the delay before the task starts executing
     pub fn delay(&self, ticks: i64) -> Result<&Self> {
-        let env = get_env()?;
+        let mut env = get_env()?;
 
         // First get the TaskScheduleSupplier from the task
         let supplier = self.inner.call_object_method(

@@ -17,7 +17,7 @@ impl crate::entity::Player {
 
     /// Sends resource packs to the player
     pub fn send_resource_packs(&self, request: &ResourcePackRequest) -> Result<()> {
-        let _env = get_env()?;
+        let mut env = get_env()?;
         let request_obj = request.as_obj().as_obj()?;
         self.inner.call_void_method(
             "sendResourcePacks",
@@ -28,7 +28,7 @@ impl crate::entity::Player {
 
     /// Clears all resource packs from the player
     pub fn clear_resource_packs(&self) -> Result<()> {
-        let _env = get_env()?;
+        let mut env = get_env()?;
         self.inner
             .call_void_method("clearResourcePacks", "()V", &[])
     }
@@ -36,7 +36,7 @@ impl crate::entity::Player {
 
 impl InventoryHolder for crate::entity::Player {
     fn get_inventory(&self) -> Result<PlayerInventory> {
-        let _env = get_env()?;
+        let mut env = get_env()?;
         let inventory = self.inner.call_object_method(
             "getInventory",
             "()Lnet/minestom/server/inventory/PlayerInventory;",

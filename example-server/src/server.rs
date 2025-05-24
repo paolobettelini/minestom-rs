@@ -1,5 +1,6 @@
 use crate::commands::SpawnCommand;
 use crate::logic::lobby::LobbyServer;
+use crate::logic::parkour::ParkourServer;
 use crate::magic_values::*;
 use crate::maps::LobbyMap2;
 use crate::maps::map::LobbyMap;
@@ -7,10 +8,10 @@ use crate::mojang::get_skin_and_signature;
 use log::{error, info};
 use minestom::MinestomServer;
 use minestom_rs as minestom;
+use rand::Rng;
 use minestom_rs::InstanceContainer;
 use minestom_rs::ServerListPingEvent;
 use minestom_rs::TOKIO_HANDLE;
-use crate::logic::parkour::ParkourServer;
 use minestom_rs::entity::PlayerSkin;
 use minestom_rs::{
     attribute::Attribute,
@@ -39,7 +40,11 @@ static SERVERS: LazyLock<Mutex<HashMap<String, Arc<Box<dyn Server + Send + Sync>
 
 pub trait Server: Send + Sync {
     fn init(&self, minecraft_server: &MinestomServer) -> minestom::Result<()>;
-    fn init_player(&self, minecraft_server: &MinestomServer, config_event: &AsyncPlayerConfigurationEvent) -> minestom::Result<()>;
+    fn init_player(
+        &self,
+        minecraft_server: &MinestomServer,
+        config_event: &AsyncPlayerConfigurationEvent,
+    ) -> minestom::Result<()>;
 }
 
 pub async fn run_server() -> minestom::Result<()> {
@@ -50,13 +55,32 @@ pub async fn run_server() -> minestom::Result<()> {
     let instance_manager = minecraft_server.instance_manager()?;
     let command_manager = minecraft_server.command_manager()?;
 
-    // FAKE: create a server
-    //let map = LobbyMap2::new(&instance_manager)?;
-    //let server = LobbyServer::new(map)?;
+    // FAKE:
+    // create parkour server
     let server = ParkourServer::default();
     server.init(&minecraft_server)?;
     let server = Box::new(server);
+    let server_name = String::from("parkour");
+    SERVERS
+        .lock()
+        .unwrap()
+        .insert(server_name.clone(), Arc::new(server));
+    // create lobby server
+    let map = LobbyMap2::new(&instance_manager)?;
+    let server = LobbyServer::new(map)?;
+    server.init(&minecraft_server)?;
+    let server = Box::new(server);
     let server_name = String::from("lobbysrv1");
+    SERVERS
+        .lock()
+        .unwrap()
+        .insert(server_name.clone(), Arc::new(server));
+    // create lobby server
+    let map = LobbyMap2::new(&instance_manager)?;
+    let server = LobbyServer::new(map)?;
+    server.init(&minecraft_server)?;
+    let server = Box::new(server);
+    let server_name = String::from("lobbysrv2");
     SERVERS
         .lock()
         .unwrap()
@@ -73,33 +97,37 @@ pub async fn run_server() -> minestom::Result<()> {
         if let Ok(player) = config_event.player() {
             if let Ok(name) = player.get_username() {
                 info!("Player configured: {}", name);
+
+                // FAKE: the player needs to be sent to lobbysrv1
+                let servers = vec!["lobbysrv1", "lobbysrv2", "parkour"];
+                let server_name = servers[rand::thread_rng().gen_range(0..servers.len())];
+                log::info!("Sending player {} to server: {}", name, server_name);
+                SERVERS
+                    .lock()
+                    .unwrap()
+                    .get(server_name)
+                    .unwrap()
+                    .init_player(&minecraft_server_clone, &config_event)?;
+                PLAYER_SERVER
+                    .write()
+                    .unwrap()
+                    //.insert(player.get_uuid()?, "lobbysrv1".to_string());
+                    .insert(player.get_uuid()?, "parkour".to_string());
+
+                // Send resource pack
+                let uuid = uuid::Uuid::new_v4();
+                let url = "http://127.0.0.1:8080/resourcepack.zip";
+                let hash = "123456";
+
+                let pack_info = ResourcePackInfo::new(uuid, url, hash)?;
+                let request = ResourcePackRequestBuilder::new()?
+                    .packs(pack_info)?
+                    .prompt(&component!("Please accept the resource pack").gold())?
+                    .required(true)?
+                    .build()?;
+
+                player.send_resource_packs(&request)?;
             }
-
-            // FAKE: the player needs to be sent to lobbysrv1
-            SERVERS
-                .lock()
-                .unwrap()
-                .get(&"lobbysrv1".to_string())
-                .unwrap()
-                .init_player(&minecraft_server_clone, &config_event)?;
-            PLAYER_SERVER
-                .write()
-                .unwrap()
-                .insert(player.get_uuid()?, "lobbysrv1".to_string());
-
-            // Send resource pack
-            let uuid = uuid::Uuid::new_v4();
-            let url = "http://127.0.0.1:8080/resourcepack.zip";
-            let hash = "123456";
-
-            let pack_info = ResourcePackInfo::new(uuid, url, hash)?;
-            let request = ResourcePackRequestBuilder::new()?
-                .packs(pack_info)?
-                .prompt(&component!("Please accept the resource pack").gold())?
-                .required(true)?
-                .build()?;
-
-            player.send_resource_packs(&request)?;
         }
 
         Ok(())

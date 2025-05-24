@@ -9,10 +9,10 @@ use tokio::runtime::{Builder, Handle};
 
 mod commands;
 mod favicon;
+mod logic;
 mod magic_values;
 mod maps;
 mod mojang;
-mod logic;
 mod server;
 
 #[unsafe(no_mangle)]

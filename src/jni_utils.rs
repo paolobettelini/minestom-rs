@@ -76,7 +76,7 @@ pub fn get_env() -> Result<JNIEnv<'static>> {
 
     let guard = JVM_INSTANCE.lock();
     if let Some(ref java_vm_arc) = *guard {
-        let env = java_vm_arc
+        let mut env = java_vm_arc
             .attach_current_thread_permanently()
             .map_err(|e| MinestomError::Jni(e))?;
         // SAFETY: The JavaVM is stored in a static and outlives all JNIEnv handles
@@ -110,7 +110,7 @@ impl JavaObject {
     /// Gets a reference to the underlying JObject.
     /// This creates a NEW LOCAL REFERENCE that must be used within the current JNI scope.
     pub fn as_obj(&self) -> Result<JObject> {
-        let env = get_env()?;
+        let mut env = get_env()?;
         let obj = env.new_local_ref(unsafe { JObject::from_raw(self.inner.as_raw()) })?;
         //debug!("Created safe local reference for JavaObject");
         Ok(obj)
@@ -325,7 +325,7 @@ impl JavaObject {
 
     /// Converts a GlobalRef to a JObject safely
     pub fn global_to_local(global_ref: &GlobalRef) -> Result<JObject> {
-        let env = get_env()?;
+        let mut env = get_env()?;
         let obj = env.new_local_ref(unsafe { JObject::from_raw(global_ref.as_raw()) })?;
         //debug!("Created safe local reference from GlobalRef");
         Ok(obj)

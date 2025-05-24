@@ -41,7 +41,11 @@ impl<T: LobbyMap> LobbyServer<T> {
 }
 
 impl<T: LobbyMap> Server for LobbyServer<T> {
-    fn init_player(&self, minecraft_server: &MinestomServer, config_event: &AsyncPlayerConfigurationEvent) -> minestom::Result<()> {
+    fn init_player(
+        &self,
+        minecraft_server: &MinestomServer,
+        config_event: &AsyncPlayerConfigurationEvent,
+    ) -> minestom::Result<()> {
         if let Ok(player) = config_event.player() {
             info!("Setting spawning instance for player");
             config_event.spawn_instance(&self.map.instance())?;

@@ -1,6 +1,6 @@
+use crate::server::Server;
 use log::info;
 use minestom::{Block, MinestomServer, Position};
-use crate::server::Server;
 use minestom::{
     component,
     entity::GameMode,
@@ -15,10 +15,12 @@ use minestom::{
     sound::{Sound, SoundEvent, Source},
 };
 use minestom_rs as minestom;
+use minestom_rs::event::EventNode;
 use rand::Rng;
-use std::collections::{HashMap, VecDeque};
-use std::sync::{Arc, Mutex};
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::sync::{Arc, Mutex, RwLock};
 use std::time::{SystemTime, UNIX_EPOCH};
+use uuid::Uuid;
 
 const START_POS: (i32, i32, i32) = (0, 100, 0);
 const BLOCK_TYPES: &[Block] = &[
@@ -70,19 +72,41 @@ impl GameState {
     }
 }
 
-#[derive(Default)]
 pub struct ParkourServer {
     player_states: Arc<Mutex<HashMap<String, GameState>>>,
+    player_uuids: Arc<RwLock<HashSet<Uuid>>>,
+}
+
+impl Default for ParkourServer {
+    fn default() -> Self {
+        Self {
+            player_states: Arc::new(Mutex::new(HashMap::new())),
+            player_uuids: Arc::new(RwLock::new(HashSet::new())),
+        }
+    }
 }
 
 impl Server for ParkourServer {
-    fn init_player(&self, minecraft_server: &MinestomServer, config_event: &AsyncPlayerConfigurationEvent) -> minestom::Result<()> {
+    fn init_player(
+        &self,
+        minecraft_server: &MinestomServer,
+        config_event: &AsyncPlayerConfigurationEvent,
+    ) -> minestom::Result<()> {
         if let Ok(player) = config_event.player() {
             if let Ok(name) = player.get_username() {
                 info!("Creating empty instance and game state for player");
                 let instance = create_empty_instance(&minecraft_server)?;
                 let game_state = GameState::new(instance.clone());
-                self.player_states.lock().unwrap().insert(name.clone(), game_state);
+                self.player_states
+                    .lock()
+                    .unwrap()
+                    .insert(name.clone(), game_state);
+                
+                // Add player UUID to the set
+                if let Ok(uuid) = player.get_uuid() {
+                    self.player_uuids.write().unwrap().insert(uuid);
+                }
+                
                 config_event.spawn_instance(&instance)?;
             }
         }
@@ -92,9 +116,18 @@ impl Server for ParkourServer {
 
     fn init(&self, minecraft_server: &MinestomServer) -> minestom::Result<()> {
         let states_ref = self.player_states.clone();
-        
-        // TODO: questo ??? da dove lo prendo il nodo
-        let event_node = minecraft_server.event_handler()?;
+        let uuids_ref = self.player_uuids.clone();
+
+        let event_node = EventNode::create_player_filter("parkour", move |player| {
+            if let Ok(uuid) = player.get_uuid() {
+                uuids_ref.read().unwrap().contains(&uuid)
+            } else {
+                false
+            }
+        })?;
+
+        let event_handler = minecraft_server.event_handler()?;
+        event_handler.add_child(&event_node)?;
 
         event_node.listen(move |spawn_event: &PlayerSpawnEvent| {
             info!("Player spawn event triggered");
@@ -110,12 +143,18 @@ impl Server for ParkourServer {
         })?;
 
         let states_ref = self.player_states.clone();
+        let uuids_ref = self.player_uuids.clone();
         event_node.listen(move |disconnect_event: &PlayerDisconnectEvent| {
             info!("Player disconnect event triggered");
             if let Ok(player) = disconnect_event.player() {
                 if let Ok(username) = player.get_username() {
                     info!("Removing game state for player {}", username);
                     states_ref.lock().unwrap().remove(&username);
+                    
+                    // Remove player UUID from the set
+                    if let Ok(uuid) = player.get_uuid() {
+                        uuids_ref.write().unwrap().remove(&uuid);
+                    }
                 }
             }
             Ok(())
@@ -319,8 +358,6 @@ pub async fn run_server() -> minestom::Result<()> {
 
         Ok(())
     })?;
-
-    
 
     info!("Starting server on 0.0.0.0:25565...");
     minecraft_server.start("0.0.0.0", 25565)?;

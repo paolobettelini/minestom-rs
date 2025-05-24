@@ -182,7 +182,7 @@ pub struct PlayerInventory {
 
 impl PlayerInventory {
     pub(crate) fn from_java(obj: JObject) -> Result<Self> {
-        let env = get_env()?;
+        let mut env = get_env()?;
         Ok(Self {
             inner: JavaObject::new(env.new_global_ref(obj)?),
         })
