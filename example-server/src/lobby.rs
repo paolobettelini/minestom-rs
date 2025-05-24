@@ -135,7 +135,15 @@ pub async fn run_server() -> minestom::Result<()> {
         Ok(())
     })?;
 
-    /*event_handler.listen(move |skin_event: &PlayerSkinInitEvent| {
+    // Does not work
+    scheduler
+        .build_task(move || {
+            println!("Test task executing!");
+            Ok(())
+        })?
+        .schedule()?;
+
+    event_handler.listen(move |skin_event: &PlayerSkinInitEvent| {
         info!("Player skin init event triggered");
         if let Ok(player) = skin_event.player() {
             if let Ok(uuid) = player.get_uuid() {
@@ -148,29 +156,24 @@ pub async fn run_server() -> minestom::Result<()> {
             }
         }
         Ok(())
-    })?;*/
+    })?;
 
-    let scheduler = scheduler.clone();
+    /*let scheduler = scheduler.clone();
     event_handler.listen_async(move |skin_event: PlayerSkinInitEvent| {
         let scheduler = scheduler.clone();
         async move {
             info!("Player skin init event triggered");
             if let Ok(player) = skin_event.player() {
                 if let Ok(uuid) = player.get_uuid() {
-                    let (texture, signature) = get_skin_and_signature(uuid).await.unwrap();
+                    info!("Got player UUID: {}", uuid);
                     
-                    scheduler
-                    .build_task(move || {
-                            //let skin = PlayerSkin::create(&texture, &signature)?;
-                            //skin_event.set_skin(&skin)?;
-                            Ok(())
-                        })?
-                        .schedule()?;
+                    let (texture, signature) = get_skin_and_signature(uuid).await.unwrap();
+                    let skin = PlayerSkin::create(&texture, &signature)?;
                 }
             }
             Ok(())
         }
-    })?;
+    })?;*/
 
     info!("Starting server on 0.0.0.0:25565...");
     minecraft_server.start("0.0.0.0", 25565)?;
@@ -190,7 +193,7 @@ pub async fn run_server() -> minestom::Result<()> {
 
 fn init_logging() {
     env_logger::builder()
-        .filter_level(log::LevelFilter::Info)
+        .filter_level(log::LevelFilter::Debug)
         .format_timestamp(Some(env_logger::fmt::TimestampPrecision::Millis))
         .init();
 }

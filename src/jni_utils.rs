@@ -113,7 +113,7 @@ impl JavaObject {
     pub fn as_obj(&self) -> Result<JObject> {
         let env = get_env()?;
         let obj = env.new_local_ref(unsafe { JObject::from_raw(self.inner.as_raw()) })?;
-        debug!("Created safe local reference for JavaObject");
+        //debug!("Created safe local reference for JavaObject");
         Ok(obj)
     }
 
@@ -328,7 +328,7 @@ impl JavaObject {
     pub fn global_to_local(global_ref: &GlobalRef) -> Result<JObject> {
         let env = get_env()?;
         let obj = env.new_local_ref(unsafe { JObject::from_raw(global_ref.as_raw()) })?;
-        debug!("Created safe local reference from GlobalRef");
+        //debug!("Created safe local reference from GlobalRef");
         Ok(obj)
     }
 
