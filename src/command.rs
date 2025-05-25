@@ -142,7 +142,10 @@ impl CommandManager {
     }
 
     /// Registers a new command with the command manager
-    pub fn register<T: Command + Send + Sync + 'static>(&self, command: T) -> Result<CommandBuilder> {
+    pub fn register<T: Command + Send + Sync + 'static>(
+        &self,
+        command: T,
+    ) -> Result<CommandBuilder> {
         let command = Arc::new(command);
         let command_name = command.name();
 

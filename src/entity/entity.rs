@@ -1,11 +1,11 @@
-use crate::collision::BoundingBox;
-use crate::jni_utils::{get_env, JavaObject, JniValue};
-use crate::tag::TagHandler;
 use crate::Component;
+use crate::InstanceContainer;
+use crate::Result;
+use crate::collision::BoundingBox;
+use crate::jni_utils::{JavaObject, JniValue, get_env};
+use crate::tag::TagHandler;
 use jni::objects::{JObject, JValue};
 use uuid::Uuid;
-use crate::Result;
-use crate::InstanceContainer;
 
 /// Represents the available Minestom entity types for creation.
 #[derive(Debug, Clone, Copy)]
@@ -34,7 +34,6 @@ impl EntityType {
     }
 }
 
-
 /// A generic wrapper around a Minestom entity Java object.
 #[derive(Clone)]
 pub struct Entity {
@@ -56,21 +55,19 @@ impl Entity {
         let field_name = entity_type.to_java_field();
         // Retrieve the static field matching our variant
         let et_obj = env
-        .get_static_field(
-            et_class,
-            field_name,
-            "Lnet/minestom/server/entity/EntityType;",
-        )?
-        .l()?;
+            .get_static_field(
+                et_class,
+                field_name,
+                "Lnet/minestom/server/entity/EntityType;",
+            )?
+            .l()?;
 
         // Instantiate the Java Entity with the given type
         let entity_class = env.find_class("net/minestom/server/entity/Entity")?;
         let entity_obj = env.new_object(
             entity_class,
             "(Lnet/minestom/server/entity/EntityType;)V",
-            &[
-                JValue::Object(&JObject::from(et_obj)),
-            ],
+            &[JValue::Object(&JObject::from(et_obj))],
         )?;
 
         Ok(Self {
@@ -123,9 +120,17 @@ impl Entity {
     }
 
     /// Spawns the entity at the specified location
-    pub fn spawn(&self, instance: &InstanceContainer, x: f64, y: f64, z: f64, yaw: f32, pitch: f32) -> Result<()> {
+    pub fn spawn(
+        &self,
+        instance: &InstanceContainer,
+        x: f64,
+        y: f64,
+        z: f64,
+        yaw: f32,
+        pitch: f32,
+    ) -> Result<()> {
         let mut env = get_env()?;
-        
+
         // Create Pos object
         let pos_class = env.find_class("net/minestom/server/coordinate/Pos")?;
         let pos = env.new_object(
@@ -151,12 +156,7 @@ impl Entity {
         )?;
 
         // Wait for the operation to complete
-        env.call_method(
-            future.as_obj()?,
-            "join",
-            "()Ljava/lang/Object;",
-            &[],
-        )?;
+        env.call_method(future.as_obj()?, "join", "()Ljava/lang/Object;", &[])?;
 
         Ok(())
     }
@@ -168,7 +168,7 @@ impl Entity {
             entity_obj,
             "setBoundingBox",
             "(Lnet/minestom/server/collision/BoundingBox;)V",
-            &[JValue::Object(&box_.as_java().as_obj()?)]
+            &[JValue::Object(&box_.as_java().as_obj()?)],
         )?;
         Ok(())
     }
@@ -180,27 +180,16 @@ impl Entity {
         // Get the underlying Java Entity object
         let entity_obj = self.inner.as_obj()?;
         // Call getUuid(): java.util.UUID
-        let uuid_j = env.call_method(
-            entity_obj,
-            "getUuid",
-            "()Ljava/util/UUID;",
-            &[],
-        )?;
+        let uuid_j = env.call_method(entity_obj, "getUuid", "()Ljava/util/UUID;", &[])?;
         let uuid_obj = uuid_j.l()?;
 
         // Extract the two long fields: most and least significant bits
-        let msb = env.call_method(
-            &uuid_obj,
-            "getMostSignificantBits",
-            "()J",
-            &[],
-        )?.j()?;
-        let lsb = env.call_method(
-            &uuid_obj,
-            "getLeastSignificantBits",
-            "()J",
-            &[],
-        )?.j()?;
+        let msb = env
+            .call_method(&uuid_obj, "getMostSignificantBits", "()J", &[])?
+            .j()?;
+        let lsb = env
+            .call_method(&uuid_obj, "getLeastSignificantBits", "()J", &[])?
+            .j()?;
 
         // Combine into a u128: msb << 64 | (lsb as u64)
         let raw = ((msb as u128) << 64) | ((lsb as u64) as u128);
@@ -219,16 +208,10 @@ impl Entity {
         )?;
         let et_obj = et_value.l()?;
         // Call name() on the EntityType enum
-        let name_j = env.call_method(
-            &et_obj,
-            "name",
-            "()Ljava/lang/String;",
-            &[],
-        )?;
+        let name_j = env.call_method(&et_obj, "name", "()Ljava/lang/String;", &[])?;
         let jstr = name_j.l()?;
         let rust_str: String = env.get_string((&jstr).into())?.into();
-        Ok(EntityType::from_java_name(&rust_str)
-            .unwrap())
+        Ok(EntityType::from_java_name(&rust_str).unwrap())
     }
 
     /// Gets the custom name of this entity, if set.
@@ -244,7 +227,9 @@ impl Entity {
         if obj.is_null() {
             Ok(None)
         } else {
-            Ok(Some(Component::from_java_object(JavaObject::from_env(&mut env, obj)?)))
+            Ok(Some(Component::from_java_object(JavaObject::from_env(
+                &mut env, obj,
+            )?)))
         }
     }
 
@@ -272,16 +257,18 @@ impl Entity {
         )?;
         Ok(())
     }
-    
+
     pub fn tag_handler(&self) -> Result<TagHandler> {
         let mut env = get_env()?;
         // Chiama Java: entity.tagHandler()
-        let th_obj = env.call_method(
-            self.inner.as_obj()?,
-            "tagHandler",
-            "()Lnet/minestom/server/tag/TagHandler;",
-            &[],
-        )?.l()?;
+        let th_obj = env
+            .call_method(
+                self.inner.as_obj()?,
+                "tagHandler",
+                "()Lnet/minestom/server/tag/TagHandler;",
+                &[],
+            )?
+            .l()?;
         Ok(TagHandler {
             inner: JavaObject::from_env(&mut env, th_obj)?,
         })

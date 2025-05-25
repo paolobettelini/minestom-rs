@@ -3,8 +3,6 @@ use minestom_rs::PlayerEntityInteractEvent;
 use minestom_rs::PlayerMoveEvent;
 use minestom_rs::Result;
 use minestom_rs::Source;
-use minestom_rs::particle::ParticlePacket;
-use minestom_rs::particle::ParticleType;
 use minestom_rs::collision::BoundingBox;
 use minestom_rs::entity::display::ItemDisplay;
 use minestom_rs::entity::entity::Entity;
@@ -12,12 +10,25 @@ use minestom_rs::entity::entity::EntityType;
 use minestom_rs::instance::InstanceContainer;
 use minestom_rs::item::ItemStack;
 use minestom_rs::material::Material;
+use minestom_rs::particle::ParticlePacket;
+use minestom_rs::particle::ParticleType;
 use minestom_rs::sound::Sound;
 use minestom_rs::sound::SoundEvent;
+use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
+
+// ID so that multiple pianos can be spawned in the same instance
+static COUNTER: Lazy<RwLock<u32>> = Lazy::new(|| RwLock::new(0));
+
+fn read_and_increment_counter() -> u32 {
+    let mut counter = COUNTER.write();
+    let current = *counter;
+    *counter += 1;
+    current
+}
 
 pub fn spawn_piano(
     instance: Arc<InstanceContainer>,
@@ -27,6 +38,7 @@ pub fn spawn_piano(
     z: f64,
     yaw: f32,
 ) -> Result<()> {
+    let id = read_and_increment_counter();
     let length = 3.0;
     // The spawn point is 1/4 from the left.
     // The coordinates provided are of the left point
@@ -67,6 +79,8 @@ pub fn spawn_piano(
         pitch,
     )?;
 
+    let tag_id = format!("tiles_section_{}", id);
+
     // fill the area with armostands to cover all the tiles,
     // sinc we cannot have a large hitbox
     for i in 0..(tiles_length / armor_width).ceil() as i32 {
@@ -82,7 +96,7 @@ pub fn spawn_piano(
             pitch,
         )?;
         let tag_handler = armor_stand.tag_handler()?;
-        tag_handler.set_tag("tiles_section", Some(&i.to_string()))?;
+        tag_handler.set_tag(&tag_id, Some(&i.to_string()))?;
     }
 
     let event_node = instance.event_node()?;
@@ -93,7 +107,7 @@ pub fn spawn_piano(
         if pos.y > max_depth_interaction {
             let entity = event.get_target()?;
             let tag_handler = entity.tag_handler()?;
-            if let Some(value) = tag_handler.get_tag("tiles_section")? {
+            if let Some(value) = tag_handler.get_tag(&tag_id)? {
                 if let Ok(armorstand_index) = value.parse::<i32>() {
                     // From the segmented hitboxes we need to construct
                     // the relative coordinate of the full tiles.
@@ -107,7 +121,7 @@ pub fn spawn_piano(
                     let normalized_tile_coordinate = tile_coordinate / tiles_length;
                     // This goes from 0 to 1+ the extra depends on how well
                     // the last armorstand fits but we can just discard it.
-                    if normalized_tile_coordinate < 1.0 {
+                    if normalized_tile_coordinate < 1.1 {
                         // There are 15 tiles of alternating width such as abababa
                         // with the following sizes
                         let tiles = 15;
@@ -120,7 +134,8 @@ pub fn spawn_piano(
                             // where to spawn the note + sound source (middle point of the tile)
                             // we need to de-normalized
                             let denormalized_middle_point = tile_middle_point * tiles_length;
-                            let note_offset = offset2 - armor_width * 0.5 + denormalized_middle_point;
+                            let note_offset =
+                                offset2 - armor_width * 0.5 + denormalized_middle_point;
                             let offset1 = scale * 0.1; // closer to the player
                             let source_x = x + (sin * offset1) - (cos * note_offset);
                             let source_y = y - offsetY + 2.0;
@@ -161,12 +176,12 @@ fn play_tile(
     let normalized_pitch = (tile_index as f32) / ((tiles - 1) as f32);
     let pitch = normalized_pitch * 1.5 + 0.5;
     for player in players.read().values() {
-        player.play_sound_at(&Sound::sound(
-            SoundEvent::BlockNoteBlockBass,
-            Source::Record,
-            1.0,
-            pitch,
-        )?, x, y, z)?;
+        player.play_sound_at(
+            &Sound::sound(SoundEvent::BlockNoteBlockBass, Source::Record, 1.0, pitch)?,
+            x,
+            y,
+            z,
+        )?;
 
         player.send_packet(&particle_packet)?;
     }

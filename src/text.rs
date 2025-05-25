@@ -82,7 +82,6 @@ impl Component {
         self.color("#FFFFFF").expect("Failed to set white color")
     }
 
-
     pub fn green(self) -> Self {
         self.color("#00FF00").expect("Failed to set green color")
     }

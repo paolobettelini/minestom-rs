@@ -1,5 +1,5 @@
 use crate::jni_utils::{JavaObject, get_env};
-use crate::{Result, MinestomError};
+use crate::{MinestomError, Result};
 use jni::objects::JValue;
 
 /// Represents a Minestom BoundingBox, defined by two relative corner vectors.
@@ -11,8 +11,12 @@ pub struct BoundingBox {
 impl BoundingBox {
     /// Constructs a new BoundingBox with given relative start and end coordinates.
     pub fn new(
-        start_x: f64, start_y: f64, start_z: f64,
-        end_x: f64, end_y: f64, end_z: f64
+        start_x: f64,
+        start_y: f64,
+        start_z: f64,
+        end_x: f64,
+        end_y: f64,
+        end_z: f64,
     ) -> Result<Self> {
         let mut env = get_env()?;
         // Find the BoundingBox class
@@ -41,12 +45,11 @@ impl BoundingBox {
         let bb_obj = env.new_object(
             bb_class,
             "(Lnet/minestom/server/coordinate/Vec;Lnet/minestom/server/coordinate/Vec;)V",
-            &[
-                JValue::Object(&start_vec),
-                JValue::Object(&end_vec),
-            ],
+            &[JValue::Object(&start_vec), JValue::Object(&end_vec)],
         )?;
-        Ok(BoundingBox { inner: JavaObject::from_env(&mut env, bb_obj)? })
+        Ok(BoundingBox {
+            inner: JavaObject::from_env(&mut env, bb_obj)?,
+        })
     }
 
     /// Returns the inner JavaObject (for passing to JNI methods).

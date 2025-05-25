@@ -167,7 +167,7 @@ impl EventNode {
     }
 
     /// Creates a new event node with a custom condition for player events
-    pub fn create_player_filter<F>(name: &str, filter: F) -> Result<Self> 
+    pub fn create_player_filter<F>(name: &str, filter: F) -> Result<Self>
     where
         F: Fn(&Player) -> bool + Send + Sync + 'static,
     {
@@ -180,20 +180,18 @@ impl EventNode {
 
         // Create the Java predicate
         let predicate_class = env.find_class("org/example/PredicateCallback")?;
-        let predicate = env.new_object(
-            predicate_class,
-            "(J)V",
-            &[(callback_id as i64).into()],
-        )?;
+        let predicate = env.new_object(predicate_class, "(J)V", &[(callback_id as i64).into()])?;
         let predicate_global = env.new_global_ref(predicate)?;
 
         // Get the PLAYER filter
         let event_filter_class = env.find_class("net/minestom/server/event/EventFilter")?;
-        let player_filter = env.get_static_field(
-            event_filter_class,
-            "PLAYER",
-            "Lnet/minestom/server/event/EventFilter;",
-        )?.l()?;
+        let player_filter = env
+            .get_static_field(
+                event_filter_class,
+                "PLAYER",
+                "Lnet/minestom/server/event/EventFilter;",
+            )?
+            .l()?;
         let player_filter_global = env.new_global_ref(player_filter)?;
 
         // Create name string
@@ -563,11 +561,9 @@ pub mod player {
         /// Gets the raw message sent by the player.
         pub fn raw_message(&self) -> Result<String> {
             let mut env = get_env()?;
-            let result = self.inner.call_object_method(
-                "getRawMessage",
-                "()Ljava/lang/String;",
-                &[],
-            )?;
+            let result =
+                self.inner
+                    .call_object_method("getRawMessage", "()Ljava/lang/String;", &[])?;
             let java_obj = result.as_obj()?;
             let jstring = JString::from(java_obj);
             let java_str = env.get_string(&jstring)?;
@@ -603,30 +599,22 @@ pub mod player {
 
         /// Sets whether the event is cancelled.
         pub fn set_cancelled(&self, cancelled: bool) -> Result<()> {
-            self.inner.call_void_method(
-                "setCancelled",
-                "(Z)V",
-                &[JniValue::Bool(cancelled)]
-            )
+            self.inner
+                .call_void_method("setCancelled", "(Z)V", &[JniValue::Bool(cancelled)])
         }
 
         /// Gets the recipients of this chat message.
         pub fn recipients(&self) -> Result<Vec<Player>> {
             let mut env = get_env()?;
-            let result = self.inner.call_object_method(
-                "getRecipients",
-                "()Ljava/util/Collection;",
-                &[],
-            )?;
+            let result =
+                self.inner
+                    .call_object_method("getRecipients", "()Ljava/util/Collection;", &[])?;
             let collection = result.as_obj()?;
-            
+
             // Convert to array
-            let array = env.call_method(
-                collection,
-                "toArray",
-                "()[Ljava/lang/Object;",
-                &[],
-            )?.l()?;
+            let array = env
+                .call_method(collection, "toArray", "()[Ljava/lang/Object;", &[])?
+                .l()?;
 
             let array = JObjectArray::from(array);
             let length = env.get_array_length(&array)?;
@@ -671,7 +659,7 @@ pub mod player {
             )?;
             Ok(Player::new(JavaObject::from_env(&mut env, result.l()?)?))
         }
-    
+
         /// Gets the entity that was interacted with.
         pub fn get_target(&self) -> Result<crate::entity::entity::Entity> {
             let mut env = get_env()?;
@@ -681,9 +669,12 @@ pub mod player {
                 "()Lnet/minestom/server/entity/Entity;",
                 &[],
             )?;
-            Ok(crate::entity::entity::Entity::new(JavaObject::from_env(&mut env, result.l()?)?))
+            Ok(crate::entity::entity::Entity::new(JavaObject::from_env(
+                &mut env,
+                result.l()?,
+            )?))
         }
-    
+
         /// Gets which hand was used (main or off).
         pub fn get_hand(&self) -> Result<Hand> {
             let mut env = get_env()?;
@@ -696,9 +687,10 @@ pub mod player {
             let hand_obj = result.l()?;
             // call ordinal() on the enum
             let ord = env.call_method(hand_obj, "ordinal", "()I", &[])?.i()?;
-            Hand::from_java(ord).ok_or_else(|| MinestomError::EventError(format!("Unknown hand ordinal {}", ord)))
+            Hand::from_java(ord)
+                .ok_or_else(|| MinestomError::EventError(format!("Unknown hand ordinal {}", ord)))
         }
-    
+
         /// Gets the block- or entity-hit position as a `Position`.
         pub fn get_interact_position(&self) -> Result<Position> {
             let mut env = get_env()?;
@@ -758,6 +750,37 @@ pub mod server {
 
         fn java_class_name() -> &'static str {
             "net/minestom/server/event/server/ServerListPingEvent"
+        }
+
+        fn new(inner: JavaObject) -> Self {
+            Self { inner }
+        }
+    }
+}
+
+pub mod inventory {
+    use super::*;
+
+    /// Event fired when a player spawns in the server.
+    pub struct InventoryPreClickEvent {
+        inner: JavaObject,
+    }
+
+    impl InventoryPreClickEvent {
+        /// Sets whether the event is cancelled.
+        pub fn set_cancelled(&self, cancelled: bool) -> Result<()> {
+            self.inner
+                .call_void_method("setCancelled", "(Z)V", &[JniValue::Bool(cancelled)])
+        }
+    }
+
+    impl Event for InventoryPreClickEvent {
+        fn as_any(&self) -> &dyn Any {
+            self
+        }
+
+        fn java_class_name() -> &'static str {
+            "net/minestom/server/event/inventory/InventoryPreClickEvent"
         }
 
         fn new(inner: JavaObject) -> Self {
@@ -903,11 +926,7 @@ pub unsafe extern "system" fn Java_org_example_PredicateCallback_testPlayer(
 
         // Execute the filter callback
         match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            if filter(&player) {
-                1
-            } else {
-                0
-            }
+            if filter(&player) { 1 } else { 0 }
         })) {
             Ok(1) => 1,
             _ => 0,

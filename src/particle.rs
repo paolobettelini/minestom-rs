@@ -17,7 +17,6 @@ pub enum ParticleType {
 }
 
 impl ParticleType {
-
     /// Nome del campo statico Java corrispondente
     pub fn to_java_field(&self) -> &'static str {
         match self {
@@ -47,7 +46,9 @@ impl SendablePacket for ParticlePacket {
     fn to_java(&self) -> JObject {
         let mut env = get_env().unwrap();
         // Recupera campo statico Particle
-        let cls_particle = env.find_class("net/minestom/server/particle/Particle").unwrap();
+        let cls_particle = env
+            .find_class("net/minestom/server/particle/Particle")
+            .unwrap();
         let field_name = self.particle.to_java_field();
         let java_particle = env
             .get_static_field(

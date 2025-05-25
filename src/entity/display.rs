@@ -1,8 +1,8 @@
-use crate::collision::BoundingBox;
+use crate::InstanceContainer;
 use crate::Result;
+use crate::collision::BoundingBox;
 use crate::item::ItemStack;
 use crate::jni_utils::{JavaObject, JniValue, get_env};
-use crate::InstanceContainer;
 use jni::objects::JValue;
 
 pub struct ItemDisplay {
@@ -13,15 +13,15 @@ impl ItemDisplay {
     /// Creates a new ItemDisplay with the given item
     pub fn new(item: &ItemStack) -> Result<Self> {
         let mut env = get_env()?;
-        
+
         // Get the EntityType for ItemDisplay
         let entity_type_class = env.find_class("net/minestom/server/entity/EntityType")?;
         let entity_type = env.get_static_field(
             entity_type_class,
             "ITEM_DISPLAY",
-            "Lnet/minestom/server/entity/EntityType;"
+            "Lnet/minestom/server/entity/EntityType;",
         )?;
-        
+
         // Create a new Entity with ITEM_DISPLAY type
         let entity_class = env.find_class("net/minestom/server/entity/Entity")?;
         let entity_type_obj = entity_type.l()?;
@@ -53,9 +53,17 @@ impl ItemDisplay {
     }
 
     /// Sets the instance and position of this ItemDisplay in one call
-    pub fn spawn(&self, instance: &InstanceContainer, x: f64, y: f64, z: f64, yaw: f32, pitch: f32) -> Result<()> {
+    pub fn spawn(
+        &self,
+        instance: &InstanceContainer,
+        x: f64,
+        y: f64,
+        z: f64,
+        yaw: f32,
+        pitch: f32,
+    ) -> Result<()> {
         let mut env = get_env()?;
-        
+
         // Create Pos object
         let pos_class = env.find_class("net/minestom/server/coordinate/Pos")?;
         let pos = env.new_object(
@@ -81,12 +89,7 @@ impl ItemDisplay {
         )?;
 
         // Wait for the operation to complete
-        env.call_method(
-            future.as_obj()?,
-            "join",
-            "()Ljava/lang/Object;",
-            &[],
-        )?;
+        env.call_method(future.as_obj()?, "join", "()Ljava/lang/Object;", &[])?;
 
         Ok(())
     }
@@ -98,7 +101,7 @@ impl ItemDisplay {
             entity_obj,
             "setBoundingBox",
             "(Lnet/minestom/server/collision/BoundingBox;)V",
-            &[JValue::Object(&box_.as_java().as_obj()?)]
+            &[JValue::Object(&box_.as_java().as_obj()?)],
         )?;
         Ok(())
     }
@@ -128,7 +131,7 @@ impl ItemDisplay {
     /// Sets the scale of this ItemDisplay
     pub fn set_scale(&self, x: f32, y: f32, z: f32) -> Result<()> {
         let mut env = get_env()?;
-        
+
         // Create Vec object
         let vec_class = env.find_class("net/minestom/server/coordinate/Vec")?;
         let vec_obj = env.new_object(
@@ -172,10 +175,7 @@ impl ItemDisplay {
             &meta_obj.as_obj()?,
             "setBrightness",
             "(II)V",
-            &[
-                JValue::Int(block_light),
-                JValue::Int(sky_light),
-            ],
+            &[JValue::Int(block_light), JValue::Int(sky_light)],
         )?;
 
         Ok(())
@@ -199,4 +199,4 @@ impl ItemDisplay {
 
         Ok(())
     }
-} 
+}

@@ -1,4 +1,5 @@
 use crate::commands::SpawnCommand;
+use crate::commands::WebloginCommand;
 use crate::logic::piano;
 use crate::magic_values::*;
 use crate::maps::LobbyMap2;
@@ -13,6 +14,7 @@ use minestom_rs::Player;
 use minestom_rs::ServerListPingEvent;
 use minestom_rs::TOKIO_HANDLE;
 use minestom_rs::entity::PlayerSkin;
+use minestom_rs::event::inventory::InventoryPreClickEvent;
 use minestom_rs::{
     attribute::Attribute,
     command::{Command, CommandContext},
@@ -74,7 +76,9 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
 
         // Register commands
         let spawn_command = SpawnCommand::new(self.map.clone(), players.clone());
+        let weblogin_command = WebloginCommand;
         spawn_command.register(&command_manager)?;
+        weblogin_command.register(&command_manager)?;
 
         let map_clone = self.map.clone();
         event_handler.listen(move |spawn_event: &PlayerSpawnEvent| {
@@ -100,6 +104,7 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
                 player.set_allow_flying(true)?;
 
                 let scale = distribution(AVG_SCALE, MIN_SCALE, MAX_SCALE);
+                let scale = 15.0;
                 info!("Setting player scale to {}", scale);
                 player
                     .get_attribute(Attribute::Scale)?
@@ -148,7 +153,11 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
             Ok(())
         })?;
 
-        // Handle chat messages
+        event_handler.listen(move |event: &InventoryPreClickEvent| {
+            event.set_cancelled(true)?;
+            Ok(())
+        })?;
+
         let players_ref = self.players.clone();
         event_handler.listen(move |event: &PlayerChatEvent| {
             event.set_cancelled(true)?;

@@ -56,11 +56,7 @@ impl crate::entity::Player {
 
     /// Refreshes the commands for this player
     pub fn refresh_commands(&self) -> Result<()> {
-        self.inner.call_void_method(
-            "refreshCommands",
-            "()V",
-            &[],
-        )
+        self.inner.call_void_method("refreshCommands", "()V", &[])
     }
 }
 
@@ -76,4 +72,3 @@ impl InventoryHolder for crate::entity::Player {
         PlayerInventory::from_java(inventory.as_obj()?)
     }
 }
- 

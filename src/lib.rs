@@ -1,5 +1,6 @@
 pub mod attribute;
 pub mod block;
+pub mod collision;
 pub mod command;
 pub mod coordinate;
 pub mod entity;
@@ -10,20 +11,20 @@ pub mod item;
 pub mod jni_env;
 pub mod jni_utils;
 pub mod material;
+pub mod particle;
 pub mod resource_pack;
 pub mod scheduler;
-pub mod collision;
-pub mod particle;
 pub mod server;
 pub mod sound;
-pub mod text;
 pub mod tag;
+pub mod text;
 
 pub use error::MinestomError;
 pub type Result<T> = std::result::Result<T, MinestomError>;
 pub use attribute::{Attribute, AttributeInstance};
 pub use block::Block;
 pub use coordinate::{Pos, Position};
+use event::inventory::InventoryPreClickEvent;
 pub use server::MinestomServer;
 pub use sound::{Sound, SoundEvent, Source};
 pub use text::Component;
@@ -36,8 +37,8 @@ pub use command::Command;
 pub use entity::Player;
 pub use event::Event;
 pub use event::player::{
-    AsyncPlayerConfigurationEvent, PlayerChatEvent, PlayerEntityInteractEvent, PlayerDisconnectEvent, PlayerMoveEvent, PlayerSkinInitEvent,
-    PlayerSpawnEvent,
+    AsyncPlayerConfigurationEvent, PlayerChatEvent, PlayerDisconnectEvent,
+    PlayerEntityInteractEvent, PlayerMoveEvent, PlayerSkinInitEvent, PlayerSpawnEvent,
 };
 pub use event::server::ServerListPingEvent;
 pub use instance::InstanceContainer;
@@ -81,6 +82,7 @@ pub static EVENT_REGISTRY: Lazy<RwLock<HashMap<String, EventConstructor>>> = Laz
     register_event_type::<PlayerSkinInitEvent>(&mut registry);
     register_event_type::<PlayerChatEvent>(&mut registry);
     register_event_type::<PlayerEntityInteractEvent>(&mut registry);
+    register_event_type::<InventoryPreClickEvent>(&mut registry);
 
     RwLock::new(registry)
 });

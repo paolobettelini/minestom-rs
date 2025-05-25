@@ -1,11 +1,11 @@
 use std::fmt;
 
-pub mod player;
 pub mod display;
 pub mod entity;
+pub mod player;
 
-pub use player::*;
 pub use display::*;
+pub use player::*;
 
 use crate::Result;
 use crate::attribute::{Attribute, AttributeInstance};
