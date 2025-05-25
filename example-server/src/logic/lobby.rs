@@ -6,9 +6,9 @@ use crate::mojang::get_skin_and_signature;
 use crate::server::Server;
 use log::{error, info};
 use minestom::MinestomServer;
-use minestom_rs::Player;
 use minestom_rs as minestom;
 use minestom_rs::InstanceContainer;
+use minestom_rs::Player;
 use minestom_rs::ServerListPingEvent;
 use minestom_rs::TOKIO_HANDLE;
 use minestom_rs::entity::PlayerSkin;
@@ -17,14 +17,14 @@ use minestom_rs::{
     command::{Command, CommandContext},
     component,
     entity::GameMode,
+    entity::ItemDisplay,
     event::player::{
-        AsyncPlayerConfigurationEvent, PlayerChatEvent, PlayerDisconnectEvent, PlayerMoveEvent, 
+        AsyncPlayerConfigurationEvent, PlayerChatEvent, PlayerDisconnectEvent, PlayerMoveEvent,
         PlayerSkinInitEvent, PlayerSpawnEvent,
     },
     item::{InventoryHolder, ItemStack},
     material::Material,
     resource_pack::{ResourcePackInfo, ResourcePackRequest, ResourcePackRequestBuilder},
-    entity::ItemDisplay
 };
 use parking_lot::RwLock;
 use std::collections::HashMap;
@@ -38,7 +38,7 @@ pub struct LobbyServer<T: LobbyMap> {
 
 impl<T: LobbyMap> LobbyServer<T> {
     pub fn new(map: T) -> minestom::Result<Self> {
-        Ok(LobbyServer { 
+        Ok(LobbyServer {
             map,
             players: Arc::new(RwLock::new(HashMap::new())),
         })
@@ -76,15 +76,6 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
         let spawn_command = SpawnCommand::new(self.map.clone(), players.clone());
         spawn_command.register(&command_manager)?;
 
-        // Add piano to the instance
-        // TODO not working
-        let piano = ItemStack::of(Material::Diamond)?
-            .with_amount(1)?
-            .with_custom_model_data("piano")?;
-        let display = ItemDisplay::new(&piano)?;
-        display.set_instance(&instance)?;
-        display.set_position(1817.5, 41.0, 1044.5)?;
-
         let map_clone = self.map.clone();
         event_handler.listen(move |spawn_event: &PlayerSpawnEvent| {
             info!("Player spawn event triggered");
@@ -108,8 +99,7 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
                 player.teleport(x, y, z, yaw, pitch)?;
                 player.set_allow_flying(true)?;
 
-                //let scale = distribution(AVG_SCALE, MIN_SCALE, MAX_SCALE);
-                let scale = 0.1;
+                let scale = distribution(AVG_SCALE, MIN_SCALE, MAX_SCALE);
                 info!("Setting player scale to {}", scale);
                 player
                     .get_attribute(Attribute::Scale)?
@@ -121,14 +111,11 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
                     .get_attribute(Attribute::StepHeight)?
                     .set_base_value(step_height_scale(scale))?;
 
-                // Get player's inventory and set the helmet
-                let inventory = player.get_inventory()?;
-                inventory.set_helmet(&piano)?;
-
                 // Send [+] join message to everyone
                 let players = players.read();
                 for player in players.values() {
-                    let msg = component!("[").color("#454545")?
+                    let msg = component!("[")
+                        .color("#454545")?
                         .chain(component!("+").green())
                         .chain(component!("] ").color("#454545")?)
                         .chain(component!("{}", username).color("#669999")?)
@@ -136,6 +123,20 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
 
                     player.send_message(&msg)?;
                 }
+
+                // Add piano to the instance
+                // TODO not working
+                let piano = ItemStack::of(Material::Diamond)?
+                    .with_amount(1)?;
+                    //.with_custom_model_data("piano")?;
+                let display = ItemDisplay::new(&piano)?;
+                display.set_instance(&spawn_instance)?;
+                display.set_position(1817.5, 42.0, 1044.5)?;
+                display.set_scale(10.0, 10.0, 10.0)?;
+
+                // Get player's inventory and set the helmet
+                let inventory = player.get_inventory()?;
+                inventory.set_helmet(&piano)?;
 
                 // refresh condition so that the player can list commands
                 player.refresh_commands()?;
@@ -164,7 +165,7 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
             let raw_msg = event.raw_message()?;
             let username = player.get_username()?;
             let formatted = component!("[{}] {}, comunque siamo nella lobby.", username, raw_msg);
-            
+
             // Send to all players
             let players = players_ref.read();
             for player in players.values() {

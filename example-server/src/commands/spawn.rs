@@ -7,10 +7,10 @@ use minestom::{
 };
 use minestom_rs as minestom;
 use minestom_rs::Player;
-use std::sync::Arc;
-use std::collections::HashMap;
-use uuid::Uuid;
 use parking_lot::RwLock;
+use std::collections::HashMap;
+use std::sync::Arc;
+use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct SpawnCommand<T: LobbyMap> {
@@ -23,13 +23,16 @@ impl<T: LobbyMap> SpawnCommand<T> {
         Self { map, players }
     }
 
-    pub fn register(&self, command_manager: &minestom::command::CommandManager) -> minestom::Result<()> {
+    pub fn register(
+        &self,
+        command_manager: &minestom::command::CommandManager,
+    ) -> minestom::Result<()> {
         let builder = command_manager.register(self.clone())?;
-        
+
         // Clone the map and players for use in the closure
         let map = self.map.clone();
         let players = self.players.clone();
-        
+
         // Add a condition that checks if the player is in the hashmap
         builder.set_condition(move |sender| {
             if let Ok(player) = sender.as_player() {
@@ -40,7 +43,7 @@ impl<T: LobbyMap> SpawnCommand<T> {
             }
             Ok(false)
         })?;
-        
+
         Ok(())
     }
 }

@@ -8,7 +8,6 @@ use crate::mojang::get_skin_and_signature;
 use log::{error, info};
 use minestom::MinestomServer;
 use minestom_rs as minestom;
-use rand::Rng;
 use minestom_rs::InstanceContainer;
 use minestom_rs::ServerListPingEvent;
 use minestom_rs::TOKIO_HANDLE;
@@ -26,6 +25,7 @@ use minestom_rs::{
     resource_pack::{ResourcePackInfo, ResourcePackRequest, ResourcePackRequestBuilder},
 };
 use parking_lot::Mutex as ParkingMutex;
+use rand::Rng;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::LazyLock;

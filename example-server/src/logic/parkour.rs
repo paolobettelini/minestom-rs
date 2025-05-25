@@ -1,6 +1,6 @@
 use crate::server::Server;
-use log::info;
 use log::error;
+use log::info;
 use minestom::{Block, MinestomServer, Position};
 use minestom::{
     component,
@@ -8,7 +8,8 @@ use minestom::{
     event::{
         Event,
         player::{
-            AsyncPlayerConfigurationEvent, PlayerChatEvent, PlayerDisconnectEvent, PlayerMoveEvent, PlayerSpawnEvent,
+            AsyncPlayerConfigurationEvent, PlayerChatEvent, PlayerDisconnectEvent, PlayerMoveEvent,
+            PlayerSpawnEvent,
         },
         server::ServerListPingEvent,
     },
@@ -17,10 +18,10 @@ use minestom::{
 };
 use minestom_rs as minestom;
 use minestom_rs::event::EventNode;
+use parking_lot::RwLock;
 use rand::Rng;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Mutex};
-use parking_lot::RwLock;
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
@@ -103,12 +104,12 @@ impl Server for ParkourServer {
                     .lock()
                     .unwrap()
                     .insert(name.clone(), game_state);
-                
+
                 // Store player in the HashMap
                 if let Ok(uuid) = player.get_uuid() {
                     self.player_uuids.write().insert(uuid, player);
                 }
-                
+
                 config_event.spawn_instance(&instance)?;
             }
         }
@@ -134,21 +135,21 @@ impl Server for ParkourServer {
         let uuids_ref = self.player_uuids.clone();
         event_node.listen(move |event: &PlayerChatEvent| {
             event.set_cancelled(true)?;
-            
+
             let player = event.player()?;
             let raw_msg = event.raw_message()?;
             let username = player.get_username()?;
             let formatted = component!("[{}] {}, comunque siamo nel parkour.", username, raw_msg);
-            
+
             // Send to all players
             let players = uuids_ref.read();
             for player in players.values() {
                 player.send_message(&formatted)?;
             }
-            
+
             Ok(())
         })?;
-        
+
         event_node.listen(move |spawn_event: &PlayerSpawnEvent| {
             info!("Player spawn event triggered");
             if let Ok(player) = spawn_event.player() {
