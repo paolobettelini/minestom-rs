@@ -1,10 +1,14 @@
 use crate::logic::piano;
 use crate::maps::LobbyMap;
 use minestom_rs::InstanceContainer;
+use minestom_rs::Player;
 use minestom_rs::PlayerMoveEvent;
 use minestom_rs::instance::InstanceManager;
+use parking_lot::RwLock;
 use rand::Rng;
+use std::collections::HashMap;
 use std::sync::Arc;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct LobbyMap2 {
@@ -39,7 +43,7 @@ impl LobbyMap for LobbyMap2 {
         spawns[index]
     }
 
-    fn init(&self) -> minestom_rs::Result<()> {
+    fn init(&self, players: Arc<RwLock<HashMap<Uuid, Player>>>) -> minestom_rs::Result<()> {
         let event_node = self.instance.event_node()?;
 
         let map = self.clone();
@@ -55,8 +59,7 @@ impl LobbyMap for LobbyMap2 {
             Ok(())
         })?;
 
-        let length = 3.0;
-        piano::spawn_piano(self.instance.clone(), 1777.4, 28.0, 1056.0, length, -90.0)?;
+        piano::spawn_piano(self.instance.clone(), players, 1777.4, 28.0, 1056.0, -90.0)?;
 
         Ok(())
     }

@@ -1,27 +1,31 @@
+use minestom_rs::Player;
 use minestom_rs::PlayerEntityInteractEvent;
 use minestom_rs::PlayerMoveEvent;
 use minestom_rs::Result;
+use minestom_rs::Source;
 use minestom_rs::collision::BoundingBox;
 use minestom_rs::entity::display::ItemDisplay;
 use minestom_rs::entity::entity::Entity;
 use minestom_rs::entity::entity::EntityType;
 use minestom_rs::instance::InstanceContainer;
-use minestom_rs::Source;
-use minestom_rs::sound::Sound;
-use minestom_rs::sound::SoundEvent;
 use minestom_rs::item::ItemStack;
 use minestom_rs::material::Material;
+use minestom_rs::sound::Sound;
+use minestom_rs::sound::SoundEvent;
+use parking_lot::RwLock;
+use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
 
 pub fn spawn_piano(
     instance: Arc<InstanceContainer>,
+    players: Arc<RwLock<HashMap<Uuid, Player>>>,
     x: f64,
     y: f64,
     z: f64,
-    length: f64,
     yaw: f32,
 ) -> Result<()> {
+    let length = 3.0;
     // The spawn point is 1/4 from the left.
     // The coordinates provided are of the left point
     let piano = ItemStack::of(Material::Diamond)?
@@ -57,7 +61,7 @@ pub fn spawn_piano(
     // sinc we cannot have a large hitbox
     for i in 0..(tiles_length / armor_width).ceil() as i32 {
         let armor_stand = Entity::new_from_type(EntityType::ArmorStand)?;
-        armor_stand.set_invisible(false)?;
+        armor_stand.set_invisible(true)?;
         armor_stand.set_no_gravity(true)?;
         armor_stand.set_bounding_box(&BoundingBox::new(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)?)?;
         // TODO: this scaling does not work well for length>3
@@ -102,22 +106,27 @@ pub fn spawn_piano(
                     let normalized_tile_coordinate = tile_coordinate / tiles_length;
                     // This goes from 0 to 1+ the extra depends on how well
                     // the last armorstand fits but we can just discard it.
-                    if (normalized_tile_coordinate < tile_coordinate) {
+                    if normalized_tile_coordinate < tile_coordinate {
                         // There are 15 tiles of alternating width such as abababa
                         // with the following sizes
                         let tiles = 15;
                         let a = 0.077;
                         let b = 0.064;
                         let index = find_tile_index(normalized_tile_coordinate, tiles, a, b);
+
+                        let source_x = x_center;
+                        let source_y = y_center;
+                        let source_z = z_center;
+
                         if let Some(tile_index) = index {
-                            // pitch is in [0.5, 2]
-                            let pitch = (tile_index as f32) / ((tiles - 1)as f32) * 1.5 + 0.5;
-                            player.play_sound(&Sound::sound(
-                                SoundEvent::BlockNoteBlockBass,
-                                Source::Record,
-                                1.0,
-                                pitch,
-                            )?)?;
+                            play_tile(
+                                players.clone(),
+                                tile_index,
+                                tiles,
+                                source_x,
+                                source_y,
+                                source_z,
+                            )?;
                         }
                     }
                 }
@@ -129,12 +138,35 @@ pub fn spawn_piano(
     Ok(())
 }
 
+fn play_tile(
+    players: Arc<RwLock<HashMap<Uuid, Player>>>,
+    tile_index: usize,
+    tiles: usize,
+    x: f64,
+    y: f64,
+    z: f64,
+) -> Result<()> {
+    // pitch is in [0.5, 2]
+    // for every player
+    let pitch = (tile_index as f32) / ((tiles - 1) as f32) * 1.5 + 0.5;
+    for player in players.read().values() {
+        player.play_sound(&Sound::sound(
+            SoundEvent::BlockNoteBlockBass,
+            Source::Record,
+            1.0,
+            pitch,
+        )?)?;
+    }
+    Ok(())
+}
+
 fn find_tile_index(x: f64, tiles: usize, a: f64, b: f64) -> Option<usize> {
     let mut pos = 0.0;
 
     for i in 0..tiles {
         let length = if i % 2 == 0 { a } else { b };
-        if x >= pos && x <= pos + length { // Check is x is in the current tile
+        if x >= pos && x <= pos + length {
+            // Check is x is in the current tile
             return Some(i);
         }
         pos += length;
