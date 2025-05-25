@@ -3,6 +3,7 @@ use crate::magic_values::*;
 use crate::maps::LobbyMap2;
 use crate::maps::map::LobbyMap;
 use crate::mojang::get_skin_and_signature;
+use crate::logic::piano;
 use crate::server::Server;
 use log::{error, info};
 use minestom::MinestomServer;
@@ -124,18 +125,18 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
                     player.send_message(&msg)?;
                 }
 
-                // Add piano to the instance
-                // TODO not working
-                let piano = ItemStack::of(Material::Diamond)?
-                    .with_amount(1)?
-                    .with_custom_model_data("piano")?;
-                let display = ItemDisplay::new(&piano)?;
-                display.spawn(&instance, 1817.5, 42.0, 1044.5)?;
-                display.set_scale(10.0, 10.0, 10.0)?;
+                // TODO remove
+                //if username == "HypePaul" {
+                    // TODO move to lobby2, anche magic_values
+                    let length = 3.0;
+                    piano::spawn_piano(instance.clone(), 1777.4, 28.0, 1056.0, length, -90.0)?;
+                //}
 
                 // Get player's inventory and set the helmet
+                let item = ItemStack::of(Material::BoltArmorTrimSmithingTemplate)?
+                        .with_amount(1)?;
                 let inventory = player.get_inventory()?;
-                inventory.set_helmet(&piano)?;
+                inventory.set_helmet(&item)?;
 
                 // refresh condition so that the player can list commands
                 player.refresh_commands()?;

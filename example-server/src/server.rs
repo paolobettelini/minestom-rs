@@ -87,7 +87,8 @@ pub async fn run_server() -> minestom::Result<()> {
                 info!("Player configured: {}", name);
 
                 // FAKE: the player needs to be sent to lobbysrv1
-                let servers = vec!["lobbysrv1", "parkour"];
+                //let servers = vec!["lobbysrv1", "parkour"];
+                let servers = vec!["lobbysrv1"];
                 let server_name = servers[rand::thread_rng().gen_range(0..servers.len())];
                 log::info!("Sending player {} to server: {}", name, server_name);
                 SERVERS

@@ -52,18 +52,20 @@ impl ItemDisplay {
     }
 
     /// Sets the instance and position of this ItemDisplay in one call
-    pub fn spawn(&self, instance: &InstanceContainer, x: f64, y: f64, z: f64) -> Result<()> {
+    pub fn spawn(&self, instance: &InstanceContainer, x: f64, y: f64, z: f64, yaw: f32, pitch: f32) -> Result<()> {
         let mut env = get_env()?;
         
         // Create Pos object
         let pos_class = env.find_class("net/minestom/server/coordinate/Pos")?;
         let pos = env.new_object(
             pos_class,
-            "(DDD)V",
+            "(DDDFF)V",
             &[
                 JValue::Double(x),
                 JValue::Double(y),
-                JValue::Double(z)
+                JValue::Double(z),
+                JValue::Float(yaw),
+                JValue::Float(pitch),
             ],
         )?;
 
@@ -83,6 +85,28 @@ impl ItemDisplay {
             "join",
             "()Ljava/lang/Object;",
             &[],
+        )?;
+
+        Ok(())
+    }
+
+    /// Sets whether this ItemDisplay should be affected by gravity
+    pub fn set_no_gravity(&self, no_gravity: bool) -> Result<()> {
+        let mut env = get_env()?;
+
+        // Ottieni il metadata dell'entità
+        let meta_obj = self.inner.call_object_method(
+            "getEntityMeta",
+            "()Lnet/minestom/server/entity/metadata/EntityMeta;",
+            &[],
+        )?;
+
+        // Chiama setHasNoGravity(boolean)
+        env.call_method(
+            &meta_obj.as_obj()?,
+            "setHasNoGravity",
+            "(Z)V",
+            &[JValue::Bool(if no_gravity { 1 } else { 0 })],
         )?;
 
         Ok(())
