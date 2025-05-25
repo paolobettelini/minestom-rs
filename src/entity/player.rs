@@ -1,8 +1,16 @@
+use jni::objects::{JObject, JValue};
+
 use crate::Result;
 use crate::entity::PlayerSkin;
 use crate::item::{InventoryHolder, PlayerInventory};
 use crate::jni_utils::{JniValue, get_env};
 use crate::resource_pack::ResourcePackRequest;
+
+/// Trait for anything that knows how to send itself as a packet to a player.
+
+pub trait SendablePacket {
+    fn to_java(&self) -> JObject;
+}
 
 impl crate::entity::Player {
     /// Sets the player's skin
@@ -13,6 +21,19 @@ impl crate::entity::Player {
             "(Lnet/minestom/server/entity/PlayerSkin;)V",
             &[skin.inner().as_jvalue(&mut env)?],
         )
+    }
+
+    /// Invia un pacchetto particelle al player via JNI
+    pub fn send_packet<P: SendablePacket>(&self, packet: &P) -> crate::Result<()> {
+        let java_pkt: JObject = packet.to_java();
+        let mut env = get_env()?;
+        env.call_method(
+            self.inner.as_obj()?,
+            "sendPacket",
+            "(Lnet/minestom/server/network/packet/server/SendablePacket;)V",
+            &[JValue::Object((&java_pkt).into())],
+        )?;
+        Ok(())
     }
 
     /// Sends resource packs to the player

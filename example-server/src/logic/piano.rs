@@ -3,6 +3,8 @@ use minestom_rs::PlayerEntityInteractEvent;
 use minestom_rs::PlayerMoveEvent;
 use minestom_rs::Result;
 use minestom_rs::Source;
+use minestom_rs::particle::ParticlePacket;
+use minestom_rs::particle::ParticleType;
 use minestom_rs::collision::BoundingBox;
 use minestom_rs::entity::display::ItemDisplay;
 use minestom_rs::entity::entity::Entity;
@@ -44,6 +46,14 @@ pub fn spawn_piano(
     let armor_width = 0.5;
     let tiles_length = 1.533333 * scale;
     let max_depth_interaction = 1.9; // height on the armostand to consider it a click
+    // TODO: this scaling does not work well for length>3
+    // Direction towards the "playing player"
+    // x += sin and z -= cos
+    let offset1 = scale * 0.05;
+    // Direction from left to right of the piano
+    // x -= cos and z -= sin
+    let offset2 = scale * 0.35;
+    let offsetY = scale * (1.0 / 16.0) * 4.5;
 
     let display = ItemDisplay::new(&piano)?;
     display.set_no_gravity(true)?;
@@ -63,15 +73,6 @@ pub fn spawn_piano(
         let armor_stand = Entity::new_from_type(EntityType::ArmorStand)?;
         armor_stand.set_invisible(true)?;
         armor_stand.set_no_gravity(true)?;
-        armor_stand.set_bounding_box(&BoundingBox::new(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)?)?;
-        // TODO: this scaling does not work well for length>3
-        // Direction towards the "playing player"
-        // x += sin and z -= cos
-        let offset1 = scale * 0.05;
-        // Direction from left to right of the piano
-        // x -= cos and z -= sin
-        let offset2 = scale * 0.35;
-        let offsetY = scale * (1.0 / 16.0) * 4.5;
         armor_stand.spawn(
             &instance,
             x + (sin * offset1) - (cos * offset2) - (cos * armor_width * i as f64),
@@ -114,11 +115,15 @@ pub fn spawn_piano(
                         let b = 0.064;
                         let index = find_tile_index(normalized_tile_coordinate, tiles, a, b);
 
-                        let source_x = x_center;
-                        let source_y = y_center;
-                        let source_z = z_center;
-
                         if let Some(tile_index) = index {
+                            let avg = (a + b) * 0.5; // it doesn't need to be precise.
+                            // where to spawn the note + sound source
+                            let note_offset = offset2 - armor_width * 0.5 + tile_coordinate;
+                            let offset1 = scale * 0.1; // closer to the player
+                            let source_x = x + (sin * offset1) - (cos * note_offset);
+                            let source_y = y - offsetY + 2.0;
+                            let source_z = z - (cos * offset1) - (sin * note_offset);
+
                             play_tile(
                                 players.clone(),
                                 tile_index,
@@ -146,9 +151,13 @@ fn play_tile(
     y: f64,
     z: f64,
 ) -> Result<()> {
+    // create particle packet
+    let mut particle_packet = ParticlePacket::new(ParticleType::Note, x, y, z);
+
     // pitch is in [0.5, 2]
     // for every player
-    let pitch = (tile_index as f32) / ((tiles - 1) as f32) * 1.5 + 0.5;
+    let normalized_pitch = (tile_index as f32) / ((tiles - 1) as f32);
+    let pitch = normalized_pitch * 1.5 + 0.5;
     for player in players.read().values() {
         player.play_sound(&Sound::sound(
             SoundEvent::BlockNoteBlockBass,
@@ -156,6 +165,8 @@ fn play_tile(
             1.0,
             pitch,
         )?)?;
+
+        player.send_packet(&particle_packet)?;
     }
     Ok(())
 }

@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
 import net.minestom.server.entity.EntityType;
+import net.minestom.server.particle.Particle;
 
 public class Main {
 
@@ -21,9 +22,11 @@ public class Main {
 
         // INIT EntityType
         doNothing(EntityType.ARMOR_STAND);
+        doNothing(Particle.HEART);
+        doNothing(Particle.NOTE);
     }
 
-    static void doNothing(EntityType et) {}
+    static <T> void doNothing(T t) {}
 
     public static native void startServer();
 

@@ -40,7 +40,7 @@ pub struct LobbyServer<T: LobbyMap> {
 impl<T: LobbyMap> LobbyServer<T> {
     pub fn new(map: T) -> minestom::Result<Self> {
         let players = Arc::new(RwLock::new(HashMap::new()));
-        map.init(players.clone());
+        map.init(players.clone())?;
         Ok(LobbyServer { map, players })
     }
 }
