@@ -26,11 +26,15 @@ impl<T: LobbyMap> SpawnCommand<T> {
     pub fn register(&self, command_manager: &minestom::command::CommandManager) -> minestom::Result<()> {
         let builder = command_manager.register(self.clone())?;
         
-        // Add a condition that always returns true
-        builder.set_condition(|sender| {
+        // Clone the map and players for use in the closure
+        let map = self.map.clone();
+        let players = self.players.clone();
+        
+        // Add a condition that checks if the player is in the hashmap
+        builder.set_condition(move |sender| {
             if let Ok(player) = sender.as_player() {
-                let players = self.players.read();
-                if players.contains_key(&player.get_uuid()?) {
+                let players_guard = players.read();
+                if players_guard.contains_key(&player.get_uuid()?) {
                     return Ok(true);
                 }
             }

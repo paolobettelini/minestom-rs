@@ -98,7 +98,8 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
                 player.teleport(x, y, z, yaw, pitch)?;
                 player.set_allow_flying(true)?;
 
-                let scale = distribution(AVG_SCALE, MIN_SCALE, MAX_SCALE);
+                //let scale = distribution(AVG_SCALE, MIN_SCALE, MAX_SCALE);
+                let scale = 0.1;
                 info!("Setting player scale to {}", scale);
                 player
                     .get_attribute(Attribute::Scale)?
@@ -118,6 +119,21 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
                 // Get player's inventory and set the helmet
                 let inventory = player.get_inventory()?;
                 inventory.set_helmet(&sombrero)?;
+
+                // Send [+] join message to everyone
+                let players = players.read();
+                for player in players.values() {
+                    let msg = component!("[").color("#454545")?
+                        .chain(component!("+").green())
+                        .chain(component!("] ").color("#454545")?)
+                        .chain(component!("{}", username).color("#669999")?)
+                        .chain(component!(" joined the game.").color("#ebebeb")?);
+
+                    player.send_message(&msg)?;
+                }
+
+                // refresh condition so that the player can list commands
+                player.refresh_commands()?;
             }
             Ok(())
         })?;

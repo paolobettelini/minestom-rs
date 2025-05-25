@@ -32,6 +32,15 @@ impl crate::entity::Player {
         self.inner
             .call_void_method("clearResourcePacks", "()V", &[])
     }
+
+    /// Refreshes the commands for this player
+    pub fn refresh_commands(&self) -> Result<()> {
+        self.inner.call_void_method(
+            "refreshCommands",
+            "()V",
+            &[],
+        )
+    }
 }
 
 impl InventoryHolder for crate::entity::Player {
