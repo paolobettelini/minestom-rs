@@ -1,3 +1,4 @@
+use crate::logic::piano;
 use crate::maps::LobbyMap;
 use minestom_rs::InstanceContainer;
 use minestom_rs::PlayerMoveEvent;
@@ -53,6 +54,9 @@ impl LobbyMap for LobbyMap2 {
             }
             Ok(())
         })?;
+
+        let length = 3.0;
+        piano::spawn_piano(self.instance.clone(), 1777.4, 28.0, 1056.0, length, -90.0)?;
 
         Ok(())
     }

@@ -11,6 +11,7 @@ pub struct Sound {
 pub enum SoundEvent {
     // Block sounds
     BlockNoteBlockBass,
+    BlockNoteBlockPling,
     BlockAnvilBreak,
     BlockAnvilDestroy,
     BlockAnvilFall,
@@ -498,6 +499,7 @@ impl SoundEvent {
         match self {
             // Block sounds
             SoundEvent::BlockNoteBlockBass => "BLOCK_NOTE_BLOCK_BASS",
+            SoundEvent::BlockNoteBlockPling => "BLOCK_NOTE_BLOCK_PLING",
             SoundEvent::BlockAnvilBreak => "BLOCK_ANVIL_BREAK",
             SoundEvent::BlockAnvilDestroy => "BLOCK_ANVIL_DESTROY",
             SoundEvent::BlockAnvilFall => "BLOCK_ANVIL_FALL",
@@ -533,6 +535,7 @@ impl SoundEvent {
         match self {
             // Block sounds
             SoundEvent::BlockNoteBlockBass => "block.note_block.bass",
+            SoundEvent::BlockNoteBlockPling => "block.note_block.pling",
             SoundEvent::BlockAnvilBreak => "block.anvil.break",
             SoundEvent::BlockAnvilDestroy => "block.anvil.destroy",
             SoundEvent::BlockAnvilFall => "block.anvil.fall",

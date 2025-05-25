@@ -1,6 +1,8 @@
 use crate::collision::BoundingBox;
 use crate::jni_utils::{get_env, JavaObject, JniValue};
-use jni::objects::JValue;
+use crate::tag::TagHandler;
+use crate::Component;
+use jni::objects::{JObject, JValue};
 use uuid::Uuid;
 use crate::Result;
 use crate::InstanceContainer;
@@ -53,19 +55,22 @@ impl Entity {
         let et_class = env.find_class("net/minestom/server/entity/EntityType")?;
         let field_name = entity_type.to_java_field();
         // Retrieve the static field matching our variant
-        let et_value = env.get_static_field(
+        let et_obj = env
+        .get_static_field(
             et_class,
             field_name,
-            "Lnet/minestom/server/entity/EntityType;"
-        )?;
+            "Lnet/minestom/server/entity/EntityType;",
+        )?
+        .l()?;
 
         // Instantiate the Java Entity with the given type
         let entity_class = env.find_class("net/minestom/server/entity/Entity")?;
-        let et_obj = et_value.l()?;
         let entity_obj = env.new_object(
             entity_class,
             "(Lnet/minestom/server/entity/EntityType;)V",
-            &[JValue::Object(&et_obj)],
+            &[
+                JValue::Object(&JObject::from(et_obj)),
+            ],
         )?;
 
         Ok(Self {
@@ -224,5 +229,61 @@ impl Entity {
         let rust_str: String = env.get_string((&jstr).into())?.into();
         Ok(EntityType::from_java_name(&rust_str)
             .unwrap())
+    }
+
+    /// Gets the custom name of this entity, if set.
+    pub fn get_custom_name(&self) -> Result<Option<Component>> {
+        let mut env = get_env()?;
+        let name_val = env.call_method(
+            self.inner.as_obj()?,
+            "getCustomName",
+            "()Lnet/kyori/adventure/text/Component;",
+            &[],
+        )?;
+        let obj = name_val.l()?;
+        if obj.is_null() {
+            Ok(None)
+        } else {
+            Ok(Some(Component::from_java_object(JavaObject::from_env(&mut env, obj)?)))
+        }
+    }
+
+    /// Sets the custom name of this entity.
+    pub fn set_custom_name(&self, name: &Component) -> Result<()> {
+        // Use Entity's helper to accept JniValue directly
+        let mut env = get_env()?;
+        let jval = name.as_jvalue(&mut env)?;
+        self.inner.call_void_method(
+            "setCustomName",
+            "(Lnet/kyori/adventure/text/Component;)V",
+            &[jval],
+        )?;
+        Ok(())
+    }
+
+    /// Sets whether the custom name is visible.
+    pub fn set_custom_name_visible(&self, visible: bool) -> Result<()> {
+        let mut env = get_env()?;
+        env.call_method(
+            self.inner.as_obj()?,
+            "setCustomNameVisible",
+            "(Z)V",
+            &[JValue::Bool(visible as u8)],
+        )?;
+        Ok(())
+    }
+    
+    pub fn tag_handler(&self) -> Result<TagHandler> {
+        let mut env = get_env()?;
+        // Chiama Java: entity.tagHandler()
+        let th_obj = env.call_method(
+            self.inner.as_obj()?,
+            "tagHandler",
+            "()Lnet/minestom/server/tag/TagHandler;",
+            &[],
+        )?.l()?;
+        Ok(TagHandler {
+            inner: JavaObject::from_env(&mut env, th_obj)?,
+        })
     }
 }

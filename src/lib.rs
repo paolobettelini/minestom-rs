@@ -16,6 +16,7 @@ pub mod collision;
 pub mod server;
 pub mod sound;
 pub mod text;
+pub mod tag;
 
 pub use error::MinestomError;
 pub type Result<T> = std::result::Result<T, MinestomError>;

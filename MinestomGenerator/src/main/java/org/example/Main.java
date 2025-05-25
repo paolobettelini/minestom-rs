@@ -1,5 +1,9 @@
 package org.example;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+
+import net.minestom.server.entity.EntityType;
 
 public class Main {
 
@@ -14,10 +18,15 @@ public class Main {
             System.err.println("Failed to load native library: " + e.getMessage());
             e.printStackTrace();
         }
+
+        // INIT EntityType
+        doNothing(EntityType.ARMOR_STAND);
     }
 
+    static void doNothing(EntityType et) {}
+
     public static native void startServer();
-    
+
     public static void main(String[] args) {
         startServer();
     }
