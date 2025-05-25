@@ -1,3 +1,4 @@
+use crate::collision::BoundingBox;
 use crate::Result;
 use crate::item::ItemStack;
 use crate::jni_utils::{JavaObject, JniValue, get_env};
@@ -87,6 +88,18 @@ impl ItemDisplay {
             &[],
         )?;
 
+        Ok(())
+    }
+
+    pub fn set_bounding_box(&self, box_: &BoundingBox) -> Result<()> {
+        let mut env = get_env()?;
+        let entity_obj = self.inner.as_obj()?;
+        env.call_method(
+            entity_obj,
+            "setBoundingBox",
+            "(Lnet/minestom/server/collision/BoundingBox;)V",
+            &[JValue::Object(&box_.as_java().as_obj()?)]
+        )?;
         Ok(())
     }
 

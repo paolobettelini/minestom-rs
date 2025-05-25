@@ -12,6 +12,7 @@ pub mod jni_utils;
 pub mod material;
 pub mod resource_pack;
 pub mod scheduler;
+pub mod collision;
 pub mod server;
 pub mod sound;
 pub mod text;
