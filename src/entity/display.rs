@@ -14,61 +14,45 @@ impl ItemDisplay {
         let mut env = get_env()?;
         
         // Get the EntityType for ItemDisplay
-        let entity_type_class = env.find_class("net/minestom/server/entity/EntityTypes")?;
+        let entity_type_class = env.find_class("net/minestom/server/entity/EntityType")?;
         let entity_type = env.get_static_field(
             entity_type_class,
             "ITEM_DISPLAY",
             "Lnet/minestom/server/entity/EntityType;"
         )?;
+        
+        // Create a new Entity with ITEM_DISPLAY type
+        let entity_class = env.find_class("net/minestom/server/entity/Entity")?;
         let entity_type_obj = entity_type.l()?;
-
-        // Create the Entity instance
-        let display_class = env.find_class("net/minestom/server/entity/Entity")?;
-        let display_obj = env.new_object(
-            display_class,
+        let entity = env.new_object(
+            entity_class,
             "(Lnet/minestom/server/entity/EntityType;)V",
             &[JValue::Object(&entity_type_obj)],
         )?;
 
-        // Get the MetadataHolder class
-        let metadata_holder_class = env.find_class("net/minestom/server/entity/MetadataHolder")?;
-
-        // Create MetadataHolder with the entity
-        let metadata_holder = env.new_object(
-            &metadata_holder_class,
-            "(Lnet/minestom/server/entity/Entity;)V",
-            &[JValue::Object(&display_obj)],
+        // Get the ItemDisplayMeta
+        let meta = env.call_method(
+            &entity,
+            "getEntityMeta",
+            "()Lnet/minestom/server/entity/metadata/EntityMeta;",
+            &[],
         )?;
 
-        // Create ItemDisplayMeta instance
-        let item_display_meta_class = env.find_class("net/minestom/server/entity/metadata/display/ItemDisplayMeta")?;
-        let item_display_meta = env.new_object(
-            item_display_meta_class,
-            "(Lnet/minestom/server/entity/Entity;Lnet/minestom/server/entity/MetadataHolder;)V",
-            &[
-                JValue::Object(&display_obj),
-                JValue::Object(&metadata_holder),
-            ],
-        )?;
-
-        // Set the item stack
+        // Set the item stack on the meta
         env.call_method(
-            &item_display_meta,
+            meta.l()?,
             "setItemStack",
             "(Lnet/minestom/server/item/ItemStack;)V",
             &[JValue::Object(&item.as_obj().as_obj()?)],
         )?;
 
-        // Create the ItemDisplay instance
-        let display = Self {
-            inner: JavaObject::from_env(&mut env, display_obj)?,
-        };
-
-        Ok(display)
+        Ok(Self {
+            inner: JavaObject::from_env(&mut env, entity)?,
+        })
     }
 
-    /// Sets the position of this ItemDisplay
-    pub fn set_position(&self, x: f64, y: f64, z: f64) -> Result<()> {
+    /// Sets the instance and position of this ItemDisplay in one call
+    pub fn spawn(&self, instance: &InstanceContainer, x: f64, y: f64, z: f64) -> Result<()> {
         let mut env = get_env()?;
         
         // Create Pos object
@@ -83,36 +67,17 @@ impl ItemDisplay {
             ],
         )?;
 
-        // Call teleport which returns a CompletableFuture
-        let future = self.inner.call_object_method(
-            "teleport",
-            "(Lnet/minestom/server/coordinate/Pos;)Ljava/util/concurrent/CompletableFuture;",
-            &[JniValue::Object(pos)],
-        )?;
-
-        // Wait for the teleport to complete
-        env.call_method(
-            future.as_obj()?,
-            "join",
-            "()Ljava/lang/Object;",
-            &[],
-        )?;
-
-        Ok(())
-    }
-
-    /// Sets the instance this ItemDisplay is in
-    pub fn set_instance(&self, instance: &InstanceContainer) -> Result<()> {
-        let mut env = get_env()?;
-        
-        // Call setInstance which returns a CompletableFuture
+        // Call setInstance with position which returns a CompletableFuture
         let future = self.inner.call_object_method(
             "setInstance",
-            "(Lnet/minestom/server/instance/Instance;)Ljava/util/concurrent/CompletableFuture;",
-            &[JniValue::Object(instance.inner()?)]
+            "(Lnet/minestom/server/instance/Instance;Lnet/minestom/server/coordinate/Pos;)Ljava/util/concurrent/CompletableFuture;",
+            &[
+                JniValue::Object(instance.inner()?),
+                JniValue::Object(pos),
+            ],
         )?;
 
-        // Call join() on the future to wait for it to complete
+        // Wait for the operation to complete
         env.call_method(
             future.as_obj()?,
             "join",

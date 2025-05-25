@@ -139,7 +139,7 @@ impl Server for ParkourServer {
             let player = event.player()?;
             let raw_msg = event.raw_message()?;
             let username = player.get_username()?;
-            let formatted = component!("[{}] {}, comunque siamo nel parkour.", username, raw_msg);
+            let formatted = component!("[{}] {}", username, raw_msg);
 
             // Send to all players
             let players = uuids_ref.read();

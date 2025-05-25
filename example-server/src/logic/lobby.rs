@@ -127,11 +127,10 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
                 // Add piano to the instance
                 // TODO not working
                 let piano = ItemStack::of(Material::Diamond)?
-                    .with_amount(1)?;
-                    //.with_custom_model_data("piano")?;
+                    .with_amount(1)?
+                    .with_custom_model_data("piano")?;
                 let display = ItemDisplay::new(&piano)?;
-                display.set_instance(&spawn_instance)?;
-                display.set_position(1817.5, 42.0, 1044.5)?;
+                display.spawn(&instance, 1817.5, 42.0, 1044.5)?;
                 display.set_scale(10.0, 10.0, 10.0)?;
 
                 // Get player's inventory and set the helmet
@@ -164,7 +163,7 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
             let player = event.player()?;
             let raw_msg = event.raw_message()?;
             let username = player.get_username()?;
-            let formatted = component!("[{}] {}, comunque siamo nella lobby.", username, raw_msg);
+            let formatted = component!("[{}] {}", username, raw_msg);
 
             // Send to all players
             let players = players_ref.read();
