@@ -8,7 +8,7 @@ public class CommandExecutorCallback implements CommandExecutor {
     private final long callbackId;
 
     public CommandExecutorCallback(long callbackId) {
-        System.out.println("Constructor called with: " + callbackId);
+        //System.out.println("Constructor called with: " + callbackId);
         this.callbackId = callbackId;
     }
 

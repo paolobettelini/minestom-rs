@@ -14,7 +14,7 @@ public class ConsumerCallback implements InvocationHandler, Consumer<Object> {
     }
 
     public ConsumerCallback(long nativeCallbackPtr) {
-        System.out.println("Constructor called with: " + nativeCallbackPtr);
+        //System.out.println("Constructor called with: " + nativeCallbackPtr);
         this.nativeCallbackPtr = nativeCallbackPtr;
     }
 

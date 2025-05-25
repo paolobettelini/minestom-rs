@@ -24,6 +24,7 @@ use minestom_rs::{
     item::{InventoryHolder, ItemStack},
     material::Material,
     resource_pack::{ResourcePackInfo, ResourcePackRequest, ResourcePackRequestBuilder},
+    entity::ItemDisplay
 };
 use parking_lot::RwLock;
 use std::collections::HashMap;
@@ -75,6 +76,15 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
         let spawn_command = SpawnCommand::new(self.map.clone(), players.clone());
         spawn_command.register(&command_manager)?;
 
+        // Add piano to the instance
+        // TODO not working
+        let piano = ItemStack::of(Material::Diamond)?
+            .with_amount(1)?
+            .with_custom_model_data("piano")?;
+        let display = ItemDisplay::new(&piano)?;
+        display.set_instance(&instance)?;
+        display.set_position(1817.5, 41.0, 1044.5)?;
+
         let map_clone = self.map.clone();
         event_handler.listen(move |spawn_event: &PlayerSpawnEvent| {
             info!("Player spawn event triggered");
@@ -111,14 +121,9 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
                     .get_attribute(Attribute::StepHeight)?
                     .set_base_value(step_height_scale(scale))?;
 
-                // Create a diamond sombrero
-                let sombrero = ItemStack::of(Material::Diamond)?
-                    .with_amount(1)?
-                    .with_custom_model_data("piano")?;
-
                 // Get player's inventory and set the helmet
                 let inventory = player.get_inventory()?;
-                inventory.set_helmet(&sombrero)?;
+                inventory.set_helmet(&piano)?;
 
                 // Send [+] join message to everyone
                 let players = players.read();

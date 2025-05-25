@@ -1,6 +1,10 @@
 use std::fmt;
 
 pub mod player;
+pub mod display;
+
+pub use player::*;
+pub use display::*;
 
 use crate::Result;
 use crate::attribute::{Attribute, AttributeInstance};
