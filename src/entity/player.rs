@@ -55,3 +55,4 @@ impl InventoryHolder for crate::entity::Player {
         PlayerInventory::from_java(inventory.as_obj()?)
     }
 }
+ 

@@ -1,5 +1,7 @@
 use minestom_rs::Result;
 use std::sync::Arc;
+use minestom_rs::PlayerEntityInteractEvent;
+use minestom_rs::PlayerMoveEvent;
 use minestom_rs::entity::display::ItemDisplay;
 use minestom_rs::item::ItemStack;
 use minestom_rs::material::Material;
@@ -24,6 +26,7 @@ pub fn spawn_piano(instance: Arc<InstanceContainer>, x: f64, y: f64, z: f64, len
     
     let display = ItemDisplay::new(&piano)?;
     display.set_no_gravity(true)?;
+    display.set_interactable(true)?;
     display.set_scale(scale as f32, scale as f32, scale as f32)?;
     display.spawn(
         &instance,
@@ -35,6 +38,11 @@ pub fn spawn_piano(instance: Arc<InstanceContainer>, x: f64, y: f64, z: f64, len
     )?;
 
     let event_node = instance.event_node()?;
+
+    event_node.listen(move |event: &PlayerEntityInteractEvent| {
+        log::info!("Player interacted with piano");
+        Ok(())
+    })?;
 
     Ok(())
 }

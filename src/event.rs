@@ -255,6 +255,22 @@ pub trait Event: Any {
 pub mod player {
     use super::*;
 
+    #[derive(Debug, Clone, Copy)]
+    pub enum Hand {
+        Main,
+        Off,
+    }
+
+    impl Hand {
+        fn from_java(value: i32) -> Option<Self> {
+            match value {
+                0 => Some(Hand::Main),
+                1 => Some(Hand::Off),
+                _ => None,
+            }
+        }
+    }
+
     /// Event fired when a player spawns in the server.
     pub struct PlayerSpawnEvent {
         inner: JavaObject,
@@ -634,6 +650,75 @@ pub mod player {
             "net/minestom/server/event/player/PlayerChatEvent"
         }
 
+        fn new(inner: JavaObject) -> Self {
+            Self { inner }
+        }
+    }
+
+    pub struct PlayerEntityInteractEvent {
+        inner: JavaObject,
+    }
+
+    impl PlayerEntityInteractEvent {
+        /// Gets the player who performed the interaction.
+        pub fn get_player(&self) -> Result<Player> {
+            let mut env = get_env()?;
+            let result = env.call_method(
+                self.inner.as_obj()?,
+                "getPlayer",
+                "()Lnet/minestom/server/entity/Player;",
+                &[],
+            )?;
+            Ok(Player::new(JavaObject::from_env(&mut env, result.l()?)?))
+        }
+    
+        /// Gets the entity that was interacted with.
+        pub fn get_target(&self) -> Result<crate::entity::entity::Entity> {
+            let mut env = get_env()?;
+            let result = env.call_method(
+                self.inner.as_obj()?,
+                "getTarget",
+                "()Lnet/minestom/server/entity/Entity;",
+                &[],
+            )?;
+            Ok(crate::entity::entity::Entity::new(JavaObject::from_env(&mut env, result.l()?)?))
+        }
+    
+        /// Gets which hand was used (main or off).
+        pub fn get_hand(&self) -> Result<Hand> {
+            let mut env = get_env()?;
+            let result = env.call_method(
+                self.inner.as_obj()?,
+                "getHand",
+                "()Lnet/minestom/server/event/player/PlayerEntityInteractEvent$Hand;",
+                &[],
+            )?;
+            let hand_obj = result.l()?;
+            // call ordinal() on the enum
+            let ord = env.call_method(hand_obj, "ordinal", "()I", &[])?.i()?;
+            Hand::from_java(ord).ok_or_else(|| MinestomError::EventError(format!("Unknown hand ordinal {}", ord)))
+        }
+    
+        /// Gets the block‐ or entity‐hit position as a Pos.
+        pub fn get_interact_position(&self) -> Result<Pos> {
+            let mut env = get_env()?;
+            let result = env.call_method(
+                self.inner.as_obj()?,
+                "getInteractPosition",
+                "()Lnet/minestom/server/coordinate/Pos;",
+                &[],
+            )?;
+            Ok(Pos::new(JavaObject::from_env(&mut env, result.l()?)?))
+        }
+    }
+
+    impl Event for PlayerEntityInteractEvent {
+        fn as_any(&self) -> &dyn Any {
+            self
+        }
+        fn java_class_name() -> &'static str {
+            "net/minestom/server/event/player/PlayerEntityInteractEvent"
+        }
         fn new(inner: JavaObject) -> Self {
             Self { inner }
         }

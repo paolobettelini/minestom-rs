@@ -2,6 +2,7 @@ use std::fmt;
 
 pub mod player;
 pub mod display;
+pub mod entity;
 
 pub use player::*;
 pub use display::*;
