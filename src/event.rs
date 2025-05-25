@@ -699,16 +699,19 @@ pub mod player {
             Hand::from_java(ord).ok_or_else(|| MinestomError::EventError(format!("Unknown hand ordinal {}", ord)))
         }
     
-        /// Gets the block‐ or entity‐hit position as a Pos.
-        pub fn get_interact_position(&self) -> Result<Pos> {
+        /// Gets the block- or entity-hit position as a `Position`.
+        pub fn get_interact_position(&self) -> Result<Position> {
             let mut env = get_env()?;
+            // Call getInteractPosition, returns a Point which is actually a Pos implementation
             let result = env.call_method(
                 self.inner.as_obj()?,
                 "getInteractPosition",
-                "()Lnet/minestom/server/coordinate/Pos;",
+                "()Lnet/minestom/server/coordinate/Point;",
                 &[],
             )?;
-            Ok(Pos::new(JavaObject::from_env(&mut env, result.l()?)?))
+            let point_obj = result.l()?;
+            // Wrap as Pos
+            Ok(Pos::new(JavaObject::from_env(&mut env, point_obj)?).to_position()?)
         }
     }
 
