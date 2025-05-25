@@ -180,6 +180,20 @@ impl Player {
         )
     }
 
+    pub fn play_sound_at(&self, sound: &Sound, x: f64, y: f64, z: f64) -> Result<()> {
+        let mut env = get_env()?;
+        self.inner.call_void_method(
+            "playSound",
+            "(Lnet/kyori/adventure/sound/Sound;DDD)V",
+            &[
+                sound.as_jvalue(&mut env)?,
+                JniValue::Double(x),
+                JniValue::Double(y),
+                JniValue::Double(z),
+            ],
+        )
+    }
+
     /// Gets the current position of the player.
     pub fn get_position(&self) -> Result<Position> {
         let mut env = get_env()?;

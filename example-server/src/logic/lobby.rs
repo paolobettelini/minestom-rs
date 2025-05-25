@@ -89,7 +89,7 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
                 let welcome_msg = component!("Welcome to the server, {}!", username)
                     .gold()
                     .bold();
-                let info_msg = component!("Enjoy your adventure!").green().italic();
+                let info_msg = component!(" ").green().italic();
                 let message = welcome_msg.chain_newline(info_msg);
 
                 player.send_message(&message)?;

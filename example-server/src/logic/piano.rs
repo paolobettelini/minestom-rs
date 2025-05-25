@@ -107,18 +107,20 @@ pub fn spawn_piano(
                     let normalized_tile_coordinate = tile_coordinate / tiles_length;
                     // This goes from 0 to 1+ the extra depends on how well
                     // the last armorstand fits but we can just discard it.
-                    if normalized_tile_coordinate < tile_coordinate {
+                    if normalized_tile_coordinate < 1.0 {
                         // There are 15 tiles of alternating width such as abababa
                         // with the following sizes
                         let tiles = 15;
                         let a = 0.077;
                         let b = 0.064;
-                        let index = find_tile_index(normalized_tile_coordinate, tiles, a, b);
+                        let res = find_tile_index(normalized_tile_coordinate, tiles, a, b);
 
-                        if let Some(tile_index) = index {
+                        if let Some((tile_index, tile_middle_point)) = res {
                             let avg = (a + b) * 0.5; // it doesn't need to be precise.
-                            // where to spawn the note + sound source
-                            let note_offset = offset2 - armor_width * 0.5 + tile_coordinate;
+                            // where to spawn the note + sound source (middle point of the tile)
+                            // we need to de-normalized
+                            let denormalized_middle_point = tile_middle_point * tiles_length;
+                            let note_offset = offset2 - armor_width * 0.5 + denormalized_middle_point;
                             let offset1 = scale * 0.1; // closer to the player
                             let source_x = x + (sin * offset1) - (cos * note_offset);
                             let source_y = y - offsetY + 2.0;
@@ -159,26 +161,27 @@ fn play_tile(
     let normalized_pitch = (tile_index as f32) / ((tiles - 1) as f32);
     let pitch = normalized_pitch * 1.5 + 0.5;
     for player in players.read().values() {
-        player.play_sound(&Sound::sound(
+        player.play_sound_at(&Sound::sound(
             SoundEvent::BlockNoteBlockBass,
             Source::Record,
             1.0,
             pitch,
-        )?)?;
+        )?, x, y, z)?;
 
         player.send_packet(&particle_packet)?;
     }
     Ok(())
 }
 
-fn find_tile_index(x: f64, tiles: usize, a: f64, b: f64) -> Option<usize> {
+/// Returns the tile index and the middle point of the title
+fn find_tile_index(x: f64, tiles: usize, a: f64, b: f64) -> Option<(usize, f64)> {
     let mut pos = 0.0;
 
     for i in 0..tiles {
         let length = if i % 2 == 0 { a } else { b };
         if x >= pos && x <= pos + length {
             // Check is x is in the current tile
-            return Some(i);
+            return Some((i, (pos + length * 0.5)));
         }
         pos += length;
     }
