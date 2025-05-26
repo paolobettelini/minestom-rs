@@ -62,6 +62,10 @@ impl LobbyMap for LobbyMap2 {
             Ok(())
         })?;
 
+        // Achievement honey I shrunk myself
+        // (1764, 26, 1177) - (1762, 26, 1177)
+        // le scritte del cartello non si vedono, nemmeno l'itemframe completamente.
+
         piano::spawn_piano(self.instance.clone(), players, 1777.4, 28.0, 1056.0, -90.0)?;
 
         let cloud = ItemStack::of(Material::Diamond)?

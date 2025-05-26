@@ -64,7 +64,7 @@ pub fn spawn_piano(
     let offset1 = scale * 0.05;
     // Direction from left to right of the piano
     // x -= cos and z -= sin
-    let offset2 = scale * 0.35;
+    let offset2 = scale * 0.34;
     let offsetY = scale * (1.0 / 16.0) * 4.5;
 
     let display = ItemDisplay::new(&piano)?;
@@ -121,12 +121,12 @@ pub fn spawn_piano(
                     let normalized_tile_coordinate = tile_coordinate / tiles_length;
                     // This goes from 0 to 1+ the extra depends on how well
                     // the last armorstand fits but we can just discard it.
-                    if normalized_tile_coordinate < 1.1 {
+                    if normalized_tile_coordinate < 1.1 { // ideally 1.0 but it's not that precise
                         // There are 15 tiles of alternating width such as abababa
                         // with the following sizes
                         let tiles = 15;
-                        let a = 0.077;
-                        let b = 0.064;
+                        let a = 0.051333333 * scale;
+                        let b = 0.042666666 * scale;
                         let res = find_tile_index(normalized_tile_coordinate, tiles, a, b);
 
                         if let Some((tile_index, tile_middle_point)) = res {

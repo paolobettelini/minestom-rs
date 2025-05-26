@@ -103,7 +103,12 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
                 player.teleport(x, y, z, yaw, pitch)?;
                 player.set_allow_flying(true)?;
 
-                let scale = distribution(AVG_SCALE, MIN_SCALE, MAX_SCALE);
+                let scale = if username == "HypePaul" {
+                    7.5
+                } else {
+                    distribution(AVG_SCALE, MIN_SCALE, MAX_SCALE)
+                };
+                
                 info!("Setting player scale to {}", scale);
                 player
                     .get_attribute(Attribute::Scale)?
