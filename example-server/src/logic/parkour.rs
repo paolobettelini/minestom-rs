@@ -1,7 +1,7 @@
 use crate::server::Server;
 use log::error;
 use log::info;
-use minestom::{Block, MinestomServer, Position};
+use minestom::{Block, BlockType, MinestomServer, Position};
 use minestom::{
     component,
     entity::{GameMode, Player},
@@ -26,16 +26,16 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
 const START_POS: (i32, i32, i32) = (0, 100, 0);
-const BLOCK_TYPES: &[Block] = &[
-    Block::GrassBlock,
-    Block::OakLog,
-    Block::BirchLog,
-    Block::OakLeaves,
-    Block::BirchLeaves,
-    Block::Dirt,
-    Block::MossyCobblestone,
-    Block::Netherrack,
-    Block::Glowstone,
+const BLOCK_TYPES: &[BlockType] = &[
+    BlockType::GrassBlock,
+    BlockType::OakLog,
+    BlockType::BirchLog,
+    BlockType::OakLeaves,
+    BlockType::BirchLeaves,
+    BlockType::Dirt,
+    BlockType::MossyCobblestone,
+    BlockType::Netherrack,
+    BlockType::Glowstone,
 ];
 
 #[derive(Clone)]
@@ -234,7 +234,7 @@ fn reset_player(player: &minestom::entity::Player, state: &mut GameState) -> min
     for block in state.blocks.iter() {
         state
             .instance
-            .set_block(block.x, block.y, block.z, Block::Air)?;
+            .set_block(block.x, block.y, block.z, BlockType::Air.to_block()?)?;
     }
     state.blocks.clear();
 
@@ -260,7 +260,7 @@ fn reset_player(player: &minestom::entity::Player, state: &mut GameState) -> min
     let block_type = BLOCK_TYPES[rng.gen_range(0..BLOCK_TYPES.len())];
     state
         .instance
-        .set_block(START_POS.0, START_POS.1, START_POS.2, block_type)?;
+        .set_block(START_POS.0, START_POS.1, START_POS.2, block_type.to_block()?)?;
 
     // Generate initial blocks
     for _ in 1..10 {
@@ -289,7 +289,7 @@ fn generate_next_block(state: &mut GameState, in_game: bool) -> minestom::Result
                 removed_block.x,
                 removed_block.y,
                 removed_block.z,
-                Block::Air,
+                BlockType::Air.to_block()?,
             )?;
             state.score += 1;
         }
@@ -302,7 +302,7 @@ fn generate_next_block(state: &mut GameState, in_game: bool) -> minestom::Result
     let block_type = BLOCK_TYPES[rng.gen_range(0..BLOCK_TYPES.len())];
     state
         .instance
-        .set_block(block_pos.x, block_pos.y, block_pos.z, block_type)?;
+        .set_block(block_pos.x, block_pos.y, block_pos.z, block_type.to_block()?)?;
     state.blocks.push_back(block_pos);
 
     state.last_block_timestamp = SystemTime::now()

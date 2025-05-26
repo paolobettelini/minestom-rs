@@ -104,7 +104,7 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
                 player.set_allow_flying(true)?;
 
                 let scale = distribution(AVG_SCALE, MIN_SCALE, MAX_SCALE);
-                let scale = 0.2;
+                // let scale = 0.2;
                 
                 info!("Setting player scale to {}", scale);
                 player

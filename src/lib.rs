@@ -22,7 +22,7 @@ pub mod text;
 pub use error::MinestomError;
 pub type Result<T> = std::result::Result<T, MinestomError>;
 pub use attribute::{Attribute, AttributeInstance};
-pub use block::Block;
+pub use block::{Block, BlockType};
 pub use coordinate::{Pos, Position};
 use event::inventory::InventoryPreClickEvent;
 pub use server::MinestomServer;

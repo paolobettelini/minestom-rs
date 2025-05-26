@@ -1,9 +1,11 @@
 use crate::logic::piano;
 use crate::maps::LobbyMap;
 use minestom_rs::InstanceContainer;
+use minestom_rs::BlockType;
 use minestom_rs::Player;
 use minestom_rs::PlayerMoveEvent;
 use minestom_rs::instance::InstanceManager;
+use minestom_rs::Block;
 use parking_lot::RwLock;
 use rand::Rng;
 use std::collections::HashMap;
@@ -62,6 +64,13 @@ impl LobbyMap for LobbyMap2 {
             Ok(())
         })?;
 
+        let block = BlockType::NoteBlock.to_block()?
+            .with_property("note", "1")?
+            .with_property("powered", "false")?;
+        self
+            .instance
+            .set_block(1761, 35, 1044, block)?;
+
         // Achievement honey I shrunk myself
         // (1764, 26, 1177) - (1762, 26, 1177)
         // le scritte del cartello non si vedono, nemmeno l'itemframe completamente.
@@ -79,6 +88,7 @@ impl LobbyMap for LobbyMap2 {
         let clouds = vec![
             cloud!("cloud1"),
             cloud!("cloud2"),
+            cloud!("cloud3"),
         ];
 
         let coords = vec![

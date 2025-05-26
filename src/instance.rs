@@ -1,6 +1,7 @@
+use crate::block::Block;
 use crate::MinestomError;
 use crate::Result;
-use crate::block::Block;
+use crate::block::BlockType;
 use crate::coordinate::Position;
 use crate::entity::Player;
 use crate::event::EventNode;
@@ -274,7 +275,7 @@ impl InstanceContainer {
     /// * `z` - The z coordinate
     /// * `block` - The block to set
     pub fn set_block(&self, x: i32, y: i32, z: i32, block: Block) -> Result<()> {
-        let block_obj = block.to_java_block()?;
+        let block_obj = block.inner.clone();
 
         self.inner.call_void_method(
             "setBlock",
