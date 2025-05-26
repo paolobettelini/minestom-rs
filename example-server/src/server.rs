@@ -104,8 +104,9 @@ pub async fn run_server() -> minestom::Result<()> {
 
                 // Send resource pack
                 let uuid = uuid::Uuid::new_v4();
-                let url = "https://github.com/paolobettelini/minestom-rs/raw/refs/heads/main/example-server/resourcepack.zip";
-                let hash = "2176cdd9c46aba882a4386b92c43d68dcc966256";
+                //let url = "https://github.com/paolobettelini/minestom-rs/raw/refs/heads/main/example-server/resourcepack.zip";
+                let url = "http://127.0.0.1:6543/resourcepack.zip";
+                let hash = "1413baef8a4ddcc0ab1b033098f928f7601e65b9";
 
                 let pack_info = ResourcePackInfo::new(uuid, url, hash)?;
                 let request = ResourcePackRequestBuilder::new()?

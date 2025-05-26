@@ -17,6 +17,13 @@
           "type": "minecraft:model",
           "model": "thecrown:item/piano"
         }
+      },
+      {
+        "when": "cloud",
+        "model": {
+          "type": "minecraft:model",
+          "model": "thecrown:item/cloud"
+        }
       }
     ],
     "fallback": {

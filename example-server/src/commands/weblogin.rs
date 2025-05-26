@@ -42,6 +42,14 @@ impl Command for WebloginCommand {
         let player = sender.as_player()?;
 
         player.send_message(&message)?;
+        let position = player.get_position()?;
+        // print the position rounded to the nearest integer
+        info!(
+            "XXXXX: ({}, {}, {}, 0.0, 0.0)",
+            position.x.round(),
+            position.y.round() - 1.0,
+            position.z.round()
+        );
 
         Ok(())
     }

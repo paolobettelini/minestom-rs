@@ -13,8 +13,8 @@ public class CommandConditionCallback implements CommandCondition {
 
     @Override
     public boolean canUse(CommandSender sender, String commandString) {
-        System.out.println("Checking command condition with callback id: " + callbackId);
-        System.out.println("Command string: " + commandString);
+        //System.out.println("Checking command condition with callback id: " + callbackId);
+        //System.out.println("Command string: " + commandString);
         return checkCondition(callbackId, sender);
     }
 

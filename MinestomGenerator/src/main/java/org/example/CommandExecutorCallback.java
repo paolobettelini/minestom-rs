@@ -14,7 +14,7 @@ public class CommandExecutorCallback implements CommandExecutor {
 
     @Override
     public void apply(CommandSender sender, CommandContext context) {
-        System.out.println("Executing command with callback id: " + callbackId);
+        //System.out.println("Executing command with callback id: " + callbackId);
         executeCommand(callbackId, sender, context);
     }
 

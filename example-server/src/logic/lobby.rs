@@ -104,7 +104,6 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
                 player.set_allow_flying(true)?;
 
                 let scale = distribution(AVG_SCALE, MIN_SCALE, MAX_SCALE);
-                let scale = 15.0;
                 info!("Setting player scale to {}", scale);
                 player
                     .get_attribute(Attribute::Scale)?
@@ -131,7 +130,7 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
 
                 // Get player's inventory and set the helmet
                 let item =
-                    ItemStack::of(Material::BoltArmorTrimSmithingTemplate)?.with_amount(1)?;
+                    ItemStack::of(Material::Apple)?.with_amount(1)?;
                 let inventory = player.get_inventory()?;
                 inventory.set_helmet(&item)?;
 
