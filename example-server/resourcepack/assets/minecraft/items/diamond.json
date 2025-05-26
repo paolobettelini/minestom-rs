@@ -19,10 +19,17 @@
         }
       },
       {
-        "when": "cloud",
+        "when": "cloud1",
         "model": {
           "type": "minecraft:model",
-          "model": "thecrown:item/cloud"
+          "model": "thecrown:item/cloud1"
+        }
+      },
+      {
+        "when": "cloud2",
+        "model": {
+          "type": "minecraft:model",
+          "model": "thecrown:item/cloud2"
         }
       }
     ],

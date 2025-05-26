@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "note=0,powered=false": { "model": "thecrown:block/zanite_block" },
+    "note=1,powered=false": { "model": "minecraft:block/note_block" }
+  }
+}

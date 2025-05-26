@@ -68,9 +68,18 @@ impl LobbyMap for LobbyMap2 {
 
         piano::spawn_piano(self.instance.clone(), players, 1777.4, 28.0, 1056.0, -90.0)?;
 
-        let cloud = ItemStack::of(Material::Diamond)?
-            .with_amount(1)?
-            .with_custom_model_data("cloud")?;
+        macro_rules! cloud {
+            ($name:expr) => {
+                ItemStack::of(Material::Diamond)?
+                    .with_amount(1)?
+                    .with_custom_model_data($name)?
+            };
+        }
+
+        let clouds = vec![
+            cloud!("cloud1"),
+            cloud!("cloud2"),
+        ];
 
         let coords = vec![
             (1725.0, 58.0, 1005.0),
@@ -169,6 +178,8 @@ impl LobbyMap for LobbyMap2 {
             (1804.0, 19.0, 976.0),
         ];
         for coord in coords {
+            let cloud = clouds[rand::thread_rng().gen_range(0..clouds.len())].clone();
+            // TODO: can we instantiate ItemDisplay just once?
             let display = ItemDisplay::new(&cloud)?;
             display.set_no_gravity(true)?;
             let yaw = rand::thread_rng().gen_range(0..4) as f32 * 90.0;
