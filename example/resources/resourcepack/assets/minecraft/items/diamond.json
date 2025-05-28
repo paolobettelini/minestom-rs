@@ -1,0 +1,41 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "cases": [
+      {
+        "when": "piano",
+        "model": {
+          "type": "minecraft:model",
+          "model": "thecrown:item/piano"
+        }
+      },
+      {
+        "when": "cloud1",
+        "model": {
+          "type": "minecraft:model",
+          "model": "thecrown:item/cloud1"
+        }
+      },
+      {
+        "when": "cloud2",
+        "model": {
+          "type": "minecraft:model",
+          "model": "thecrown:item/cloud2"
+        }
+      },
+      {
+        "when": "cloud3",
+        "model": {
+          "type": "minecraft:model",
+          "model": "thecrown:item/cloud3"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/diamond"
+    }
+  }
+}
