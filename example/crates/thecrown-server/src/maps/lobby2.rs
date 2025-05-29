@@ -6,7 +6,9 @@ use minestom::Player;
 use minestom::PlayerMoveEvent;
 use minestom::instance::InstanceManager;
 use minestom::Block;
+use world_seed_entity_engine::generic_model::GenericModel;
 use parking_lot::RwLock;
+use minestom::Pos;
 use rand::Rng;
 use std::collections::HashMap;
 use minestom::material::Material;
@@ -33,6 +35,19 @@ impl LobbyMap2 {
     }
 }
 
+///////////////////////////
+struct BulbasaurModel;
+impl GenericModel for BulbasaurModel {
+    fn get_id(&self) -> String {
+        println!("BulbasaurModel get_id called");
+        "bulbasaur/bulbasaur.bbmodel".to_string()
+    }
+
+    fn init(&self, instance: InstanceContainer, pos: Pos) {
+        println!("BulbasaurModel init called");
+    }
+}
+
 impl LobbyMap for LobbyMap2 {
     fn spawn_coordinate(&self) -> (f64, f64, f64, f32, f32) {
         let spawns = vec![
@@ -50,6 +65,9 @@ impl LobbyMap for LobbyMap2 {
 
     fn init(&self, players: Arc<RwLock<HashMap<Uuid, Player>>>) -> minestom::Result<()> {
         let event_node = self.instance.event_node()?;
+
+        let model = BulbasaurModel;
+        model.init((*self.instance).clone(), Pos::of(1817.5, 41.0, 1044.5, 90.0, 0.0));
 
         let map = self.clone();
         event_node.listen(move |move_event: &PlayerMoveEvent| {

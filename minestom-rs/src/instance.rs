@@ -23,7 +23,7 @@ pub struct InstanceContainer {
 }
 
 impl InstanceManager {
-    pub(crate) fn new(inner: JavaObject) -> Self {
+    pub fn new(inner: JavaObject) -> Self {
         Self { inner }
     }
 
@@ -54,7 +54,7 @@ impl InstanceManager {
 }
 
 impl InstanceContainer {
-    pub(crate) fn new(inner: JavaObject) -> Self {
+    pub fn new(inner: JavaObject) -> Self {
         Self { inner }
     }
 

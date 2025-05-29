@@ -100,4 +100,4 @@ java -Djava.library.path=$CARGO_TARGET_DIR/release -jar build/libs/app.jar
 # TODO
 
 Event and command callbacks should be async. InstanceContainer, SharedInstance etc dovrebbero avere gli stessi metodi comuni.
-Lo scheduler non funziona, dà errore JNI.
+Lo scheduler non funziona, dà errore JNI. Remove Arc<InstanceContainer>

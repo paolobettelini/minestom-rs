@@ -45,8 +45,8 @@ impl ModelEngine {
 
         // Wrap it into an InputStreamReader
         let reader_obj = env.new_object(
-            "java/io/InputStreamReader",            // class
-            "(Ljava/io/InputStream;)V",             // ctor signature
+            "java/io/InputStreamReader",
+            "(Ljava/io/InputStream;)V",
             &[JValue::Object(&fis_obj)],
         )?;
 
@@ -62,9 +62,9 @@ impl ModelEngine {
         )?;
         let path_obj = env
             .call_static_method(
-                "java/nio/file/Paths",                                   // class
-                "get",                                                   // method
-                "(Ljava/lang/String;[Ljava/lang/String;)Ljava/nio/file/Path;", // sig
+                "java/nio/file/Paths",
+                "get",
+                "(Ljava/lang/String;[Ljava/lang/String;)Ljava/nio/file/Path;",
                 &[
                     JValue::Object(&j_models_str),
                     JValue::Object(&empty_str_array),
@@ -74,9 +74,9 @@ impl ModelEngine {
 
         // Call ModelEngine.loadMappings(Reader, Path)
         env.call_static_method(
-            "net/worldseed/multipart/ModelEngine",  // class
-            "loadMappings",                         // static method
-            "(Ljava/io/Reader;Ljava/nio/file/Path;)V", // signature: Reader, Path -> void
+            "net/worldseed/multipart/ModelEngine",
+            "loadMappings",
+            "(Ljava/io/Reader;Ljava/nio/file/Path;)V",
             &[
                 JValue::Object(&reader_obj),
                 JValue::Object(&path_obj),
