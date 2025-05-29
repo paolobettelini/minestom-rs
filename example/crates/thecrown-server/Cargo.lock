@@ -2198,10 +2198,12 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "sha1",
  "thiserror",
  "tokio",
  "uuid",
  "walkdir",
+ "world-seed-entity-engine",
  "zip",
 ]
 
@@ -2902,6 +2904,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f42320e61fe2cfd34354ecb597f86f413484a798ba44a8ca1165c58d42da6c1"
 dependencies = [
  "bitflags 2.9.1",
+]
+
+[[package]]
+name = "world-seed-entity-engine"
+version = "0.1.0"
+dependencies = [
+ "minestom",
 ]
 
 [[package]]

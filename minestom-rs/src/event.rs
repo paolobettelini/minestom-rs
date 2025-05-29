@@ -888,7 +888,7 @@ pub use self::player::PlayerDisconnectEvent;
 pub use self::server::ServerListPingEvent;
 
 #[unsafe(no_mangle)]
-pub unsafe extern "system" fn Java_org_example_PredicateCallback_testPlayer(
+pub unsafe extern "system" fn Java_rust_minestom_PredicateCallback_testPlayer(
     env: *mut jni::sys::JNIEnv,
     _this: jni::objects::JObject,
     callback_id: jni::sys::jlong,

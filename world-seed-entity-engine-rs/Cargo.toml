@@ -1,0 +1,7 @@
+[package]
+name = "world-seed-entity-engine"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+minestom = { path = "../minestom-rs" }

@@ -132,7 +132,7 @@ pub fn init() -> Result<MinestomServer> {
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "system" fn Java_org_example_ConsumerCallback_invokeNativeCallback(
+pub unsafe extern "system" fn Java_rust_minestom_ConsumerCallback_invokeNativeCallback(
     env: *mut JNIEnv,
     _this: jobject,
     callback_id: jlong,

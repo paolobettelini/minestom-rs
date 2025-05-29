@@ -23,7 +23,7 @@ pub struct LobbyMap2 {
 impl LobbyMap2 {
     pub fn new(instance_manager: &InstanceManager) -> minestom::Result<Self> {
         let anvil_path =
-            String::from("/home/paolo/Desktop/github/minestom-rs/example-server/anvil/lobby2");
+            String::from("/home/paolo/Desktop/github/minestom-rs/example/resources/anvil/lobby2");
         let instance = instance_manager.create_instance_container()?;
         let instance = Arc::new(instance);
         instance.load_anvil_world(anvil_path)?;

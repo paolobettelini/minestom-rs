@@ -13,7 +13,7 @@ public class App {
             System.err.println("Failed to load native library: " + e.getMessage());
             e.printStackTrace();
         }
-
+        
         // INIT EntityType
         doNothing(EntityType.ARMOR_STAND);
         doNothing(Particle.HEART);

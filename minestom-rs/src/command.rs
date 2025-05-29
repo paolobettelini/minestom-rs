@@ -271,7 +271,7 @@ impl CommandBuilder {
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "system" fn Java_org_example_CommandExecutorCallback_executeCommand(
+pub unsafe extern "system" fn Java_rust_minestom_CommandExecutorCallback_executeCommand(
     env: *mut jni::sys::JNIEnv,
     _class: jni::objects::JClass,
     callback_id: jni::sys::jlong,
@@ -352,7 +352,7 @@ pub unsafe extern "system" fn Java_org_example_CommandExecutorCallback_executeCo
 }
 
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_org_example_CommandConditionCallback_checkCondition(
+unsafe extern "system" fn Java_rust_minestom_CommandConditionCallback_checkCondition(
     env: *mut jni::sys::JNIEnv,
     _class: jni::objects::JClass,
     callback_id: jni::sys::jlong,

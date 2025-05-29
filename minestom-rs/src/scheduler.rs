@@ -300,7 +300,7 @@ impl Drop for TaskBuilder {
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "system" fn Java_org_example_TaskExecutorCallback_executeTask(
+pub unsafe extern "system" fn Java_rust_minestom_TaskExecutorCallback_executeTask(
     env: *mut jni::sys::JNIEnv,
     _this: jni::objects::JObject,
     callback_id: jni::sys::jlong,
