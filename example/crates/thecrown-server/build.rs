@@ -25,7 +25,7 @@ fn main() {
     let bbmodel_dir = resources.join(bbmodel_dir_name);
     let resourcepack_gen_dir = out_dir.join(resourcepack_gen_name);
     let models_dir = out_dir.join(models_dir_name);
-    let mappings_path = resources.join(model_mapping_name);
+    let mappings_path = out_dir.join(model_mapping_name);
 
     if resourcepack_dir.exists() {
         // Cleanse directories

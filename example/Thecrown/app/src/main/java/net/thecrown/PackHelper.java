@@ -1,7 +1,10 @@
 package net.thecrown;
 
 import net.worldseed.resourcepack.PackBuilder;
+import org.apache.commons.io.FileUtils;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -30,15 +33,18 @@ public class PackHelper {
     
         try {
             var config = PackBuilder.Generate(bbmodelDir, resourcepackDir, modelsDir);
-        } catch (ExceptionInInitializerError e) {
-            // This will produce an error because the class ModelEngine contains
-            // a static block using MinecraftServer, which here is not started.
-            // We do not care.
+            FileUtils.writeStringToFile(
+                mappings.toFile(),
+                config.modelMappings(),
+                Charset.defaultCharset()
+            );
         } catch (Exception e) {
             System.err.println("Error generating pack: " + e.getMessage());
             e.printStackTrace();
             System.exit(1);
+            return;
         }
+
     }
 
     public static void main(String[] args) {

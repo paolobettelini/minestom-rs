@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 minestom = { path = "../minestom-rs" }
+jni = { version = "0.21", features = ["invocation"] }

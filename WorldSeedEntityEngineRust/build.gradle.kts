@@ -14,7 +14,9 @@ repositories {
 
 dependencies {
     api("com.github.Minestom:Minestom:f62abc722f")
-    api("com.github.AtlasEngineCa:WorldSeedEntityEngine:d670b24")
+
+    //api("com.github.AtlasEngineCa:WorldSeedEntityEngine:d670b24")
+    implementation(files("/home/paolo/Downloads/WorldSeedEntityEngine/build/libs/wsee.jar"))
 
     implementation("commons-io:commons-io:2.11.0")
     implementation("org.zeroturnaround:zt-zip:1.8")

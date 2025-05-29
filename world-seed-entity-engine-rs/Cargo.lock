@@ -905,5 +905,6 @@ dependencies = [
 name = "world-seed-entity-engine"
 version = "0.1.0"
 dependencies = [
+ "jni",
  "minestom",
 ]

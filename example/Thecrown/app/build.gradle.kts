@@ -13,6 +13,7 @@ repositories {
 dependencies {
     implementation(files("../../../MinestomRust/build/libs/minestom-library.jar"))
     implementation(files("../../../WorldSeedEntityEngineRust/build/libs/wsee-library.jar"))
+    implementation("commons-io:commons-io:2.11.0")
 }
 
 java {

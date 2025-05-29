@@ -4,7 +4,9 @@ use crate::logic::parkour::ParkourServer;
 use crate::magic_values::*;
 use crate::maps::LobbyMap2;
 use crate::maps::map::LobbyMap;
+use std::path::Path;
 use crate::mojang::get_skin_and_signature;
+use world_seed_entity_engine::model_engine::ModelEngine;
 use log::{error, info};
 use minestom::MinestomServer;
 use minestom as minestom;
@@ -55,6 +57,14 @@ pub async fn run_server() -> minestom::Result<()> {
     let instance_manager = minecraft_server.instance_manager()?;
     let command_manager = minecraft_server.command_manager()?;
 
+    // WorldEntitySeedEngine initialization
+    let output_dir = "/home/paolo/Desktop/github/minestom-rs/example/resources/output";
+    let output_dir = Path::new(output_dir);
+    let models_dir = output_dir.join("models");
+    let mappings = output_dir.join("model_mapping.json");
+    ModelEngine::set_model_material(Material::MagmaCream)?;
+    ModelEngine::load_mappings(mappings, models_dir)?;
+
     // FAKE:
     // create parkour server
     let server = ParkourServer::default();
@@ -104,7 +114,6 @@ pub async fn run_server() -> minestom::Result<()> {
 
                 // Send resource pack
                 let uuid = uuid::Uuid::new_v4();
-                //let url = "https://github.com/paolobettelini/minestom-rs/raw/refs/heads/main/example-server/resourcepack.zip";
                 let url = "http://127.0.0.1:6543/resourcepack.zip";
                 let hash = include_str!(concat!(env!("OUT_DIR"), "/resourcepack.sha1"));
 
