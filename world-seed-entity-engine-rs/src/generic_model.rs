@@ -11,13 +11,18 @@ pub trait GenericModel: Send + Sync + 'static {
     fn init(&self, instance: InstanceContainer, pos: Pos);
 }
 
+#[derive(Clone)]
+pub struct WseeModel {
+    inner: JavaObject,
+}
+
 // Registry mapping callback IDs to user implementations
 static MODEL_REGISTRY: Lazy<RwLock<HashMap<u64, Arc<dyn GenericModel>>>> =
     Lazy::new(|| RwLock::new(HashMap::new()));
 static NEXT_MODEL_ID: AtomicU64 = AtomicU64::new(1);
 
 // Hardcoded Java subclass for callbacks
-const JAVA_CLASS: &str = "net/worldseed/multipart/GenericModelCallback";
+const JAVA_CLASS: &str = "rust/wsee/GenericModelCallback";
 
 /// JNI callback for getId()
 #[unsafe(no_mangle)]
@@ -56,7 +61,7 @@ Java_rust_wsee_GenericModelCallback_nativeInit(
 }
 
 /// Registers a Rust `GenericModel` impl and returns the Java callback object
-pub fn create_generic_model_callback<M: GenericModel>(model_impl: M) -> Result<JavaObject> {
+pub fn create_wsee_model<M: GenericModel>(model_impl: M) -> Result<WseeModel> {
     // Allocate a new callback ID
     let id = NEXT_MODEL_ID.fetch_add(1, Ordering::SeqCst);
     MODEL_REGISTRY.write().unwrap().insert(id, Arc::new(model_impl));
@@ -68,5 +73,24 @@ pub fn create_generic_model_callback<M: GenericModel>(model_impl: M) -> Result<J
         "(J)V",
         &[JValue::Long(id as i64)],
     )?;
-    JavaObject::from_env(&mut env, obj)
+    Ok(WseeModel {
+        inner: JavaObject::from_env(&mut env, obj)?,
+    })
+}
+
+impl WseeModel {
+    pub fn init(&self, instance: InstanceContainer, pos: Pos) -> Result<()> {
+        let mut env = get_env()?;
+        env.call_method(
+            &self.inner.as_obj()?,
+            "init",
+            "(Lnet/minestom/server/instance/Instance;Lnet/minestom/server/coordinate/Pos;)V",
+            &[
+                JValue::Object(&instance.inner()?), // your InstanceContainer
+                JValue::Object(&pos.inner()?), // your Pos
+            ],
+        )?;
+
+        Ok(())
+    }
 }

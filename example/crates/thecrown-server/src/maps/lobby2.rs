@@ -3,6 +3,7 @@ use crate::maps::LobbyMap;
 use minestom::InstanceContainer;
 use minestom::BlockType;
 use minestom::Player;
+use world_seed_entity_engine::generic_model::create_wsee_model;
 use minestom::PlayerMoveEvent;
 use minestom::instance::InstanceManager;
 use minestom::Block;
@@ -67,7 +68,8 @@ impl LobbyMap for LobbyMap2 {
         let event_node = self.instance.event_node()?;
 
         let model = BulbasaurModel;
-        model.init((*self.instance).clone(), Pos::of(1817.5, 41.0, 1044.5, 90.0, 0.0));
+        let model = create_wsee_model(model)?;
+        model.init((*self.instance).clone(), Pos::of(1817.5, 41.0, 1044.5, 90.0, 0.0))?;
 
         let map = self.clone();
         event_node.listen(move |move_event: &PlayerMoveEvent| {

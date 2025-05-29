@@ -1,3 +1,5 @@
+use jni::objects::JObject;
+
 use crate::Result;
 use crate::jni_utils::{JavaObject, JniValue, get_env};
 
@@ -41,6 +43,7 @@ impl Pos {
         Self { inner }
     }
 
+
     pub fn of(x: f64, y: f64, z: f64, yaw: f32, pitch: f32) -> Self {
         let mut env = get_env().unwrap();
         let pos_class = env.find_class("net/minestom/server/coordinate/Pos").unwrap();
@@ -69,7 +72,7 @@ impl Pos {
         Ok(Position::new(x, y, z))
     }
 
-    pub fn inner(&self) -> &JavaObject {
-        &self.inner
+    pub fn inner(&self) -> Result<JObject<'_>> {
+        self.inner.as_obj()
     }
 }
