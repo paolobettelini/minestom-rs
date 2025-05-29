@@ -25,7 +25,7 @@ public class Common {
      * @param path     Path to the Anvil world directory
      */
     public static void loadAnvil(InstanceContainer instance, String path) {
-        System.out.println("Loading world from Anvil... please wait");
+        //System.out.println("Loading world from Anvil... please wait");
 
         instance.setChunkSupplier(LightingChunk::new);
         instance.setChunkLoader(new net.minestom.server.instance.anvil.AnvilLoader(path));
@@ -33,12 +33,12 @@ public class Common {
         var chunks = new ArrayList<CompletableFuture<Chunk>>();
         ChunkRange.chunksInRange(0, 0, 32, (x, z) -> chunks.add(instance.loadChunk(x, z)));
         CompletableFuture.runAsync(() -> {
-            System.out.println("Loading world lightning... please wait");
+            //System.out.println("Loading world lightning... please wait");
             CompletableFuture.allOf(chunks.toArray(CompletableFuture[]::new)).join();
             LightingChunk.relight(instance, instance.getChunks());
-            System.out.println("All done!");
+            System.out.println("Loaded lightning!");
         });
 
-        System.out.println("World loading completed successfully!");
+        //System.out.println("World loading completed successfully!");
     }
 } 

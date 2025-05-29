@@ -7,7 +7,7 @@ public class CommandConditionCallback implements CommandCondition {
     private final long callbackId;
 
     public CommandConditionCallback(long callbackId) {
-        System.out.println("Creating CommandConditionCallback with id: " + callbackId);
+        //System.out.println("Creating CommandConditionCallback with id: " + callbackId);
         this.callbackId = callbackId;
     }
 

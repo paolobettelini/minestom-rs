@@ -33,6 +33,7 @@ public class GenericModelCallback extends GenericModelImpl {
     @Override
     public void init(@Nullable Instance instance,
                      @NotNull Pos position) {
+        System.out.println("GenericModelCallback.init called with instance: " + instance + ", position: " + position);
         nativeInit(callbackId, instance, position);
         super.init(instance, position, 1.0f);
     }
