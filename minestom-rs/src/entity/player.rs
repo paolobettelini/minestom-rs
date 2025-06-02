@@ -58,6 +58,10 @@ impl crate::entity::Player {
     pub fn refresh_commands(&self) -> Result<()> {
         self.inner.call_void_method("refreshCommands", "()V", &[])
     }
+
+    pub fn inner(&self) -> Result<JObject<'_>> {
+        self.inner.as_obj()
+    }
 }
 
 impl InventoryHolder for crate::entity::Player {

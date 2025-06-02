@@ -3,9 +3,11 @@ use std::fmt;
 pub mod display;
 pub mod entity;
 pub mod player;
+pub mod entity_creature;
 
 pub use display::*;
 pub use player::*;
+pub use entity_creature::*;
 
 use crate::Result;
 use crate::attribute::{Attribute, AttributeInstance};

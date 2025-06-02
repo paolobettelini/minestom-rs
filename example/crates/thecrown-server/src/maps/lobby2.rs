@@ -1,7 +1,10 @@
 use crate::logic::piano;
 use crate::maps::LobbyMap;
+use minestom::entity::EntityCreature;
 use minestom::InstanceContainer;
+use minestom::entity::create_entity_creature;
 use minestom::BlockType;
+use minestom::entity::entity::EntityType;
 use minestom::Player;
 use world_seed_entity_engine::generic_model::create_wsee_model;
 use minestom::PlayerMoveEvent;
@@ -9,6 +12,7 @@ use minestom::instance::InstanceManager;
 use minestom::Block;
 use world_seed_entity_engine::generic_model::GenericModel;
 use parking_lot::RwLock;
+use minestom::event::player::PlayerSpawnEvent;
 use minestom::Pos;
 use rand::Rng;
 use std::collections::HashMap;
@@ -35,19 +39,6 @@ impl LobbyMap2 {
     }
 }
 
-///////////////////////////
-struct BulbasaurModel;
-impl GenericModel for BulbasaurModel {
-    fn get_id(&self) -> String {
-        println!("BulbasaurModel get_id called");
-        "bulbasaur/bulbasaur.bbmodel".to_string()
-    }
-
-    fn init(&self, instance: InstanceContainer, pos: Pos) {
-        println!("BulbasaurModel init called");
-    }
-}
-
 impl LobbyMap for LobbyMap2 {
     fn spawn_coordinate(&self) -> (f64, f64, f64, f32, f32) {
         let spawns = vec![
@@ -66,6 +57,9 @@ impl LobbyMap for LobbyMap2 {
     fn init(&self, players: Arc<RwLock<HashMap<Uuid, Player>>>) -> minestom::Result<()> {
         let event_node = self.instance.event_node()?;
 
+        //let entity = BulbasaurMob;
+        //let entity = create_entity_creature(EntityType::Zombie, entity)?;
+
         let model = BulbasaurModel;
         let model = create_wsee_model(model)?;
         model.init(self.instance.clone(), Pos::of(1817.5, 41.0, 1044.5, 90.0, 0.0))?;
@@ -79,6 +73,13 @@ impl LobbyMap for LobbyMap2 {
                         player.teleport(x, y, z, yaw, pitch)?;
                     }
                 }
+            }
+            Ok(())
+        })?;
+
+        event_node.listen(move |spawn_event: &PlayerSpawnEvent| {
+            if let Ok(player) = spawn_event.player() {
+                model.add_viewer(&player)?;
             }
             Ok(())
         })?;
@@ -229,5 +230,41 @@ impl LobbyMap for LobbyMap2 {
 
     fn instance(&self) -> InstanceContainer {
         self.instance.clone()
+    }
+}
+
+
+
+///////////////////////////
+#[derive(Clone)]
+struct BulbasaurModel;
+impl GenericModel for BulbasaurModel {
+    fn get_id(&self) -> String {
+        println!("BulbasaurModel get_id called");
+        "bulbasaur/bulbasaur.bbmodel".to_string()
+    }
+
+    fn init(&self, instance: InstanceContainer, pos: Pos) {
+        println!("BulbasaurModel init called");
+    }
+}
+
+struct BulbasaurMob;
+impl EntityCreature for BulbasaurMob {
+    fn update_new_viewer(&self, player: Player) {
+        // e.g. send a packet, change an internal state, etc.
+        println!("New viewer joined: {:?}", player);
+    }
+    fn update_old_viewer(&self, player: Player) {
+        println!("Viewer left: {:?}", player);
+    }
+
+    fn tick(&self, time: i64) {
+        // Called every tick
+        // println!("Tick at {}", time);
+    }
+    
+    fn remove(&self) {
+        println!("Creature is being removed");
     }
 }

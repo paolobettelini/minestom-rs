@@ -1,6 +1,6 @@
 use jni::sys::{jlong, jobject, jstring};
 use jni::{JNIEnv, objects::{JClass, JObject, JValue}, sys};
-use minestom::{InstanceContainer, Pos};
+use minestom::{InstanceContainer, Player, Pos};
 use minestom::{jni_utils::{get_env, JavaObject}, Result};
 use std::{collections::HashMap, sync::{Arc, RwLock, atomic::{AtomicU64, Ordering}}};
 use once_cell::sync::Lazy;
@@ -91,6 +91,20 @@ impl WseeModel {
             ],
         )?;
 
+        Ok(())
+    }
+
+    pub fn add_viewer(&self, player: &Player) -> Result<()> {
+        let mut env = get_env()?;
+
+        env.call_method(
+            &self.inner.as_obj()?,
+            "addViewer",
+            "(Lnet/minestom/server/entity/Player;)Z",
+            &[
+                JValue::Object(&player.inner()?)
+            ],
+        )?;
         Ok(())
     }
 }

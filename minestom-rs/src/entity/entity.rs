@@ -12,15 +12,17 @@ use uuid::Uuid;
 pub enum EntityType {
     ArmorStand,
     Player,
+    Zombie,
     // ...
 }
 
 impl EntityType {
     /// Returns the corresponding Java static field name for this variant.
-    fn to_java_field(&self) -> &'static str {
+    pub fn to_java_field(&self) -> &'static str {
         match self {
             EntityType::ArmorStand => "ARMOR_STAND",
             EntityType::Player => "PLAYER",
+            EntityType::Zombie => "ZOMBIE",
             // ...
         }
     }
@@ -29,6 +31,7 @@ impl EntityType {
         match name {
             "minecraft:armor_stand" => Some(EntityType::ArmorStand),
             "minecraft:player" => Some(EntityType::Player),
+            "minecraft:zombie" => Some(EntityType::Zombie),
             _ => panic!("Unknown EntityType: {}", name),
         }
     }
