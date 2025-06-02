@@ -12,7 +12,7 @@ use minestom::instance::InstanceManager;
 use minestom::Block;
 use world_seed_entity_engine::generic_model::GenericModel;
 use parking_lot::RwLock;
-use minestom::event::player::PlayerSpawnEvent;
+use minestom::event::player::{PlayerSpawnEvent, PlayerDisconnectEvent};
 use minestom::Pos;
 use rand::Rng;
 use std::collections::HashMap;
@@ -77,9 +77,18 @@ impl LobbyMap for LobbyMap2 {
             Ok(())
         })?;
 
+        let m = model.clone();
         event_node.listen(move |spawn_event: &PlayerSpawnEvent| {
             if let Ok(player) = spawn_event.player() {
-                model.add_viewer(&player)?;
+                m.add_viewer(&player)?;
+            }
+            Ok(())
+        })?;
+
+        let m = model.clone();
+        event_node.listen(move |disconnect: &PlayerDisconnectEvent| {
+            if let Ok(player) = disconnect.player() {
+                m.remove_viewer(&player)?;
             }
             Ok(())
         })?;
@@ -240,12 +249,10 @@ impl LobbyMap for LobbyMap2 {
 struct BulbasaurModel;
 impl GenericModel for BulbasaurModel {
     fn get_id(&self) -> String {
-        println!("BulbasaurModel get_id called");
         "bulbasaur/bulbasaur.bbmodel".to_string()
     }
 
     fn init(&self, instance: InstanceContainer, pos: Pos) {
-        println!("BulbasaurModel init called");
     }
 }
 

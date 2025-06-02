@@ -107,4 +107,19 @@ impl WseeModel {
         )?;
         Ok(())
     }
+
+    pub fn remove_viewer(&self, player: &Player) -> Result<()> {
+        let mut env = get_env()?;
+
+        env.call_method(
+            &self.inner.as_obj()?,
+            "removeViewer",
+            "(Lnet/minestom/server/entity/Player;)Z",
+            &[
+                JValue::Object(&player.inner()?)
+            ],
+        )?;
+        
+        Ok(())
+    }
 }
