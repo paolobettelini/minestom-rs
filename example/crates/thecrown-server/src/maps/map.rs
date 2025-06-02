@@ -10,5 +10,5 @@ pub trait LobbyMap: Clone + Send + Sync + 'static {
 
     fn init(&self, players: Arc<RwLock<HashMap<Uuid, Player>>>) -> minestom::Result<()>;
 
-    fn instance(&self) -> Arc<InstanceContainer>;
+    fn instance(&self) -> InstanceContainer;
 }

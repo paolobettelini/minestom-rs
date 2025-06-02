@@ -20,7 +20,7 @@ use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct LobbyMap2 {
-    pub instance: Arc<InstanceContainer>,
+    pub instance: InstanceContainer,
 }
 
 impl LobbyMap2 {
@@ -28,7 +28,6 @@ impl LobbyMap2 {
         let anvil_path =
             String::from("/home/paolo/Desktop/github/minestom-rs/example/resources/anvil/lobby2");
         let instance = instance_manager.create_instance_container()?;
-        let instance = Arc::new(instance);
         instance.load_anvil_world(anvil_path)?;
         Ok(Self {
             instance: instance.clone(),
@@ -69,7 +68,7 @@ impl LobbyMap for LobbyMap2 {
 
         let model = BulbasaurModel;
         let model = create_wsee_model(model)?;
-        model.init((*self.instance).clone(), Pos::of(1817.5, 41.0, 1044.5, 90.0, 0.0))?;
+        model.init(self.instance.clone(), Pos::of(1817.5, 41.0, 1044.5, 90.0, 0.0))?;
 
         let map = self.clone();
         event_node.listen(move |move_event: &PlayerMoveEvent| {
@@ -228,7 +227,7 @@ impl LobbyMap for LobbyMap2 {
         Ok(())
     }
 
-    fn instance(&self) -> Arc<InstanceContainer> {
+    fn instance(&self) -> InstanceContainer {
         self.instance.clone()
     }
 }

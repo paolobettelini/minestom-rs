@@ -31,7 +31,7 @@ fn read_and_increment_counter() -> u32 {
 }
 
 pub fn spawn_piano(
-    instance: Arc<InstanceContainer>,
+    instance: InstanceContainer,
     players: Arc<RwLock<HashMap<Uuid, Player>>>,
     x: f64,
     y: f64,
