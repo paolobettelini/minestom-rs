@@ -1,6 +1,6 @@
-use crate::block::Block;
 use crate::MinestomError;
 use crate::Result;
+use crate::block::Block;
 use crate::block::BlockType;
 use crate::coordinate::Position;
 use crate::entity::Player;

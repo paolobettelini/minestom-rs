@@ -12,6 +12,7 @@ mod favicon;
 mod logic;
 mod magic_values;
 mod maps;
+mod models;
 mod mojang;
 mod server;
 

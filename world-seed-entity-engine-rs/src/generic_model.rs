@@ -1,9 +1,22 @@
 use jni::sys::{jlong, jobject, jstring};
-use jni::{JNIEnv, objects::{JClass, JObject, JValue}, sys};
+use jni::{
+    JNIEnv,
+    objects::{JClass, JObject, JValue},
+    sys,
+};
 use minestom::{InstanceContainer, Player, Pos};
-use minestom::{jni_utils::{get_env, JavaObject}, Result};
-use std::{collections::HashMap, sync::{Arc, RwLock, atomic::{AtomicU64, Ordering}}};
+use minestom::{
+    Result,
+    jni_utils::{JavaObject, get_env},
+};
 use once_cell::sync::Lazy;
+use std::{
+    collections::HashMap,
+    sync::{
+        Arc, RwLock,
+        atomic::{AtomicU64, Ordering},
+    },
+};
 
 /// Trait to implement in Rust for any GenericModelImpl subclass
 pub trait GenericModel: Send + Sync + 'static {
@@ -26,15 +39,15 @@ const JAVA_CLASS: &str = "rust/wsee/GenericModelCallback";
 
 /// JNI callback for getId()
 #[unsafe(no_mangle)]
-pub unsafe extern "system" fn
-Java_rust_wsee_GenericModelCallback_nativeGetId(
+pub unsafe extern "system" fn Java_rust_wsee_GenericModelCallback_nativeGetId(
     raw_env: *mut sys::JNIEnv,
     _class: JClass,
     callback_id: jlong,
 ) -> jstring {
     let env = unsafe { JNIEnv::from_raw(raw_env).unwrap() };
     let id = MODEL_REGISTRY
-        .read().unwrap()
+        .read()
+        .unwrap()
         .get(&(callback_id as u64))
         .and_then(|m| Some(m.get_id()))
         .unwrap_or_default();
@@ -43,8 +56,7 @@ Java_rust_wsee_GenericModelCallback_nativeGetId(
 
 /// JNI callback for init(...)
 #[unsafe(no_mangle)]
-pub unsafe extern "system" fn
-Java_rust_wsee_GenericModelCallback_nativeInit(
+pub unsafe extern "system" fn Java_rust_wsee_GenericModelCallback_nativeInit(
     raw_env: *mut sys::JNIEnv,
     _class: JClass,
     callback_id: jlong,
@@ -64,15 +76,14 @@ Java_rust_wsee_GenericModelCallback_nativeInit(
 pub fn create_wsee_model<M: GenericModel>(model_impl: M) -> Result<WseeModel> {
     // Allocate a new callback ID
     let id = NEXT_MODEL_ID.fetch_add(1, Ordering::SeqCst);
-    MODEL_REGISTRY.write().unwrap().insert(id, Arc::new(model_impl));
+    MODEL_REGISTRY
+        .write()
+        .unwrap()
+        .insert(id, Arc::new(model_impl));
 
     // Construct the Java GenericModelCallback(long callbackId)
     let mut env = get_env()?;
-    let obj = env.new_object(
-        JAVA_CLASS,
-        "(J)V",
-        &[JValue::Long(id as i64)],
-    )?;
+    let obj = env.new_object(JAVA_CLASS, "(J)V", &[JValue::Long(id as i64)])?;
     Ok(WseeModel {
         inner: JavaObject::from_env(&mut env, obj)?,
     })
@@ -87,7 +98,7 @@ impl WseeModel {
             "(Lnet/minestom/server/instance/Instance;Lnet/minestom/server/coordinate/Pos;)V",
             &[
                 JValue::Object(&instance.inner()?), // your InstanceContainer
-                JValue::Object(&pos.inner()?), // your Pos
+                JValue::Object(&pos.inner()?),      // your Pos
             ],
         )?;
 
@@ -101,9 +112,7 @@ impl WseeModel {
             &self.inner.as_obj()?,
             "addViewer",
             "(Lnet/minestom/server/entity/Player;)Z",
-            &[
-                JValue::Object(&player.inner()?)
-            ],
+            &[JValue::Object(&player.inner()?)],
         )?;
         Ok(())
     }
@@ -115,11 +124,9 @@ impl WseeModel {
             &self.inner.as_obj()?,
             "removeViewer",
             "(Lnet/minestom/server/entity/Player;)Z",
-            &[
-                JValue::Object(&player.inner()?)
-            ],
+            &[JValue::Object(&player.inner()?)],
         )?;
-        
+
         Ok(())
     }
 }

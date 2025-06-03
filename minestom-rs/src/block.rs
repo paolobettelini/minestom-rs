@@ -1,7 +1,7 @@
 use jni::objects::JString;
 
 use crate::Result;
-use crate::jni_utils::{get_env, JavaObject, JniValue};
+use crate::jni_utils::{JavaObject, JniValue, get_env};
 
 #[derive(Debug, Clone)]
 pub struct Block {
@@ -596,9 +596,7 @@ impl BlockType {
             .l()?;
         let obj = JavaObject::from_env(&mut env, block)?;
 
-        Ok(Block {
-            inner: obj,
-        })
+        Ok(Block { inner: obj })
     }
 
     fn to_field_name(&self) -> &'static str {

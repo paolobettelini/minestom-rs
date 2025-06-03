@@ -1,15 +1,17 @@
+use crate::jni_utils::{JavaObject, get_env};
+use crate::{InstanceContainer, Player, Pos};
 use jni::sys::{jboolean, jlong, jobject};
-use jni::{JNIEnv, objects::{JClass, JObject, JValue}};
-use crate::{
-    InstanceContainer,
-    Pos,
-    Player,
+use jni::{
+    JNIEnv,
+    objects::{JClass, JObject, JValue},
 };
-use crate::jni_utils::{get_env, JavaObject};
 use once_cell::sync::Lazy;
 use std::{
     collections::HashMap,
-    sync::{Arc, RwLock, atomic::{AtomicU64, Ordering}},
+    sync::{
+        Arc, RwLock,
+        atomic::{AtomicU64, Ordering},
+    },
 };
 
 use crate::entity::entity::EntityType;
@@ -49,45 +51,45 @@ const JAVA_CLASS: &str = "rust/minestom/EntityCreatureCallback";
 
 /// JNI callback: updateNewViewer(Player)
 #[unsafe(no_mangle)]
-pub unsafe extern "system" fn
-Java_rust_minestom_EntityCreatureCallback_nativeUpdateNewViewer(
+pub unsafe extern "system" fn Java_rust_minestom_EntityCreatureCallback_nativeUpdateNewViewer(
     raw_env: *mut jni::sys::JNIEnv,
     _class: JClass,
     callback_id: jlong,
-    j_player: jni::objects::JObject,
+    j_player: jobject,
 ) {
     let env = unsafe { JNIEnv::from_raw(raw_env).unwrap() };
     let registry = CREATURE_REGISTRY.read().unwrap();
     if let Some(creature) = registry.get(&(callback_id as u64)) {
-        // Wrap the Java Player into our Rust Player wrapper
         let mut env = env;
-        let rust_player = Player::new(JavaObject::from_env(&mut env, j_player).unwrap());
+        let rust_player = Player::new(
+            JavaObject::from_env(&mut env, unsafe { JObject::from_raw(j_player) }).unwrap(),
+        );
         creature.update_new_viewer(rust_player);
     }
 }
 
 /// JNI callback: updateOldViewer(Player)
 #[unsafe(no_mangle)]
-pub unsafe extern "system" fn
-Java_rust_minestom_EntityCreatureCallback_nativeUpdateOldViewer(
+pub unsafe extern "system" fn Java_rust_minestom_EntityCreatureCallback_nativeUpdateOldViewer(
     raw_env: *mut jni::sys::JNIEnv,
     _class: JClass,
     callback_id: jlong,
-    j_player: jni::objects::JObject,
+    j_player: jobject,
 ) {
     let env = unsafe { JNIEnv::from_raw(raw_env).unwrap() };
     let registry = CREATURE_REGISTRY.read().unwrap();
     if let Some(creature) = registry.get(&(callback_id as u64)) {
         let mut env = env;
-        let rust_player = Player::new(JavaObject::from_env(&mut env, j_player).unwrap());
+        let rust_player = Player::new(
+            JavaObject::from_env(&mut env, unsafe { JObject::from_raw(j_player) }).unwrap(),
+        );
         creature.update_old_viewer(rust_player);
     }
 }
 
 /// JNI callback: tick(long time)
 #[unsafe(no_mangle)]
-pub unsafe extern "system" fn
-Java_rust_minestom_EntityCreatureCallback_nativeTick(
+pub unsafe extern "system" fn Java_rust_minestom_EntityCreatureCallback_nativeTick(
     raw_env: *mut jni::sys::JNIEnv,
     _class: JClass,
     callback_id: jlong,
@@ -127,8 +129,7 @@ Java_rust_minestom_EntityCreatureCallback_nativeDamage(
 
 /// JNI callback: remove()
 #[unsafe(no_mangle)]
-pub unsafe extern "system" fn
-Java_rust_minestom_EntityCreatureCallback_nativeRemove(
+pub unsafe extern "system" fn Java_rust_minestom_EntityCreatureCallback_nativeRemove(
     _raw_env: *mut jni::sys::JNIEnv,
     _class: JClass,
     callback_id: jlong,
@@ -148,24 +149,24 @@ Java_rust_minestom_EntityCreatureCallback_nativeRemove(
 /// # Returns
 /// A `MinestomEntityCreature` holding the Java `EntityCreatureCallback` instance.
 ///
-pub fn create_entity_creature<C: EntityCreature>(entity_type: EntityType, creature_impl: C) -> crate::Result<MinestomEntityCreature> {
-    // Allocate a new callback ID
+pub fn create_entity_creature(
+    entity_type: EntityType,
+    creature_impl: Arc<dyn EntityCreature>,
+) -> crate::Result<MinestomEntityCreature> {
+    // 1) Generate a new callback ID and insert the Arc<dyn EntityCreature> into the registry:
     let id = NEXT_CREATURE_ID.fetch_add(1, Ordering::SeqCst);
-    CREATURE_REGISTRY.write().unwrap().insert(id, Arc::new(creature_impl));
+    CREATURE_REGISTRY.write().unwrap().insert(id, creature_impl);
 
+    // 2) Grab a JNIEnv so we can construct the Java side:
     let mut env = get_env()?;
-    // Lookup the Java-side EntityType enum constant
-    let java_entity_type = {
-        // e.g. if `entity_type.to_java_field()` → "ZOMBIE",
-        // we fetch net.minestom.server.entity.EntityType.ZOMBIE
-        let et_class = "net/minestom/server/entity/EntityType";
-        let field_name = entity_type.to_java_field();
-        let sig = "Lnet/minestom/server/entity/EntityType;";
-        env.get_static_field(et_class, field_name, sig)?
-            .l()?
-    };
 
-    // Construct the Java EntityCreatureCallback(long callbackId, EntityType type)
+    // 3) Look up the Java-side EntityType enum (e.g. EntityType.ZOMBIE):
+    let et_class = "net/minestom/server/entity/EntityType";
+    let field_name = entity_type.to_java_field();
+    let sig = "Lnet/minestom/server/entity/EntityType;";
+    let java_entity_type = env.get_static_field(et_class, field_name, sig)?.l()?;
+
+    // 4) Construct the Java `new EntityCreatureCallback(long callbackId, EntityType type)`
     let obj = env.new_object(
         JAVA_CLASS,
         "(JLnet/minestom/server/entity/EntityType;)V",
@@ -174,12 +175,48 @@ pub fn create_entity_creature<C: EntityCreature>(entity_type: EntityType, creatu
             JValue::Object(&java_entity_type.into()),
         ],
     )?;
+
     Ok(MinestomEntityCreature {
         inner: JavaObject::from_env(&mut env, obj)?,
     })
 }
 
 impl MinestomEntityCreature {
+    pub fn null() -> Self {
+        MinestomEntityCreature {
+            inner: JavaObject::null(),
+        }
+    }
+
+    pub fn set_invisible(&self, invisible: bool) -> crate::Result<()> {
+        let mut env = get_env()?;
+        env.call_method(
+            &self.inner.as_obj()?,
+            "setInvisible",
+            "(Z)V",
+            &[JValue::Bool(if invisible { 1 } else { 0 })],
+        )?;
+        Ok(())
+    }
+
+    pub fn set_instance_and_pos(
+        &self,
+        instance: &InstanceContainer,
+        pos: &Pos,
+    ) -> crate::Result<()> {
+        let mut env = get_env()?;
+        env.call_method(
+            &self.inner.as_obj()?,
+            "setInstance",
+            "(Lnet/minestom/server/instance/Instance;Lnet/minestom/server/coordinate/Pos;)Ljava/util/concurrent/CompletableFuture;",
+            &[
+                JValue::Object(&instance.inner()?),
+                JValue::Object(&pos.inner()?),
+            ],
+        )?;
+        Ok(())
+    }
+
     /// Once you've created the Java callback, you typically want to add it to an instance:
     /// call `.spawn()` or similar.
     ///
@@ -198,8 +235,9 @@ impl MinestomEntityCreature {
         Ok(())
     }
 
-    // Expose the raw `EntityCreature` if you need other methods.
-    // pub fn as_entity(&self) -> crate::Result<crate::EntityCreature> {
-    //     Ok(crate::EntityCreature::new(self.inner.clone()))
+    // Helper: expose the raw `EntityCreature` Java wrapper,
+    // in case you need to call other methods.
+    // pub fn as_entity(&self) -> crate::Result<MinestomEntityCreature> {
+    //     Ok(MinestomEntityCreature::new(self.inner.clone()))
     // }
 }

@@ -1,6 +1,8 @@
 use crate::server::Server;
 use log::error;
 use log::info;
+use minestom;
+use minestom::event::EventNode;
 use minestom::{Block, BlockType, MinestomServer, Position};
 use minestom::{
     component,
@@ -16,8 +18,6 @@ use minestom::{
     instance::InstanceContainer,
     sound::{Sound, SoundEvent, Source},
 };
-use minestom as minestom;
-use minestom::event::EventNode;
 use parking_lot::RwLock;
 use rand::Rng;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -258,9 +258,12 @@ fn reset_player(player: &minestom::entity::Player, state: &mut GameState) -> min
     // Place initial block
     let mut rng = rand::thread_rng();
     let block_type = BLOCK_TYPES[rng.gen_range(0..BLOCK_TYPES.len())];
-    state
-        .instance
-        .set_block(START_POS.0, START_POS.1, START_POS.2, block_type.to_block()?)?;
+    state.instance.set_block(
+        START_POS.0,
+        START_POS.1,
+        START_POS.2,
+        block_type.to_block()?,
+    )?;
 
     // Generate initial blocks
     for _ in 1..10 {
@@ -300,9 +303,12 @@ fn generate_next_block(state: &mut GameState, in_game: bool) -> minestom::Result
 
     let mut rng = rand::thread_rng();
     let block_type = BLOCK_TYPES[rng.gen_range(0..BLOCK_TYPES.len())];
-    state
-        .instance
-        .set_block(block_pos.x, block_pos.y, block_pos.z, block_type.to_block()?)?;
+    state.instance.set_block(
+        block_pos.x,
+        block_pos.y,
+        block_pos.z,
+        block_type.to_block()?,
+    )?;
     state.blocks.push_back(block_pos);
 
     state.last_block_timestamp = SystemTime::now()

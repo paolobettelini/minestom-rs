@@ -10,7 +10,7 @@ pub struct Position {
     pub z: f64,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Pos {
     inner: JavaObject,
 }
@@ -43,21 +43,24 @@ impl Pos {
         Self { inner }
     }
 
-
     pub fn of(x: f64, y: f64, z: f64, yaw: f32, pitch: f32) -> Self {
         let mut env = get_env().unwrap();
-        let pos_class = env.find_class("net/minestom/server/coordinate/Pos").unwrap();
-        let pos = env.new_object(
-            pos_class,
-            "(DDDFF)V",
-            &[
-                JniValue::Double(x).as_jvalue(),
-                JniValue::Double(y).as_jvalue(),
-                JniValue::Double(z).as_jvalue(),
-                JniValue::Float(yaw).as_jvalue(),
-                JniValue::Float(pitch).as_jvalue(),
-            ],
-        ).unwrap();
+        let pos_class = env
+            .find_class("net/minestom/server/coordinate/Pos")
+            .unwrap();
+        let pos = env
+            .new_object(
+                pos_class,
+                "(DDDFF)V",
+                &[
+                    JniValue::Double(x).as_jvalue(),
+                    JniValue::Double(y).as_jvalue(),
+                    JniValue::Double(z).as_jvalue(),
+                    JniValue::Float(yaw).as_jvalue(),
+                    JniValue::Float(pitch).as_jvalue(),
+                ],
+            )
+            .unwrap();
         Pos {
             inner: JavaObject::from_env(&mut env, pos).unwrap(),
         }

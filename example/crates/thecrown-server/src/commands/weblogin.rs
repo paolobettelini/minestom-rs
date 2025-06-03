@@ -1,12 +1,12 @@
 use crate::maps::LobbyMap;
 use log::info;
+use minestom;
+use minestom::Player;
 use minestom::{
     Command,
     command::{self, CommandContext, CommandSender},
     component,
 };
-use minestom as minestom;
-use minestom::Player;
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;

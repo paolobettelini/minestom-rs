@@ -121,7 +121,8 @@ pub fn spawn_piano(
                     let normalized_tile_coordinate = tile_coordinate / tiles_length;
                     // This goes from 0 to 1+ the extra depends on how well
                     // the last armorstand fits but we can just discard it.
-                    if normalized_tile_coordinate < 1.1 { // ideally 1.0 but it's not that precise
+                    if normalized_tile_coordinate < 1.1 {
+                        // ideally 1.0 but it's not that precise
                         // There are 15 tiles of alternating width such as abababa
                         // with the following sizes
                         let tiles = 15;

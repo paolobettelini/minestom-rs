@@ -1,5 +1,6 @@
 use crate::Result;
 use crate::error::MinestomError;
+use env_logger::from_env;
 use jni::objects::{GlobalRef, JObject, JString, JValueGen};
 use jni::{JNIEnv, JavaVM};
 use parking_lot::Mutex;
@@ -98,6 +99,11 @@ impl JavaObject {
         Self {
             inner: Arc::new(global_ref),
         }
+    }
+
+    pub fn null() -> Self {
+        let mut env = get_env().unwrap();
+        Self::from_env(&mut env, JObject::null()).unwrap()
     }
 
     /// Creates a new JavaObject from a JObject in the given environment.

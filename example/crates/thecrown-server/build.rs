@@ -1,7 +1,7 @@
-use std::{env, fs, process::Command};
-use std::path::PathBuf;
-use walkdir::WalkDir;
 use sha1::Digest;
+use std::path::PathBuf;
+use std::{env, fs, process::Command};
+use walkdir::WalkDir;
 
 fn main() {
     let resource_dir_name = "../../resources";
@@ -33,7 +33,8 @@ fn main() {
             fs::remove_dir_all(&out_dir).expect("Failed to remove existing output directory");
         }
         fs::create_dir_all(&out_dir).expect("Failed to create output directory");
-        fs::create_dir_all(&resourcepack_gen_dir).expect("Failed to create generated resourcepack directory");
+        fs::create_dir_all(&resourcepack_gen_dir)
+            .expect("Failed to create generated resourcepack directory");
         fs::create_dir_all(&models_dir).expect("Failed to create models directory");
 
         // Build script rerun-if-changed
@@ -50,7 +51,10 @@ fn main() {
         // Copy resourcepack to generated_resourcepack
         for entry in WalkDir::new(&resourcepack_dir) {
             let entry = entry.expect("WalkDir error");
-            let rel_path = entry.path().strip_prefix(&resourcepack_dir).expect("Failed to strip prefix");
+            let rel_path = entry
+                .path()
+                .strip_prefix(&resourcepack_dir)
+                .expect("Failed to strip prefix");
             let dest_path = resourcepack_gen_dir.join(rel_path);
             if entry.file_type().is_dir() {
                 fs::create_dir_all(&dest_path).expect("Failed to create directory");
@@ -60,7 +64,11 @@ fn main() {
         }
 
         // Now call PackBuilder.generate. We need to call the Java program using gradle.
-        let gradlew = if cfg!(windows) { "gradlew.bat" } else { "./gradlew" };
+        let gradlew = if cfg!(windows) {
+            "gradlew.bat"
+        } else {
+            "./gradlew"
+        };
         let status = Command::new(gradlew)
             .current_dir(&gradle_project_dir)
             .args(&[

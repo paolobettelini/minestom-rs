@@ -1,27 +1,29 @@
 use crate::logic::piano;
 use crate::maps::LobbyMap;
-use minestom::entity::EntityCreature;
-use minestom::InstanceContainer;
-use minestom::entity::create_entity_creature;
-use minestom::BlockType;
-use world_seed_entity_engine::generic_model::WseeModel;
-use minestom::entity::entity::EntityType;
-use minestom::Player;
-use world_seed_entity_engine::generic_model::create_wsee_model;
-use minestom::PlayerMoveEvent;
-use minestom::instance::InstanceManager;
+use crate::models::bulbasaur::BulbasaurMob;
 use minestom::Block;
-use world_seed_entity_engine::generic_model::GenericModel;
-use parking_lot::RwLock;
-use minestom::event::player::{PlayerSpawnEvent, PlayerDisconnectEvent};
+use minestom::BlockType;
+use minestom::InstanceContainer;
+use minestom::Player;
+use minestom::PlayerMoveEvent;
 use minestom::Pos;
+use minestom::entity::EntityCreature;
+use minestom::entity::ItemDisplay;
+use minestom::entity::MinestomEntityCreature;
+use minestom::entity::create_entity_creature;
+use minestom::entity::entity::EntityType;
+use minestom::event::player::{PlayerDisconnectEvent, PlayerSpawnEvent};
+use minestom::instance::InstanceManager;
+use minestom::item::ItemStack;
+use minestom::material::Material;
+use parking_lot::RwLock;
 use rand::Rng;
 use std::collections::HashMap;
-use minestom::material::Material;
-use minestom::entity::ItemDisplay;
-use minestom::item::ItemStack;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, Weak};
 use uuid::Uuid;
+use world_seed_entity_engine::generic_model::GenericModel;
+use world_seed_entity_engine::generic_model::WseeModel;
+use world_seed_entity_engine::generic_model::create_wsee_model;
 
 #[derive(Clone)]
 pub struct LobbyMap2 {
@@ -58,8 +60,8 @@ impl LobbyMap for LobbyMap2 {
     fn init(&self, players: Arc<RwLock<HashMap<Uuid, Player>>>) -> minestom::Result<()> {
         let event_node = self.instance.event_node()?;
 
-        let mob = BulbasaurMob::new(self.instance.clone())?;
-        let entity = create_entity_creature(EntityType::Zombie, mob)?;
+        let spawn_pos = Pos::of(1817.5, 41.0, 1044.5, 90.0, 0.0);
+        let mob = BulbasaurMob::new(self.instance.clone(), spawn_pos)?;
 
         let map = self.clone();
         event_node.listen(move |move_event: &PlayerMoveEvent| {
@@ -74,12 +76,11 @@ impl LobbyMap for LobbyMap2 {
             Ok(())
         })?;
 
-        let block = BlockType::NoteBlock.to_block()?
+        let block = BlockType::NoteBlock
+            .to_block()?
             .with_property("note", "1")?
             .with_property("powered", "false")?;
-        self
-            .instance
-            .set_block(1761, 35, 1044, block)?;
+        self.instance.set_block(1761, 35, 1044, block)?;
 
         // Achievement honey I shrunk myself
         // (1764, 26, 1177) - (1762, 26, 1177)
@@ -95,11 +96,7 @@ impl LobbyMap for LobbyMap2 {
             };
         }
 
-        let clouds = vec![
-            cloud!("cloud1"),
-            cloud!("cloud2"),
-            cloud!("cloud3"),
-        ];
+        let clouds = vec![cloud!("cloud1"), cloud!("cloud2"), cloud!("cloud3")];
 
         let coords = vec![
             (1725.0, 58.0, 1005.0),
@@ -220,55 +217,5 @@ impl LobbyMap for LobbyMap2 {
 
     fn instance(&self) -> InstanceContainer {
         self.instance.clone()
-    }
-}
-
-
-
-///////////////////////////
-#[derive(Clone)]
-struct BulbasaurModel;
-impl GenericModel for BulbasaurModel {
-    fn get_id(&self) -> String {
-        "bulbasaur/bulbasaur.bbmodel".to_string()
-    }
-
-    fn init(&self, instance: InstanceContainer, pos: Pos) {
-    }
-}
-
-struct BulbasaurMob {
-    model: WseeModel,
-    instance: InstanceContainer,
-}
-
-impl BulbasaurMob {
-    pub fn new(instance: InstanceContainer) -> minestom::Result<Self> {
-        let model = BulbasaurModel;
-        let model = create_wsee_model(model)?;
-
-        // should I do stuff like this.setInvisible here?
-        model.init(instance.clone(), Pos::of(1817.5, 41.0, 1044.5, 90.0, 0.0))?;
-
-        Ok(Self { model, instance })
-    }
-}
-
-impl EntityCreature for BulbasaurMob {
-    fn update_new_viewer(&self, player: Player) {
-        log::info!("ARE YOU READY TO SEE THE BULBASAUR?");
-        let _ = self.model.add_viewer(&player);
-    }
-
-    fn update_old_viewer(&self, player: Player) {
-        let _ = self.model.remove_viewer(&player);
-    }
-
-    fn tick(&self, time: i64) {
-
-    }
-    
-    fn remove(&self) {
-       
     }
 }

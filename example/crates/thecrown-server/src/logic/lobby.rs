@@ -7,9 +7,9 @@ use crate::maps::map::LobbyMap;
 use crate::mojang::get_skin_and_signature;
 use crate::server::Server;
 use log::{error, info};
-use minestom::MinestomServer;
-use minestom as minestom;
+use minestom;
 use minestom::InstanceContainer;
+use minestom::MinestomServer;
 use minestom::Player;
 use minestom::ServerListPingEvent;
 use minestom::TOKIO_HANDLE;
@@ -105,7 +105,7 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
 
                 let scale = distribution(AVG_SCALE, MIN_SCALE, MAX_SCALE);
                 // let scale = 0.2;
-                
+
                 info!("Setting player scale to {}", scale);
                 player
                     .get_attribute(Attribute::Scale)?
@@ -131,8 +131,7 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
                 }
 
                 // Get player's inventory and set the helmet
-                let item =
-                    ItemStack::of(Material::Apple)?.with_amount(1)?;
+                let item = ItemStack::of(Material::Apple)?.with_amount(1)?;
                 let inventory = player.get_inventory()?;
                 inventory.set_helmet(&item)?;
 
