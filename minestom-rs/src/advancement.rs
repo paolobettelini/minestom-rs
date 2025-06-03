@@ -50,10 +50,8 @@ impl AdvancementRoot {
         let class = env.find_class("net/minestom/server/advancements/AdvancementRoot")?;
 
         // Prepare common values
-        let binding = title.as_jvalue(&mut env)?;
-        let title_val = binding.as_jvalue();
-        let binding = description.as_jvalue(&mut env)?;
-        let desc_val = binding.as_jvalue();
+        let title_val = title.as_jvalue(&mut env)?;
+        let desc_val = description.as_jvalue(&mut env)?;
         // Material -> Java Material
         let mat_str = env.new_string(icon.to_java_name())?;
         let material_obj = env.call_static_method(
@@ -79,13 +77,13 @@ impl AdvancementRoot {
             env.new_object(
                 class,
                 "(Lnet/kyori/adventure/text/Component;Lnet/kyori/adventure/text/Component;Lnet/minestom/server/item/Material;Lnet/minestom/server/advancements/FrameType;FFLjava/lang/String;)V",
-                &[ title_val, desc_val, material_val, frame_val, x_val, y_val, (&bg_str).into() ],
+                &[ title_val.as_jvalue(), desc_val.as_jvalue(), material_val, frame_val, x_val, y_val, (&bg_str).into() ],
             )?
         } else {
             env.new_object(
                 class,
                 "(Lnet/kyori/adventure/text/Component;Lnet/kyori/adventure/text/Component;Lnet/minestom/server/item/Material;Lnet/minestom/server/advancements/FrameType;FF)V",
-                &[ title_val, desc_val, material_val, frame_val, x_val, y_val ],
+                &[ title_val.as_jvalue(), desc_val.as_jvalue(), material_val, frame_val, x_val, y_val ],
             )?
         };
 
@@ -178,10 +176,8 @@ impl Advancement {
         let class = env.find_class("net/minestom/server/advancements/Advancement")?;
         let sig = "(Lnet/kyori/adventure/text/Component;Lnet/kyori/adventure/text/Component;Lnet/minestom/server/item/Material;Lnet/minestom/server/advancements/FrameType;FF)V";
 
-        let binding = title.as_jvalue(&mut env)?;
-        let title_val = binding.as_jvalue();
-        let binding = description.as_jvalue(&mut env)?;
-        let desc_val = binding.as_jvalue();
+        let title_val = title.as_jvalue(&mut env)?;
+        let desc_val = description.as_jvalue(&mut env)?;
         // Material -> Java Material
         let mat_str = env.new_string(icon.to_java_name())?;
         let material_obj = env.call_static_method(
@@ -200,7 +196,7 @@ impl Advancement {
         let obj = env.new_object(
             class,
             sig,
-            &[ title_val, desc_val, (&material_val).into(), (&frame_val).into(), x_val, y_val ],
+            &[ title_val.as_jvalue(), desc_val.as_jvalue(), (&material_val).into(), (&frame_val).into(), x_val, y_val ],
         )?;
         let global = env.new_global_ref(obj)?;
         Ok(Advancement { inner: JavaObject::new(global) })

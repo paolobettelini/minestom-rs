@@ -42,7 +42,6 @@ use uuid::Uuid;
 pub struct LobbyServer<T: LobbyMap> {
     map: T,
     players: Arc<RwLock<HashMap<Uuid, Player>>>,
-    tab: AdvancementTab,
 }
 
 impl<T: LobbyMap> LobbyServer<T> {
@@ -50,31 +49,7 @@ impl<T: LobbyMap> LobbyServer<T> {
         let players = Arc::new(RwLock::new(HashMap::new()));
         map.init(players.clone())?;
 
-        // Achievements
-        let adv_manager: AdvancementManager = minecraft_server.advancement_manager()?;
-        let root = AdvancementRoot::new(
-            &component!("Benvenuto!"),         // titolo
-            &component!("Inizia il viaggio!"), // descrizione
-            Material::NetherStar,             // icona
-            FrameType::TASK()?,                // tipo frame
-            0.0,
-            0.0,                                        // posizione
-            Some("minecraft:textures/block/stone.png"), // sfondo (opzionale)
-        )?;
-        let tab = adv_manager.create_tab("mio:tab", root.clone())?;
-        let child = Advancement::new(
-            &component!("Primo Passo"),
-            &component!("Hai completato il primo obiettivo"),
-            Material::GoldIngot,
-            FrameType::GOAL()?,
-            1.0,
-            1.0,
-        )?;
-        tab.create_advancement("mio:tab:step1", child.clone(), root.clone().as_advancement())?;
-        child.show_toast(true);     // abilita/disabilita la toast
-        child.set_achieved(true);
-
-        Ok(LobbyServer { map, players, tab })
+        Ok(LobbyServer { map, players })
     }
 }
 
@@ -88,17 +63,6 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
             info!("Setting spawning instance for player");
             config_event.spawn_instance(&self.map.instance())?;
         }
-
-        let event_handler = minecraft_server.event_handler()?;
-
-        let tab = self.tab.clone();
-        event_handler.listen(move |spawn_event: &PlayerSpawnEvent| {
-            // Try to get player information
-            if let Ok(player) = spawn_event.player() {
-                tab.add_viewer(&player)?;
-            }
-            Ok(())
-        })?;
 
         Ok(())
     }

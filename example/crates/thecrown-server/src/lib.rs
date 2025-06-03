@@ -15,6 +15,7 @@ mod maps;
 mod models;
 mod mojang;
 mod server;
+mod advancements;
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_net_thecrown_App_startServer(env: JNIEnv, class: JClass) -> jint {
