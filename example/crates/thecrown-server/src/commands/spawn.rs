@@ -68,7 +68,7 @@ impl<T: LobbyMap> Command for SpawnCommand<T> {
         player.teleport(x, y, z, yaw, pitch)?;
 
         use crate::advancements::*;
-        player.set_achieved(crate::advancements::HONEY_I_SHRUNK_MYSELF)?;
+        player.set_achieved(crate::advancements::SHRUNKEN)?;
 
         Ok(())
     }

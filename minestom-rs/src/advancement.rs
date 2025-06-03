@@ -44,7 +44,7 @@ impl AdvancementRoot {
         frame: FrameType,
         x: f32,
         y: f32,
-        background: Option<&str>
+        background: &str,
     ) -> Result<Self> {
         let mut env = get_env()?;
         let class = env.find_class("net/minestom/server/advancements/AdvancementRoot")?;
@@ -72,20 +72,12 @@ impl AdvancementRoot {
         let y_val = binding.as_jvalue();
 
         // Construct
-        let obj = if let Some(bg) = background {
-            let bg_str = env.new_string(bg)?;
-            env.new_object(
-                class,
-                "(Lnet/kyori/adventure/text/Component;Lnet/kyori/adventure/text/Component;Lnet/minestom/server/item/Material;Lnet/minestom/server/advancements/FrameType;FFLjava/lang/String;)V",
-                &[ title_val.as_jvalue(), desc_val.as_jvalue(), material_val, frame_val, x_val, y_val, (&bg_str).into() ],
-            )?
-        } else {
-            env.new_object(
-                class,
-                "(Lnet/kyori/adventure/text/Component;Lnet/kyori/adventure/text/Component;Lnet/minestom/server/item/Material;Lnet/minestom/server/advancements/FrameType;FF)V",
-                &[ title_val.as_jvalue(), desc_val.as_jvalue(), material_val, frame_val, x_val, y_val ],
-            )?
-        };
+        let bg_str = env.new_string(background)?;
+        let obj = env.new_object(
+            class,
+            "(Lnet/kyori/adventure/text/Component;Lnet/kyori/adventure/text/Component;Lnet/minestom/server/item/Material;Lnet/minestom/server/advancements/FrameType;FFLjava/lang/String;)V",
+            &[ title_val.as_jvalue(), desc_val.as_jvalue(), material_val, frame_val, x_val, y_val, (&bg_str).into() ],
+        )?;
 
         let global = env.new_global_ref(obj)?;
         Ok(AdvancementRoot { inner: JavaObject::new(global) })
