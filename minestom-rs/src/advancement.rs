@@ -209,19 +209,30 @@ impl Advancement {
     }
 
     /// Mark this advancement as achieved or unachieved
-pub fn set_achieved(&self, achieved: bool) -> Result<Advancement> {
-    let mut env = get_env()?;
-    // Chiama Java: Advancement setAchieved(boolean)
-    let result = env.call_method(
-        &self.inner.as_obj()?,
-        "setAchieved",
-        "(Z)Lnet/minestom/server/advancements/Advancement;",
-        &[ JValue::Bool(if achieved { 1 } else { 0 }) ],
-    )?;
-    let adv_obj = result.l()?;
-    let global = env.new_global_ref(adv_obj)?;
-    Ok(Advancement { inner: JavaObject::new(global) })
-}
+    pub fn set_achieved(&self, achieved: bool) -> Result<Advancement> {
+        let mut env = get_env()?;
+        // Chiama Java: Advancement setAchieved(boolean)
+        let result = env.call_method(
+            &self.inner.as_obj()?,
+            "setAchieved",
+            "(Z)Lnet/minestom/server/advancements/Advancement;",
+            &[ JValue::Bool(if achieved { 1 } else { 0 }) ],
+        )?;
+        let adv_obj = result.l()?;
+        let global = env.new_global_ref(adv_obj)?;
+        Ok(Advancement { inner: JavaObject::new(global) })
+    }
+
+    pub fn is_achieved(&self) -> Result<bool> {
+        let mut env = get_env()?;
+        let result = env.call_method(
+            &self.inner.as_obj()?,
+            "isAchieved",
+            "()Z",
+            &[],
+        )?;
+        Ok(result.z()?)
+    }
 
     pub fn inner(&self) -> &JavaObject { &self.inner }
 }

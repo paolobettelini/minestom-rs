@@ -4,6 +4,7 @@ use crate::models::bulbasaur::BulbasaurMob;
 use minestom::Block;
 use minestom::BlockType;
 use minestom::InstanceContainer;
+use crate::advancements::{self, CanAchieveAdvancement};
 use minestom::Player;
 use minestom::PlayerMoveEvent;
 use minestom::Pos;
@@ -70,7 +71,24 @@ impl LobbyMap for LobbyMap2 {
                     if pos.y < 0.0 {
                         let (x, y, z, yaw, pitch) = map.spawn_coordinate();
                         player.teleport(x, y, z, yaw, pitch)?;
+
+                        // Check for achievement
+                        // TODO if scale is proper
+                        if !player.is_achieved(advancements::TITANOMACHY)? {
+                            player.set_achieved(advancements::TITANOMACHY)?;
+                        }
                     }
+
+                    // Check for achievement
+                    let (x1, y1, z1) = (1762.0, 26.5, 1177.0);
+                    let (x2, y2, z2) = (1764.0, 27.5, 1178.0);
+                    if pos.x >= x1 && pos.x <= x2 && pos.y >= y1 && pos.y <= y2 && pos.z >= z1 && pos.z <= z2 {
+                        if !player.is_achieved(advancements::SHRUNKEN)? {
+                            // TODO if scale is proper
+                            player.set_achieved(advancements::SHRUNKEN)?;
+                        }
+                    }
+
                 }
             }
             Ok(())
@@ -79,8 +97,8 @@ impl LobbyMap for LobbyMap2 {
         // Spawn custom block
         let (x, y, z) = (1761, 35, 1044);
         let block = BlockType::Barrier.to_block()?;
-        //.with_property("note", "1")?
-        //.with_property("powered", "false")?;
+            //.with_property("note", "1")?
+            //.with_property("powered", "false")?;
         self.instance.set_block(x, y, z, block)?;
         let item = ItemStack::of(Material::Diamond)?
             .with_amount(1)?
@@ -113,8 +131,6 @@ impl LobbyMap for LobbyMap2 {
         display.set_no_gravity(true)?;
         display.spawn(&self.instance, x, y, z, yaw, pitch)?;
 
-        // Achievement honey I shrunk myself
-        // (1764, 26, 1177) - (1762, 26, 1177)
         // le scritte del cartello non si vedono, nemmeno l'itemframe completamente.
 
         piano::spawn_piano(self.instance.clone(), players, 1777.4, 28.0, 1056.0, -90.0)?;

@@ -43,6 +43,12 @@ pub const WELCOME: &'static str = "welcome";
 pub const SHRUNKEN: &'static str = "shrunken";
 pub const TITANOMACHY: &'static str = "titanomachy";
 
+pub const PARKOUR_WELCOME: &'static str = "parkour_welcome";
+
+// TODO: ogni nuovo achievement sitriggera anche quelli acquisiti precedentemente
+// I tab name devono contenere il nome del player perché il nome deve essere univoco.
+// Quindi dovrei anche distruggerlo (come ?)
+
 impl AdvancementsMap {
     pub fn new(minecraft_server: &MinestomServer, player: &Player) -> minestom::Result<Self> {
         let adv_manager = minecraft_server.advancement_manager()?;
@@ -50,63 +56,60 @@ impl AdvancementsMap {
         let map: HashMap<String, Advancement> = crate::define_advancements! {
             server: minecraft_server,
             player: player,
+
             tabs: [
                 {
                     tab_name: "thecrown",
+                    background: "minecraft:textures/block/stripped_acacia_log.png",
                     items: [
                         {
                             name: WELCOME,
-                            title: "Welcome to TheCrown!",
-                            description: "You can now start playing.",
+                            title: component!("Welcome to TheCrown!"),
+                            description: component!("You can now start playing."),
                             icon: Material::BlueBed,
                             frame: FrameType::GOAL(),
                             coords: (0.0, 0.0),
-                            background: "thecrown:textures/block/zanite_block.png",
-                            achieved: true // Default achievement
+                            achieved: true
                         },
                         {
                             name: SHRUNKEN,
-                            title: "Honey, I Shrunk Myself!",
-                            description: "Squeezed through where no Steve has gone before... and found a tiny secret worth the squeeze - Find the tiny hidden hole only the smallest can fit through.",
-                            icon: Material::GoldIngot,
+                            title: component!("Honey, I Shrunk Myself!").bold(),
+                            description: component!("You squeezed through where no Steve has gone before... and found a tiny secret worth the squeeze")
+                                .color("#adadad")?
+                                .chain(component!(" - ").color("#FFFFFF")?)
+                                .chain(component!("Find the tiny hidden hole only the smallest can fit through.").color("#454545")?),
+                            icon: Material::JungleButton,
                             frame: FrameType::CHALLENGE(),
-                            coords: (1.0, 2.0),
+                            coords: (2.0, 1.0),
                             depends_on: WELCOME,
                             achieved: false
                         },
                         {
                             name: TITANOMACHY,
-                            title: "Honey, I Shrunk Myself!",
-                            description: "The mighty were cast down, and Tartarus awaited - Step off the edge into the void below, and embrace your destiny as a fallen giant.",
-                            icon: Material::GoldIngot,
+                            title: component!("Titanomachy").bold(),
+                            description: component!("The mighty were cast down, and Tartarus awaited")
+                                .color("#adadad")?
+                                .chain(component!(" - ").color("#FFFFFF")?)
+                                .chain(component!("Step off the edge into the void below.").color("#454545")?),
+                            icon: Material::IronBlock,
                             frame: FrameType::CHALLENGE(),
-                            coords: (1.0, 2.0),
+                            coords: (2.0, -1.0),
                             depends_on: WELCOME,
                             achieved: false
                         }
                     ]
                 },
                 {
-                    tab_name: "bonus_tab",
+                    tab_name: "parkour",
+                    background: "minecraft:textures/block/stripped_warped_stem.png",
                     items: [
                         {
-                            name: "bonus_root",
-                            title: "Bonus Root",
-                            description: "This is a standalone bonus root",
-                            icon: Material::Emerald,
-                            frame: FrameType::CHALLENGE(),
+                            name: PARKOUR_WELCOME,
+                            title: component!("Welcome to parkour!"),
+                            description: component!("The first 25, and many more to go!"),
+                            icon: Material::Dirt,
+                            frame: FrameType::GOAL(),
                             coords: (0.0, 0.0),
-                            background: "minecraft:textures/block/gold_block.png",
-                            achieved: true
-                        },
-                        {
-                            name: "bonus_child",
-                            title: "Bonus Child",
-                            description: "Follows the bonus_root advancement",
-                            icon: Material::Diamond,
-                            frame: FrameType::TASK(),
-                            coords: (2.0, -1.0),
-                            depends_on: "bonus_root",
                             achieved: false
                         }
                     ]
@@ -141,6 +144,7 @@ pub fn get_advancement(player: &Player, name: &str) -> Option<Advancement> {
 
 pub trait CanAchieveAdvancement {
     fn set_achieved(&self, name: &str) -> minestom::Result<()>;
+    fn is_achieved(&self, name: &str) -> minestom::Result<bool>;
 }
 
 impl CanAchieveAdvancement for Player {
@@ -148,13 +152,14 @@ impl CanAchieveAdvancement for Player {
         get_advancement(&self, name).unwrap().set_achieved(true)?;
         Ok(())
     }
+
+    fn is_achieved(&self, name: &str) -> minestom::Result<bool> {
+        get_advancement(&self, name).unwrap().is_achieved()
+    }
 }
 
 static ADVANCEMENTS: LazyLock<RwLock<HashMap<Uuid, AdvancementsMap>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
-
-// Place this macro in a crate‐wide scope (e.g. in `lib.rs` or a top‐level module marked with `#[macro_use]`),
-// so that you can invoke it as `crate::define_advancements! { … }`.
 
 #[macro_export]
 macro_rules! define_advancements {
@@ -165,21 +170,23 @@ macro_rules! define_advancements {
             $(
                 {
                     tab_name: $tab_name:expr,
+                    background: $tab_bg:expr,
                     items: [
-                        // The first entry in each `items` array is the root for that tab.
-                        {
-                            name: $root_name:expr,
-                            title: $root_title:expr,
-                            description: $root_desc:expr,
-                            icon: $root_icon:expr,
-                            frame: $root_frame:expr,
-                            coords: ($root_x:expr, $root_y:expr),
-                            background: $root_bg:expr,
-                            achieved: $root_ach:expr
-                        }
+                        // (A) Optional “root” entry: this must supply `title: <Component>` and `description: <Component>`.
                         $(
-                            // All subsequent entries must specify a `depends_on` pointing
-                            // to a previously‐listed name in the same tab.
+                            {
+                                name: $root_name:expr,
+                                title: $root_title:expr,
+                                description: $root_desc:expr,
+                                icon: $root_icon:expr,
+                                frame: $root_frame:expr,
+                                coords: ($root_x:expr, $root_y:expr),
+                                achieved: $root_ach:expr
+                            }
+                        )?
+
+                        // (B) Zero or more “child” entries. Each child must supply `depends_on: <&str>`.
+                        $(
                             ,
                             {
                                 name: $name:expr,
@@ -200,74 +207,54 @@ macro_rules! define_advancements {
         // 1) Grab the AdvancementManager once for all tabs.
         let adv_manager = $server.advancement_manager()?;
 
-        // 2) Build a single HashMap<String, Advancement> to collect every root & child.
+        // 2) Build one HashMap<String, Advancement> to collect everything.
         let mut adv_map: std::collections::HashMap<String, minestom::advancement::Advancement> =
             std::collections::HashMap::new();
 
         $(
-            // ───────────────────────────────────────────────────────
-            // For each `{ tab_name, items: [ … ] }` block:
-            //   1. Create the root AdvancementRoot (first `items` entry).
-            //   2. Create exactly one tab named `$tab_name`.
-            //   3. Put `root.as_advancement()` into adv_map under `$root_name`.
-            //   4. Iterate over the remaining child entries, creating each under its parent.
-            // ───────────────────────────────────────────────────────
             {
-                // 1) Build the root using `AdvancementRoot::new(...)`, which now always requires `background: &str`.
-                let root = minestom::advancement::AdvancementRoot::new(
-                    &component!($root_title),
-                    &component!($root_desc),
-                    $root_icon,
-                    $root_frame,
-                    $root_x,
-                    $root_y,
-                    $root_bg,   // Always a &str, never optional
-                )?;
-                // Optionally mark the root as already achieved:
-                if $root_ach {
-                    let _ = root.as_advancement().set_achieved(true);
-                }
-
-                // 2) Create a single AdvancementTab named `$tab_name`:
-                let tab = adv_manager.create_tab($tab_name, root.clone())?;
-                tab.add_viewer($player)?;
-
-                // 3) Insert the root’s Advancement (root.as_advancement()) into adv_map
-                adv_map.insert($root_name.to_string(), root.as_advancement());
-
-                // 4) Process each “child” entry under the same tab:
+                // (A) Build a root if the optional root‐entry is present:
                 $(
-                    // a) Look up the parent’s Advancement (it must already exist in adv_map).
+                    let root = minestom::advancement::AdvancementRoot::new(
+                        &$root_title,   // must be a component!(…)
+                        &$root_desc,    // must be a component!(…)
+                        $root_icon,
+                        $root_frame,
+                        $root_x,
+                        $root_y,
+                        $tab_bg,        // &str
+                    )?;
+                    if $root_ach {
+                        let _ = root.as_advancement().set_achieved(true);
+                    }
+                    let tab = adv_manager.create_tab($tab_name, root.clone())?;
+                    tab.add_viewer($player)?;
+                    adv_map.insert($root_name.to_string(), root.as_advancement());
+                )?
+
+                // (B) Process zero or more child entries:
+                $(
                     let parent_adv: minestom::advancement::Advancement =
                         adv_map.get($parent).unwrap().clone();
-
-                    // b) Build a new plain Advancement (no background for children).
                     let adv = minestom::advancement::Advancement::new(
-                        &component!($title),
-                        &component!($desc),
+                        &$title,      // component!(…)
+                        &$desc,       // component!(…)
                         $icon,
                         $frame,
                         $x,
                         $y,
                     )?;
                     let _ = adv.show_toast(true);
-
-                    // c) Give it an ID that uses the tab name as a namespace:
                     let id = format!("{}/{}", $tab_name, $name);
                     tab.create_advancement(&id, adv.clone(), parent_adv)?;
-
-                    // d) If `achieved: true`, mark it immediately
                     if $ach {
                         let _ = adv.set_achieved(true);
                     }
-
-                    // e) Insert this child into adv_map so deeper descendants can refer to it.
                     adv_map.insert($name.to_string(), adv);
                 )*
             }
         )*
 
-        // Return one combined HashMap of “name → Advancement” across all tabs.
         adv_map
     }};
 }
