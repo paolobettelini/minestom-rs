@@ -25,9 +25,9 @@ impl FrameType {
         Ok(FrameType { inner: JavaObject::new(global) })
     }
 
-    pub fn TASK() -> Result<Self> { Self::from_static("TASK") }
-    pub fn GOAL() -> Result<Self> { Self::from_static("GOAL") }
-    pub fn CHALLENGE() -> Result<Self> { Self::from_static("CHALLENGE") }
+    pub fn TASK() -> Self { Self::from_static("TASK").unwrap() }
+    pub fn GOAL() -> Self { Self::from_static("GOAL").unwrap() }
+    pub fn CHALLENGE() -> Self { Self::from_static("CHALLENGE").unwrap() }
 }
 
 /// Root node of an advancement tab

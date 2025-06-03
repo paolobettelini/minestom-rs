@@ -4,6 +4,7 @@ use minestom::advancement::FrameType;
 use crate::logic::parkour::ParkourServer;
 use crate::magic_values::*;
 use minestom::advancement::Advancement;
+use crate::advancements::init_player_advancements;
 use minestom::advancement::AdvancementRoot;
 use minestom::advancement::AdvancementManager;
 use crate::maps::LobbyMap2;
@@ -195,37 +196,14 @@ pub async fn run_server() -> minestom::Result<()> {
         }
     })?;*/
 
-    // Achievements
-    let adv_manager = minecraft_server.advancement_manager()?;
+    let server = minecraft_server.clone();
     event_handler.listen(move |spawn_event: &PlayerSpawnEvent| {
-        // Try to get player information
         if let Ok(player) = spawn_event.player() {
-            let root = AdvancementRoot::new(
-                &component!("Welcome!"),
-                &component!("Join the server!"),
-                Material::NetherStar,
-                FrameType::TASK()?,
-                0.0,
-                0.0,
-                Some("minecraft:textures/block/stone.png"),
-            )?;
-            root.as_advancement().set_achieved(true);
-            let tab = adv_manager.create_tab("thecrown", root.clone())?;
-            let child = Advancement::new(
-                &component!("Honey, I shrunk myself!"),
-                &component!("You completed the first objective"),
-                Material::GoldIngot,
-                FrameType::GOAL()?,
-                1.0,
-                1.0,
-            )?;
-            tab.create_advancement("thecrown/step1", child.clone(), root.clone().as_advancement())?;
-            child.show_toast(true);
-
-            tab.add_viewer(&player)?;
+            let _ = init_player_advancements(&server, &player);
         }
         Ok(())
     })?;
+    
 
     info!("Starting server on 0.0.0.0:25565...");
     minecraft_server.start("0.0.0.0", 25565)?;

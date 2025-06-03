@@ -67,6 +67,9 @@ impl<T: LobbyMap> Command for SpawnCommand<T> {
         let (x, y, z, yaw, pitch) = self.map.spawn_coordinate();
         player.teleport(x, y, z, yaw, pitch)?;
 
+        use crate::advancements::get_advancement;
+        get_advancement(&player, "thecrown/honeyishrunkmyself").unwrap().set_achieved(true)?;
+
         Ok(())
     }
 }
