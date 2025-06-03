@@ -6,6 +6,7 @@ use minestom::PlayerMoveEvent;
 use minestom::Pos;
 use minestom::entity::EntityCreature;
 use minestom::entity::ItemDisplay;
+use world_seed_entity_engine::animation_handler::AnimationHandler;
 use minestom::entity::MinestomEntityCreature;
 use minestom::entity::create_entity_creature;
 use minestom::entity::entity::EntityType;
@@ -37,6 +38,7 @@ pub struct BulbasaurMob {
     model: WseeModel,
     instance: InstanceContainer,
     spawn_pos: Pos,
+    animation_handler: AnimationHandler,
 }
 
 impl BulbasaurMob {
@@ -50,11 +52,14 @@ impl BulbasaurMob {
         let model = BulbasaurModel;
         let model = create_wsee_model(model)?;
 
+        let animation_handler = AnimationHandler::new(&model)?;
+
         let mob_impl = Self {
             creature_handle: Arc::downgrade(&placeholder),
             model: model.clone(),
             instance: instance.clone(),
             spawn_pos: spawn_pos.clone(),
+            animation_handler: animation_handler.clone(),
         };
 
         let mob_impl_arc: Arc<dyn EntityCreature> = Arc::new(mob_impl);
@@ -69,6 +74,7 @@ impl BulbasaurMob {
 
         wrapper.set_instance_and_pos(&instance, &spawn_pos)?;
         model.init(instance.clone(), spawn_pos)?;
+        animation_handler.play_repeat("animation.bulbasaur.faint");
 
         Ok(placeholder.clone())
     }
@@ -85,5 +91,7 @@ impl EntityCreature for BulbasaurMob {
 
     fn tick(&self, time: i64) {}
 
-    fn remove(&self) {}
+    fn remove(&self) {
+        // TODO: model,animation_handler.destroy()
+    }
 }

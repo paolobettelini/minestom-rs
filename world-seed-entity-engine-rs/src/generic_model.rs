@@ -105,6 +105,10 @@ impl WseeModel {
         Ok(())
     }
 
+    pub fn inner(&self) -> Result<JObject<'_>> {
+        self.inner.as_obj()
+    }
+
     pub fn add_viewer(&self, player: &Player) -> Result<()> {
         let mut env = get_env()?;
 
