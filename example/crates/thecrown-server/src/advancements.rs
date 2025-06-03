@@ -39,14 +39,16 @@ use std::sync::{Mutex, RwLock};
 use uuid::Uuid;
 use world_seed_entity_engine::model_engine::ModelEngine;
 
-static ADVANCEMENTS: LazyLock<RwLock<HashMap<Uuid, ThecrownAdvancements>>> =
+pub const HONEY_I_SHRUNK_MYSELF: &'static str = "honeyishrunkmyself";
+
+static ADVANCEMENTS: LazyLock<RwLock<HashMap<Uuid, AdvancementsMap>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
-pub struct ThecrownAdvancements {
+pub struct AdvancementsMap {
     pub advancements: HashMap<String, Advancement>,
 }
 
-impl ThecrownAdvancements {
+impl AdvancementsMap {
     pub fn new(minecraft_server: &MinestomServer, player: &Player) -> minestom::Result<Self> {
         let adv_manager = minecraft_server.advancement_manager()?;
         let root = AdvancementRoot::new(
@@ -59,12 +61,14 @@ impl ThecrownAdvancements {
             Some("minecraft:textures/block/stone.png"),
         )?;
         let _ = root.as_advancement().set_achieved(true); // Achieved by default
-        let tab = adv_manager.create_tab("thecrown", root.clone())?;
+        let tab_name = "thecrown";
+        let tab = adv_manager.create_tab(tab_name, root.clone())?;
         tab.add_viewer(&player)?;
 
         let mut advancements = HashMap::new();
 
-        let name = "thecrown/honeyishrunkmyself";
+        let name = HONEY_I_SHRUNK_MYSELF;
+        let id = format!("thecrown/{}", name);
         let honey_i_shrunk_myself = Advancement::new(
             &component!("Honey, I shrunk myself!"),
             &component!("You completed the first objective"),
@@ -74,8 +78,7 @@ impl ThecrownAdvancements {
             1.0,
         )?;
         let _ = honey_i_shrunk_myself.show_toast(true);
-        tab.create_advancement(name, honey_i_shrunk_myself.clone(), root.clone().as_advancement())?;
-
+        tab.create_advancement(&id, honey_i_shrunk_myself.clone(), root.clone().as_advancement())?;
         advancements.insert(name.to_string(), honey_i_shrunk_myself);
 
         Ok(Self { advancements })
@@ -84,7 +87,7 @@ impl ThecrownAdvancements {
 
 pub fn init_player_advancements(minecraft_server: &MinestomServer, player: &Player) -> minestom::Result<()> {
     let uuid = player.get_uuid()?;
-    let advancements = ThecrownAdvancements::new(minecraft_server, player)?;
+    let advancements = AdvancementsMap::new(minecraft_server, player)?;
 
     // add to the map
     let mut player_advancements = ADVANCEMENTS.write().unwrap();
@@ -98,5 +101,16 @@ pub fn get_advancement(player: &Player, name: &str) -> Option<Advancement> {
         player_advancements.advancements.get(name).cloned()
     } else {
         None
+    }
+}
+
+pub trait CanAchieveAdvancement {
+    fn set_achieved(&self, name: &str) -> minestom::Result<()>;
+}
+
+impl CanAchieveAdvancement for Player {
+    fn set_achieved(&self, name: &str) -> minestom::Result<()> {
+        get_advancement(&self, name).unwrap().set_achieved(true)?;
+        Ok(())
     }
 } 
