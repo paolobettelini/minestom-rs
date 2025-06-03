@@ -77,7 +77,7 @@ pub async fn run_server() -> minestom::Result<()> {
         .insert(server_name.clone(), Arc::new(server));
     // create lobby server
     let map = LobbyMap2::new(&instance_manager)?;
-    let server = LobbyServer::new(map)?;
+    let server = LobbyServer::new(map, minecraft_server.clone())?;
     server.init(&minecraft_server)?;
     let server = Box::new(server);
     let server_name = String::from("lobbysrv1");

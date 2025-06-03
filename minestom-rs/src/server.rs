@@ -1,3 +1,4 @@
+use crate::advancement::AdvancementManager;
 use crate::Result;
 use crate::command::CommandManager;
 use crate::entity::Player;
@@ -121,6 +122,26 @@ impl MinestomServer {
         let event_handler_obj = event_handler.l()?;
         let event_handler_global = env.new_global_ref(event_handler_obj)?;
         Ok(EventNode::from(JavaObject::new(event_handler_global)))
+    }
+
+    /// Gets the advancement manager for creating custom advancement tabs
+    pub fn advancement_manager(&self) -> Result<AdvancementManager> {
+        let mut env = get_env()?;
+        // Trova la classe MinecraftServer
+        let server_class = env.find_class("net/minestom/server/MinecraftServer")?;
+        // Chiama il metodo statico getAdvancementManager(): AdvancementManager
+        let manager_value = env.call_static_method(
+            &server_class,
+            "getAdvancementManager",
+            "()Lnet/minestom/server/advancements/AdvancementManager;",
+            &[],
+        )?;
+        // Estrai l'oggetto Java
+        let manager_obj = manager_value.l()?;
+        // Converti in global ref per Rust
+        let manager_ref = env.new_global_ref(manager_obj)?;
+        // Avvolgi nel tuo struct Rust
+        Ok(AdvancementManager { inner: JavaObject::new(manager_ref) })
     }
 
     /// Gets the command manager for registering and managing commands

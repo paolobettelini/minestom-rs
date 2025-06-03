@@ -77,11 +77,10 @@ impl LobbyMap for LobbyMap2 {
         })?;
 
         // Spawn custom block
-        let (x, y, z)  = (1761, 35, 1044);
-        let block = BlockType::Barrier
-            .to_block()?;
-            //.with_property("note", "1")?
-            //.with_property("powered", "false")?;
+        let (x, y, z) = (1761, 35, 1044);
+        let block = BlockType::Barrier.to_block()?;
+        //.with_property("note", "1")?
+        //.with_property("powered", "false")?;
         self.instance.set_block(x, y, z, block)?;
         let item = ItemStack::of(Material::Diamond)?
             .with_amount(1)?
@@ -98,7 +97,7 @@ impl LobbyMap for LobbyMap2 {
         )?;
 
         // Spawn custom rock
-        let (x, y, z, yaw, pitch)  = (1791.3, 33.5, 1030.3, 45.0, 0.0);
+        let (x, y, z, yaw, pitch) = (1791.3, 33.5, 1030.3, 45.0, 0.0);
         let item = ItemStack::of(Material::Diamond)?
             .with_amount(1)?
             .with_custom_model_data("rock1")?;
@@ -106,7 +105,7 @@ impl LobbyMap for LobbyMap2 {
         display.set_no_gravity(true)?;
         display.spawn(&self.instance, x, y, z, yaw, pitch)?;
 
-        let (x, y, z, yaw, pitch)  = (1791.2, 33.5, 1030.9, 0.0, 0.0);
+        let (x, y, z, yaw, pitch) = (1791.2, 33.5, 1030.9, 0.0, 0.0);
         let item = ItemStack::of(Material::Diamond)?
             .with_amount(1)?
             .with_custom_model_data("rock1")?;

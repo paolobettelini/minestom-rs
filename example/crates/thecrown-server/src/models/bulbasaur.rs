@@ -6,7 +6,6 @@ use minestom::PlayerMoveEvent;
 use minestom::Pos;
 use minestom::entity::EntityCreature;
 use minestom::entity::ItemDisplay;
-use world_seed_entity_engine::animation_handler::AnimationHandler;
 use minestom::entity::MinestomEntityCreature;
 use minestom::entity::create_entity_creature;
 use minestom::entity::entity::EntityType;
@@ -19,6 +18,7 @@ use rand::Rng;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, Weak};
 use uuid::Uuid;
+use world_seed_entity_engine::animation_handler::AnimationHandler;
 use world_seed_entity_engine::generic_model::GenericModel;
 use world_seed_entity_engine::generic_model::WseeModel;
 use world_seed_entity_engine::generic_model::create_wsee_model;
@@ -72,9 +72,10 @@ impl BulbasaurMob {
 
         wrapper.set_invisible(true)?;
 
-        wrapper.set_instance_and_pos(&instance, &spawn_pos)?;
-        model.init(instance.clone(), spawn_pos)?;
+        model.init(instance.clone(), spawn_pos.clone())?;
         animation_handler.play_repeat("animation.bulbasaur.faint");
+
+        wrapper.set_instance_and_pos(&instance, &spawn_pos)?;
 
         Ok(placeholder.clone())
     }

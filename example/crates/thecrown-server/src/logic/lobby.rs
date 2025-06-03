@@ -1,8 +1,12 @@
 use crate::commands::SpawnCommand;
 use crate::commands::WebloginCommand;
 use crate::logic::piano;
+use minestom::advancement::FrameType;
+use minestom::advancement::AdvancementRoot;
+use minestom::advancement::AdvancementManager;
 use crate::magic_values::*;
 use crate::maps::LobbyMap2;
+use minestom::advancement::Advancement;
 use crate::maps::map::LobbyMap;
 use crate::mojang::get_skin_and_signature;
 use crate::server::Server;
@@ -13,6 +17,7 @@ use minestom::MinestomServer;
 use minestom::Player;
 use minestom::ServerListPingEvent;
 use minestom::TOKIO_HANDLE;
+use minestom::advancement::AdvancementTab;
 use minestom::entity::PlayerSkin;
 use minestom::event::inventory::InventoryPreClickEvent;
 use minestom::{
@@ -37,13 +42,39 @@ use uuid::Uuid;
 pub struct LobbyServer<T: LobbyMap> {
     map: T,
     players: Arc<RwLock<HashMap<Uuid, Player>>>,
+    tab: AdvancementTab,
 }
 
 impl<T: LobbyMap> LobbyServer<T> {
-    pub fn new(map: T) -> minestom::Result<Self> {
+    pub fn new(map: T, minecraft_server: MinestomServer) -> minestom::Result<Self> {
         let players = Arc::new(RwLock::new(HashMap::new()));
         map.init(players.clone())?;
-        Ok(LobbyServer { map, players })
+
+        // Achievements
+        let adv_manager: AdvancementManager = minecraft_server.advancement_manager()?;
+        let root = AdvancementRoot::new(
+            &component!("Benvenuto!"),         // titolo
+            &component!("Inizia il viaggio!"), // descrizione
+            Material::NetherStar,             // icona
+            FrameType::TASK()?,                // tipo frame
+            0.0,
+            0.0,                                        // posizione
+            Some("minecraft:textures/block/stone.png"), // sfondo (opzionale)
+        )?;
+        let tab = adv_manager.create_tab("mio:tab", root.clone())?;
+        let child = Advancement::new(
+            &component!("Primo Passo"),
+            &component!("Hai completato il primo obiettivo"),
+            Material::GoldIngot,
+            FrameType::GOAL()?,
+            1.0,
+            1.0,
+        )?;
+        tab.create_advancement("mio:tab:step1", child.clone(), root.clone().as_advancement())?;
+        child.show_toast(true);     // abilita/disabilita la toast
+        child.set_achieved(true);
+
+        Ok(LobbyServer { map, players, tab })
     }
 }
 
@@ -57,6 +88,17 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
             info!("Setting spawning instance for player");
             config_event.spawn_instance(&self.map.instance())?;
         }
+
+        let event_handler = minecraft_server.event_handler()?;
+
+        let tab = self.tab.clone();
+        event_handler.listen(move |spawn_event: &PlayerSpawnEvent| {
+            // Try to get player information
+            if let Ok(player) = spawn_event.player() {
+                tab.add_viewer(&player)?;
+            }
+            Ok(())
+        })?;
 
         Ok(())
     }
