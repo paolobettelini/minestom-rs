@@ -4,6 +4,7 @@ use minestom::entity::EntityCreature;
 use minestom::InstanceContainer;
 use minestom::entity::create_entity_creature;
 use minestom::BlockType;
+use world_seed_entity_engine::generic_model::WseeModel;
 use minestom::entity::entity::EntityType;
 use minestom::Player;
 use world_seed_entity_engine::generic_model::create_wsee_model;
@@ -57,12 +58,8 @@ impl LobbyMap for LobbyMap2 {
     fn init(&self, players: Arc<RwLock<HashMap<Uuid, Player>>>) -> minestom::Result<()> {
         let event_node = self.instance.event_node()?;
 
-        //let entity = BulbasaurMob;
-        //let entity = create_entity_creature(EntityType::Zombie, entity)?;
-
-        let model = BulbasaurModel;
-        let model = create_wsee_model(model)?;
-        model.init(self.instance.clone(), Pos::of(1817.5, 41.0, 1044.5, 90.0, 0.0))?;
+        let mob = BulbasaurMob::new(self.instance.clone())?;
+        let entity = create_entity_creature(EntityType::Zombie, mob)?;
 
         let map = self.clone();
         event_node.listen(move |move_event: &PlayerMoveEvent| {
@@ -73,22 +70,6 @@ impl LobbyMap for LobbyMap2 {
                         player.teleport(x, y, z, yaw, pitch)?;
                     }
                 }
-            }
-            Ok(())
-        })?;
-
-        let m = model.clone();
-        event_node.listen(move |spawn_event: &PlayerSpawnEvent| {
-            if let Ok(player) = spawn_event.player() {
-                m.add_viewer(&player)?;
-            }
-            Ok(())
-        })?;
-
-        let m = model.clone();
-        event_node.listen(move |disconnect: &PlayerDisconnectEvent| {
-            if let Ok(player) = disconnect.player() {
-                m.remove_viewer(&player)?;
             }
             Ok(())
         })?;
@@ -256,22 +237,38 @@ impl GenericModel for BulbasaurModel {
     }
 }
 
-struct BulbasaurMob;
+struct BulbasaurMob {
+    model: WseeModel,
+    instance: InstanceContainer,
+}
+
+impl BulbasaurMob {
+    pub fn new(instance: InstanceContainer) -> minestom::Result<Self> {
+        let model = BulbasaurModel;
+        let model = create_wsee_model(model)?;
+
+        // should I do stuff like this.setInvisible here?
+        model.init(instance.clone(), Pos::of(1817.5, 41.0, 1044.5, 90.0, 0.0))?;
+
+        Ok(Self { model, instance })
+    }
+}
+
 impl EntityCreature for BulbasaurMob {
     fn update_new_viewer(&self, player: Player) {
-        // e.g. send a packet, change an internal state, etc.
-        println!("New viewer joined: {:?}", player);
+        log::info!("ARE YOU READY TO SEE THE BULBASAUR?");
+        let _ = self.model.add_viewer(&player);
     }
+
     fn update_old_viewer(&self, player: Player) {
-        println!("Viewer left: {:?}", player);
+        let _ = self.model.remove_viewer(&player);
     }
 
     fn tick(&self, time: i64) {
-        // Called every tick
-        // println!("Tick at {}", time);
+
     }
     
     fn remove(&self) {
-        println!("Creature is being removed");
+       
     }
 }
