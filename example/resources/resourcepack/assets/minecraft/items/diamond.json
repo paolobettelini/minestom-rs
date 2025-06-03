@@ -12,6 +12,20 @@
         }
       },
       {
+        "when": "rock1",
+        "model": {
+          "type": "minecraft:model",
+          "model": "thecrown:item/rock1"
+        }
+      },
+      {
+        "when": "zanite_block",
+        "model": {
+          "type": "minecraft:model",
+          "model": "thecrown:item/zanite_block"
+        }
+      },
+      {
         "when": "cloud1",
         "model": {
           "type": "minecraft:model",

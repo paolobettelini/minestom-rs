@@ -76,7 +76,6 @@ impl BulbasaurMob {
 
 impl EntityCreature for BulbasaurMob {
     fn update_new_viewer(&self, player: Player) {
-        log::info!("ARE YOU READY TO SEE THE BULBASAUR?");
         let _ = self.model.add_viewer(&player);
     }
 

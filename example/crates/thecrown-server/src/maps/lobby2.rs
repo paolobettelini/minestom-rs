@@ -76,11 +76,43 @@ impl LobbyMap for LobbyMap2 {
             Ok(())
         })?;
 
-        let block = BlockType::NoteBlock
-            .to_block()?
-            .with_property("note", "1")?
-            .with_property("powered", "false")?;
-        self.instance.set_block(1761, 35, 1044, block)?;
+        // Spawn custom block
+        let (x, y, z)  = (1761, 35, 1044);
+        let block = BlockType::Barrier
+            .to_block()?;
+            //.with_property("note", "1")?
+            //.with_property("powered", "false")?;
+        self.instance.set_block(x, y, z, block)?;
+        let item = ItemStack::of(Material::Diamond)?
+            .with_amount(1)?
+            .with_custom_model_data("zanite_block")?;
+        let display = ItemDisplay::new(&item)?;
+        display.set_no_gravity(true)?;
+        display.spawn(
+            &self.instance,
+            x as f64 + 0.5,
+            y as f64 + 0.5,
+            z as f64 + 0.5,
+            0.0,
+            90.0,
+        )?;
+
+        // Spawn custom rock
+        let (x, y, z, yaw, pitch)  = (1791.3, 33.5, 1030.3, 45.0, 0.0);
+        let item = ItemStack::of(Material::Diamond)?
+            .with_amount(1)?
+            .with_custom_model_data("rock1")?;
+        let display = ItemDisplay::new(&item)?;
+        display.set_no_gravity(true)?;
+        display.spawn(&self.instance, x, y, z, yaw, pitch)?;
+
+        let (x, y, z, yaw, pitch)  = (1791.2, 33.5, 1030.9, 0.0, 0.0);
+        let item = ItemStack::of(Material::Diamond)?
+            .with_amount(1)?
+            .with_custom_model_data("rock1")?;
+        let display = ItemDisplay::new(&item)?;
+        display.set_no_gravity(true)?;
+        display.spawn(&self.instance, x, y, z, yaw, pitch)?;
 
         // Achievement honey I shrunk myself
         // (1764, 26, 1177) - (1762, 26, 1177)
