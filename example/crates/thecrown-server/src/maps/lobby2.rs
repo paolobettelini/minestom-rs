@@ -1,10 +1,12 @@
+use crate::advancements::{self, CanAchieveAdvancement};
 use crate::logic::piano;
+use crate::magic_values::{SHRUNK_ACHIEVEMENT_SCALE, TITAN_ACHIEVEMENT_SCALE};
 use crate::maps::LobbyMap;
 use crate::models::bulbasaur::BulbasaurMob;
+use minestom::Attribute;
 use minestom::Block;
 use minestom::BlockType;
 use minestom::InstanceContainer;
-use crate::advancements::{self, CanAchieveAdvancement};
 use minestom::Player;
 use minestom::PlayerMoveEvent;
 use minestom::Pos;
@@ -73,8 +75,10 @@ impl LobbyMap for LobbyMap2 {
                         player.teleport(x, y, z, yaw, pitch)?;
 
                         // Check for achievement
-                        // TODO if scale is proper
-                        if !player.is_achieved(advancements::TITANOMACHY)? {
+                        if !player.is_achieved(advancements::TITANOMACHY)?
+                            && player.get_attribute(Attribute::Scale)?.base_value()?
+                                >= TITAN_ACHIEVEMENT_SCALE
+                        {
                             player.set_achieved(advancements::TITANOMACHY)?;
                         }
                     }
@@ -82,13 +86,18 @@ impl LobbyMap for LobbyMap2 {
                     // Check for achievement
                     let (x1, y1, z1) = (1762.0, 26.5, 1177.0);
                     let (x2, y2, z2) = (1764.0, 27.5, 1178.0);
-                    if pos.x >= x1 && pos.x <= x2 && pos.y >= y1 && pos.y <= y2 && pos.z >= z1 && pos.z <= z2 {
-                        if !player.is_achieved(advancements::SHRUNKEN)? {
-                            // TODO if scale is proper
-                            player.set_achieved(advancements::SHRUNKEN)?;
-                        }
+                    if pos.x >= x1
+                        && pos.x <= x2
+                        && pos.y >= y1
+                        && pos.y <= y2
+                        && pos.z >= z1
+                        && pos.z <= z2
+                        && !player.is_achieved(advancements::SHRUNKEN)?
+                        && player.get_attribute(Attribute::Scale)?.base_value()?
+                            <= SHRUNK_ACHIEVEMENT_SCALE
+                    {
+                        player.set_achieved(advancements::SHRUNKEN)?;
                     }
-
                 }
             }
             Ok(())
@@ -97,8 +106,8 @@ impl LobbyMap for LobbyMap2 {
         // Spawn custom block
         let (x, y, z) = (1761, 35, 1044);
         let block = BlockType::Barrier.to_block()?;
-            //.with_property("note", "1")?
-            //.with_property("powered", "false")?;
+        //.with_property("note", "1")?
+        //.with_property("powered", "false")?;
         self.instance.set_block(x, y, z, block)?;
         let item = ItemStack::of(Material::Diamond)?
             .with_amount(1)?
@@ -113,6 +122,34 @@ impl LobbyMap for LobbyMap2 {
             0.0,
             90.0,
         )?;
+
+        // Lights
+        let coords = vec![
+            (1775.5, 18.5, 980.5),
+            (1775.5, 18.5, 982.5),
+            (1775.5, 18.5, 984.5),
+            (1770.5, 18.5, 980.5),
+            (1770.5, 18.5, 982.5),
+            (1770.5, 18.5, 984.5),
+        ];
+        for coord in coords {
+            let (x, y, z) = coord;
+            let block = BlockType::Light.to_block()?;
+            self.instance.set_block(x as i32, y as i32, z as i32, block)?;
+            let item = ItemStack::of(Material::Diamond)?
+                .with_amount(1)?
+                .with_custom_model_data("light")?;
+            let display = ItemDisplay::new(&item)?;
+            display.set_no_gravity(true)?;
+            display.spawn(
+                &self.instance,
+                x as f64,
+                y as f64,
+                z as f64,
+                0.0,
+                0.0,
+            )?;
+        }
 
         // Spawn custom rock
         let (x, y, z, yaw, pitch) = (1791.3, 33.5, 1030.3, 45.0, 0.0);

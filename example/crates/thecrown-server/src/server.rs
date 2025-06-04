@@ -1,12 +1,8 @@
+use crate::advancements::init_player_advancements;
 use crate::commands::SpawnCommand;
 use crate::logic::lobby::LobbyServer;
-use minestom::advancement::FrameType;
 use crate::logic::parkour::ParkourServer;
 use crate::magic_values::*;
-use minestom::advancement::Advancement;
-use crate::advancements::init_player_advancements;
-use minestom::advancement::AdvancementRoot;
-use minestom::advancement::AdvancementManager;
 use crate::maps::LobbyMap2;
 use crate::maps::map::LobbyMap;
 use crate::mojang::get_skin_and_signature;
@@ -16,6 +12,10 @@ use minestom::InstanceContainer;
 use minestom::MinestomServer;
 use minestom::ServerListPingEvent;
 use minestom::TOKIO_HANDLE;
+use minestom::advancement::Advancement;
+use minestom::advancement::AdvancementManager;
+use minestom::advancement::AdvancementRoot;
+use minestom::advancement::FrameType;
 use minestom::entity::PlayerSkin;
 use minestom::{
     attribute::Attribute,
@@ -203,7 +203,6 @@ pub async fn run_server() -> minestom::Result<()> {
         }
         Ok(())
     })?;
-    
 
     info!("Starting server on 0.0.0.0:25565...");
     minecraft_server.start("0.0.0.0", 25565)?;

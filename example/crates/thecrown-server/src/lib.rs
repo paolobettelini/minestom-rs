@@ -7,6 +7,7 @@ use once_cell::sync::Lazy;
 use std::panic;
 use tokio::runtime::{Builder, Handle};
 
+mod advancements;
 mod commands;
 mod favicon;
 mod logic;
@@ -15,7 +16,6 @@ mod maps;
 mod models;
 mod mojang;
 mod server;
-mod advancements;
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_net_thecrown_App_startServer(env: JNIEnv, class: JClass) -> jint {

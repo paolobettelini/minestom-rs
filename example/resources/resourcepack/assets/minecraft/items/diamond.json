@@ -12,6 +12,13 @@
         }
       },
       {
+        "when": "light",
+        "model": {
+          "type": "minecraft:model",
+          "model": "thecrown:item/light"
+        }
+      },
+      {
         "when": "rock1",
         "model": {
           "type": "minecraft:model",

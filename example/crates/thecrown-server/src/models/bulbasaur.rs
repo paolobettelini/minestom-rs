@@ -73,7 +73,7 @@ impl BulbasaurMob {
         wrapper.set_invisible(true)?;
 
         model.init(instance.clone(), spawn_pos.clone())?;
-        animation_handler.play_repeat("animation.bulbasaur.faint");
+        let _ = animation_handler.play_repeat("animation.bulbasaur.faint");
 
         wrapper.set_instance_and_pos(&instance, &spawn_pos)?;
 

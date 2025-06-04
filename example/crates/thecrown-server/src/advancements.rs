@@ -1,11 +1,7 @@
 use crate::commands::SpawnCommand;
 use crate::logic::lobby::LobbyServer;
-use minestom::advancement::FrameType;
 use crate::logic::parkour::ParkourServer;
 use crate::magic_values::*;
-use minestom::advancement::Advancement;
-use minestom::advancement::AdvancementRoot;
-use minestom::advancement::AdvancementManager;
 use crate::maps::LobbyMap2;
 use crate::maps::map::LobbyMap;
 use crate::mojang::get_skin_and_signature;
@@ -13,8 +9,13 @@ use log::{error, info};
 use minestom;
 use minestom::InstanceContainer;
 use minestom::MinestomServer;
+use minestom::Player;
 use minestom::ServerListPingEvent;
 use minestom::TOKIO_HANDLE;
+use minestom::advancement::Advancement;
+use minestom::advancement::AdvancementManager;
+use minestom::advancement::AdvancementRoot;
+use minestom::advancement::FrameType;
 use minestom::entity::PlayerSkin;
 use minestom::{
     attribute::Attribute,
@@ -31,7 +32,6 @@ use minestom::{
 use parking_lot::Mutex as ParkingMutex;
 use rand::Rng;
 use std::collections::HashMap;
-use minestom::Player;
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::LazyLock;
@@ -45,21 +45,25 @@ pub const TITANOMACHY: &'static str = "titanomachy";
 
 pub const PARKOUR_WELCOME: &'static str = "parkour_welcome";
 
-// TODO: ogni nuovo achievement sitriggera anche quelli acquisiti precedentemente
-// I tab name devono contenere il nome del player perché il nome deve essere univoco.
-// Quindi dovrei anche distruggerlo (come ?)
+// TODO: uncache advancements when player leaves
 
 impl AdvancementsMap {
     pub fn new(minecraft_server: &MinestomServer, player: &Player) -> minestom::Result<Self> {
         let adv_manager = minecraft_server.advancement_manager()?;
+        let prefix = player.get_username()?.to_lowercase();
+
+        // TODO: remove when we can uncache advancements
+        let suffix: String = (0..5)
+            .map(|_| rand::thread_rng().gen_range('a'..='z'))
+            .collect();
+        let prefix = format!("{}-{}", prefix, suffix);
 
         let map: HashMap<String, Advancement> = crate::define_advancements! {
             server: minecraft_server,
             player: player,
-
             tabs: [
                 {
-                    tab_name: "thecrown",
+                    tab_name: &format!("{}-network", prefix),
                     background: "minecraft:textures/block/stripped_acacia_log.png",
                     items: [
                         {
@@ -100,7 +104,7 @@ impl AdvancementsMap {
                     ]
                 },
                 {
-                    tab_name: "parkour",
+                    tab_name: &format!("{}-parkour", prefix),
                     background: "minecraft:textures/block/stripped_warped_stem.png",
                     items: [
                         {
@@ -125,7 +129,10 @@ pub struct AdvancementsMap {
     pub advancements: HashMap<String, Advancement>,
 }
 
-pub fn init_player_advancements(minecraft_server: &MinestomServer, player: &Player) -> minestom::Result<()> {
+pub fn init_player_advancements(
+    minecraft_server: &MinestomServer,
+    player: &Player,
+) -> minestom::Result<()> {
     let uuid = player.get_uuid()?;
     let adv_map = AdvancementsMap::new(minecraft_server, player)?;
     let mut global = ADVANCEMENTS.write().unwrap();
@@ -149,7 +156,9 @@ pub trait CanAchieveAdvancement {
 
 impl CanAchieveAdvancement for Player {
     fn set_achieved(&self, name: &str) -> minestom::Result<()> {
-        get_advancement(&self, name).unwrap().set_achieved(true)?;
+        let adv = get_advancement(&self, name).unwrap();
+        adv.set_achieved(true)?;
+        adv.show_toast(false)?;
         Ok(())
     }
 
@@ -224,12 +233,15 @@ macro_rules! define_advancements {
                         $root_y,
                         $tab_bg,        // &str
                     )?;
+                    let root_adv = root.as_advancement();
                     if $root_ach {
-                        let _ = root.as_advancement().set_achieved(true);
+                        let _ = root_adv.set_achieved(true);
                     }
+                    // Show toast if not yet achieved.
+                    let _ = root_adv.show_toast(!$root_ach);
                     let tab = adv_manager.create_tab($tab_name, root.clone())?;
                     tab.add_viewer($player)?;
-                    adv_map.insert($root_name.to_string(), root.as_advancement());
+                    adv_map.insert($root_name.to_string(), root_adv);
                 )?
 
                 // (B) Process zero or more child entries:
@@ -244,12 +256,14 @@ macro_rules! define_advancements {
                         $x,
                         $y,
                     )?;
-                    let _ = adv.show_toast(true);
+
                     let id = format!("{}/{}", $tab_name, $name);
                     tab.create_advancement(&id, adv.clone(), parent_adv)?;
                     if $ach {
                         let _ = adv.set_achieved(true);
                     }
+                    // Show toast if not yet achieved.
+                    let _ = adv.show_toast(!$ach);
                     adv_map.insert($name.to_string(), adv);
                 )*
             }
