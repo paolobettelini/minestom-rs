@@ -2,31 +2,25 @@ use crate::advancements::{self, CanAchieveAdvancement};
 use crate::logic::piano;
 use crate::magic_values::{SHRUNK_ACHIEVEMENT_SCALE, TITAN_ACHIEVEMENT_SCALE};
 use crate::maps::LobbyMap;
+use crate::models::bulbasaur::{BulbasaurMob, BulbasaurModel};
 use crate::models::oldman::OldManModel;
-use crate::models::bulbasaur::BulbasaurMob;
 use minestom::Attribute;
-use minestom::Block;
 use minestom::BlockType;
 use minestom::InstanceContainer;
 use minestom::Player;
 use minestom::PlayerMoveEvent;
 use minestom::Pos;
-use minestom::entity::EntityCreature;
 use minestom::entity::ItemDisplay;
-use minestom::entity::MinestomEntityCreature;
-use minestom::entity::create_entity_creature;
-use minestom::entity::entity::EntityType;
-use minestom::event::player::{PlayerDisconnectEvent, PlayerSpawnEvent};
+use minestom::event::player::PlayerSpawnEvent;
 use minestom::instance::InstanceManager;
 use minestom::item::ItemStack;
 use minestom::material::Material;
 use parking_lot::RwLock;
 use rand::Rng;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::Arc;
 use uuid::Uuid;
 use world_seed_entity_engine::generic_model::GenericModel;
-use world_seed_entity_engine::generic_model::WseeModel;
 use world_seed_entity_engine::generic_model::create_wsee_model;
 
 #[derive(Clone)]
@@ -107,10 +101,11 @@ impl LobbyMap for LobbyMap2 {
         // Old man model
         let model = OldManModel;
         let model = create_wsee_model(model)?;
-        model.init(self.instance.clone(), Pos::of(1817.5, 45.0, 1044.5, 90.0, 0.0))?;
+        model.init(self.instance.clone(), Pos::of(1800.5, 33.0, 1044.5, -90.0, 0.0))?;
         event_node.listen(move |spawn_event: &PlayerSpawnEvent| {
             if let Ok(player) = spawn_event.player() {
                 let _ = model.add_viewer(&player);
+                //log::info!("Added player XXXXXXXXXXXXXXXXXXXXX");
                 // TODO also remove
             }
             Ok(())

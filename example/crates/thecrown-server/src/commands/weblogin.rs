@@ -1,16 +1,9 @@
-use crate::maps::LobbyMap;
-use log::info;
 use minestom;
-use minestom::Player;
 use minestom::{
     Command,
-    command::{self, CommandContext, CommandSender},
+    command::{CommandContext, CommandSender},
     component,
 };
-use parking_lot::RwLock;
-use std::collections::HashMap;
-use std::sync::Arc;
-use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct WebloginCommand;

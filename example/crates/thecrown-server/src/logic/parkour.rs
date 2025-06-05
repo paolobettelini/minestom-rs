@@ -3,7 +3,7 @@ use log::error;
 use log::info;
 use minestom;
 use minestom::event::EventNode;
-use minestom::{Block, BlockType, MinestomServer, Position};
+use minestom::{BlockType, MinestomServer, Position};
 use minestom::{
     component,
     entity::{GameMode, Player},
@@ -20,7 +20,7 @@ use minestom::{
 };
 use parking_lot::RwLock;
 use rand::Rng;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;

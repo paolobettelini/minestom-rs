@@ -1,6 +1,3 @@
-use crate::maps::LobbyMap;
-use minestom::InstanceContainer;
-use rand::Rng;
 
 #[derive(Copy, Clone)]
 pub struct LobbyMap1;

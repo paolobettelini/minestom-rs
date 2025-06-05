@@ -1,4 +1,3 @@
-use base64::{Engine as _, engine::general_purpose::STANDARD};
 use reqwest::Client;
 use serde::Deserialize;
 use uuid::Uuid;

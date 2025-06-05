@@ -1,9 +1,7 @@
 use minestom::Player;
 use minestom::PlayerEntityInteractEvent;
-use minestom::PlayerMoveEvent;
 use minestom::Result;
 use minestom::Source;
-use minestom::collision::BoundingBox;
 use minestom::entity::display::ItemDisplay;
 use minestom::entity::entity::Entity;
 use minestom::entity::entity::EntityType;
@@ -170,7 +168,7 @@ fn play_tile(
     z: f64,
 ) -> Result<()> {
     // create particle packet
-    let mut particle_packet = ParticlePacket::new(ParticleType::Note, x, y, z);
+    let particle_packet = ParticlePacket::new(ParticleType::Note, x, y, z);
 
     // pitch is in [0.5, 2]
     // for every player

@@ -1,35 +1,23 @@
 use crate::advancements::init_player_advancements;
-use crate::commands::SpawnCommand;
 use crate::logic::lobby::LobbyServer;
 use crate::logic::parkour::ParkourServer;
-use crate::magic_values::*;
 use crate::maps::LobbyMap2;
 use crate::maps::map::LobbyMap;
 use crate::mojang::get_skin_and_signature;
-use log::{error, info};
+use log::info;
 use minestom;
-use minestom::InstanceContainer;
 use minestom::MinestomServer;
 use minestom::ServerListPingEvent;
 use minestom::TOKIO_HANDLE;
-use minestom::advancement::Advancement;
-use minestom::advancement::AdvancementManager;
-use minestom::advancement::AdvancementRoot;
-use minestom::advancement::FrameType;
 use minestom::entity::PlayerSkin;
 use minestom::{
-    attribute::Attribute,
-    command::{Command, CommandContext},
     component,
-    entity::GameMode,
     event::player::{
-        AsyncPlayerConfigurationEvent, PlayerMoveEvent, PlayerSkinInitEvent, PlayerSpawnEvent,
+        AsyncPlayerConfigurationEvent, PlayerSkinInitEvent, PlayerSpawnEvent,
     },
-    item::{InventoryHolder, ItemStack},
     material::Material,
-    resource_pack::{ResourcePackInfo, ResourcePackRequest, ResourcePackRequestBuilder},
+    resource_pack::{ResourcePackInfo, ResourcePackRequestBuilder},
 };
-use parking_lot::Mutex as ParkingMutex;
 use rand::Rng;
 use std::collections::HashMap;
 use std::path::Path;

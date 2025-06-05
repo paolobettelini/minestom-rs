@@ -4,7 +4,7 @@ use minestom;
 use minestom::Player;
 use minestom::{
     Command,
-    command::{self, CommandContext, CommandSender},
+    command::{CommandContext, CommandSender},
     component,
 };
 use parking_lot::RwLock;

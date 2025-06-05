@@ -1,38 +1,22 @@
 use crate::commands::SpawnCommand;
 use crate::commands::WebloginCommand;
-use crate::logic::piano;
 use crate::magic_values::*;
-use crate::maps::LobbyMap2;
 use crate::maps::map::LobbyMap;
-use crate::mojang::get_skin_and_signature;
 use crate::server::Server;
-use log::{error, info};
+use log::info;
 use minestom;
-use minestom::InstanceContainer;
 use minestom::MinestomServer;
 use minestom::Player;
-use minestom::ServerListPingEvent;
-use minestom::TOKIO_HANDLE;
-use minestom::advancement::Advancement;
-use minestom::advancement::AdvancementManager;
-use minestom::advancement::AdvancementRoot;
-use minestom::advancement::AdvancementTab;
-use minestom::advancement::FrameType;
-use minestom::entity::PlayerSkin;
 use minestom::event::inventory::InventoryPreClickEvent;
 use minestom::{
     attribute::Attribute,
-    command::{Command, CommandContext},
     component,
     entity::GameMode,
-    entity::ItemDisplay,
     event::player::{
-        AsyncPlayerConfigurationEvent, PlayerChatEvent, PlayerDisconnectEvent, PlayerMoveEvent,
-        PlayerSkinInitEvent, PlayerSpawnEvent,
+        AsyncPlayerConfigurationEvent, PlayerChatEvent, PlayerDisconnectEvent, PlayerSpawnEvent,
     },
     item::{InventoryHolder, ItemStack},
     material::Material,
-    resource_pack::{ResourcePackInfo, ResourcePackRequest, ResourcePackRequestBuilder},
 };
 use parking_lot::RwLock;
 use std::collections::HashMap;
@@ -110,7 +94,7 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
                 player.set_allow_flying(true)?;
 
                 let scale = distribution(AVG_SCALE, MIN_SCALE, MAX_SCALE);
-                let scale = 0.2;
+                //let scale = 0.2;
 
                 info!("Setting player scale to {}", scale);
                 player

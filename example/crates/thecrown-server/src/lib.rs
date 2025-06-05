@@ -3,9 +3,7 @@ use jni::objects::JClass;
 use jni::sys::jint;
 use minestom::jni_utils;
 use minestom::{RUNTIME, init_runtime};
-use once_cell::sync::Lazy;
 use std::panic;
-use tokio::runtime::{Builder, Handle};
 
 mod advancements;
 mod commands;
