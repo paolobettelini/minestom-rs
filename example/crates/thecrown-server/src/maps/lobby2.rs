@@ -2,6 +2,7 @@ use crate::advancements::{self, CanAchieveAdvancement};
 use crate::logic::piano;
 use crate::magic_values::{SHRUNK_ACHIEVEMENT_SCALE, TITAN_ACHIEVEMENT_SCALE};
 use crate::maps::LobbyMap;
+use crate::models::oldman::OldManModel;
 use crate::models::bulbasaur::BulbasaurMob;
 use minestom::Attribute;
 use minestom::Block;
@@ -103,11 +104,22 @@ impl LobbyMap for LobbyMap2 {
             Ok(())
         })?;
 
+        // Old man model
+        let model = OldManModel;
+        let model = create_wsee_model(model)?;
+        model.init(self.instance.clone(), Pos::of(1817.5, 45.0, 1044.5, 90.0, 0.0))?;
+        event_node.listen(move |spawn_event: &PlayerSpawnEvent| {
+            if let Ok(player) = spawn_event.player() {
+                let _ = model.add_viewer(&player);
+                // TODO also remove
+            }
+            Ok(())
+        })?;
+
+
         // Spawn custom block
         let (x, y, z) = (1761, 35, 1044);
         let block = BlockType::Barrier.to_block()?;
-        //.with_property("note", "1")?
-        //.with_property("powered", "false")?;
         self.instance.set_block(x, y, z, block)?;
         let item = ItemStack::of(Material::Diamond)?
             .with_amount(1)?
@@ -134,7 +146,8 @@ impl LobbyMap for LobbyMap2 {
         ];
         for coord in coords {
             let (x, y, z) = coord;
-            let block = BlockType::Light.to_block()?;
+            let block = BlockType::Light.to_block()?
+                .with_property("level", "15")?;
             self.instance.set_block(x as i32, y as i32, z as i32, block)?;
             let item = ItemStack::of(Material::Diamond)?
                 .with_amount(1)?
