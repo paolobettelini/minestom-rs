@@ -7,9 +7,10 @@ public class App {
 
     static {
         try {
+            String libName = System.getProperty("lib.name", "minestom");
             String libraryPath = System.getProperty("java.library.path");
             System.out.println("Library path: " + libraryPath);
-            System.loadLibrary("minestom");
+            System.loadLibrary(libName);
         } catch (UnsatisfiedLinkError e) {
             System.err.println("Failed to load native library: " + e.getMessage());
             e.printStackTrace();

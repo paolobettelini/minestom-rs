@@ -1,6 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
 use crate::GameServerSpecs;
 use crate::ProtocolPacket;
+use crate::TransferPacketData;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
@@ -12,7 +13,7 @@ pub enum McServerPacket {
     WhisperCommand { server: String, sender: String, target: String, message: String },
 
     /* Relay -> Gameserver */
-    // ExecuteTransfer { username: String, transfer: TransferPacketData },
+    ExecuteTransfer { username: String, transfer: TransferPacketData },
 }
 
 impl ProtocolPacket for McServerPacket {

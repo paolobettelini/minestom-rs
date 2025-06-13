@@ -19,6 +19,8 @@ pub mod sound;
 pub mod tag;
 pub mod text;
 pub mod advancement;
+pub mod transfer;
+pub mod cookie;
 
 pub use error::MinestomError;
 pub type Result<T> = std::result::Result<T, MinestomError>;

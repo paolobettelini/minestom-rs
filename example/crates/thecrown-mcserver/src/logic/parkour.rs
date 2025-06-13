@@ -191,17 +191,6 @@ impl Server for ParkourServer {
             }
         })?;
 
-        event_node.listen(move |event: &ServerListPingEvent| {
-            let response_data = event.get_response_data()?;
-
-            response_data.set_online(-1)?;
-            response_data.set_max_player(i32::MAX)?;
-            response_data.set_description(&component!("Henlo").red())?;
-            response_data.set_favicon(&crate::favicon::random_image())?;
-
-            Ok(())
-        })?;
-
         let states_ref = self.player_states.clone();
         event_node.listen(move |spawn_event: &PlayerMoveEvent| {
             if let Ok(player) = spawn_event.player() {

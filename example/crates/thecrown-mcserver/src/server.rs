@@ -93,6 +93,7 @@ pub async fn run_server() -> anyhow::Result<()> {
     let command_manager = minecraft_server.command_manager()?;
 
     let server_name = "server1";
+    let port = 25566;
     let nats_url = String::from("127.0.0.1:4222");
     let subject = format!("mcserver.{}", server_name);
     let nats_client = Arc::new(NatsClient::new(nats_url).await?);
@@ -112,7 +113,7 @@ pub async fn run_server() -> anyhow::Result<()> {
     let register_packet = RelayPacket::RegisterServer {
         server_name: server_name.to_string(),
         address: String::from("127.0.0.1"),
-        port: 25565
+        port,
     };
 
     // WorldEntitySeedEngine initialization
@@ -162,18 +163,6 @@ pub async fn run_server() -> anyhow::Result<()> {
                 player.send_resource_packs(&request)?;
             }
         }
-
-        Ok(())
-    })?;
-
-    // TODO: move to auth server
-    event_handler.listen(move |event: &ServerListPingEvent| {
-        let response_data = event.get_response_data()?;
-
-        response_data.set_online(-1)?;
-        response_data.set_max_player(i32::MAX)?;
-        response_data.set_description(&component!("Henlo").red())?;
-        response_data.set_favicon(&crate::favicon::random_image())?;
 
         Ok(())
     })?;
@@ -234,8 +223,7 @@ pub async fn run_server() -> anyhow::Result<()> {
         Ok(())
     })?;
 
-    info!("Starting server on 0.0.0.0:25565...");
-    minecraft_server.start("0.0.0.0", 25565)?;
+    minecraft_server.start("0.0.0.0", port)?;
 
     // Register to relay
     nats_client.publish(&register_packet).await;

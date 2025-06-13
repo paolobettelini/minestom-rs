@@ -1,9 +1,12 @@
 use chrono::{NaiveDateTime, Utc};
 use futures::StreamExt;
 use thecrown_protocol::GameServerType;
+use thecrown_common::crypto;
 use thecrown_protocol::McServerPacket;
 use crate::State;
+use thecrown_protocol::TransferPacketData;
 use thecrown_protocol::GameServerSpecs;
+use thecrown_protocol::AccomodatePlayerData;
 use thecrown_protocol::RelayPacket;
 
 type PacketType = RelayPacket;
@@ -29,6 +32,59 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
             server_container.publish(message).await;
 
             None
+        },
+        RelayPacket::PlayerWantsToJoin { username } => {
+            log::info!("Received join request by {username}");
+
+            // check if banned
+            // TODO: two requests are sent to mojang to get the UUID.
+            /*if let Some(ban) = state.db_client.get_ban(&username).await {
+                let time_left = if let Some(end) = ban.ban_end {
+                    let now = Utc::now().timestamp();
+                    Some(end.timestamp() - now)
+                } else {
+                    None
+                };
+
+                let response = RelayPacket::AccomodatePlayer {
+                    data: AccomodatePlayerData::Ban {
+                        reason: ban.ban_reason.to_string(),
+                        time_left,
+                    },
+                };
+
+                return Some(response);
+            }
+
+            // get player data
+            if let Some(player) = state.db_client.get_player(&username).await {
+                // maybe get the type of lobby he was previously in?
+            } else {
+                // Initialize player to the database
+                state.db_client.insert_player(&username).await;
+            }
+
+            // Get lobby "hub" for player
+            let (game_server, cookie) = state
+                .get_lobby_for_player(&username, "hub")
+                .await
+                .expect("No hub servers found");
+            */
+
+            let cookie = crypto::random_token();
+            let transfer_data = TransferPacketData {
+                cookie: cookie.into(),
+                address: "127.0.0.1".to_string(),
+                port: 25566,
+                //address: game_server.address.clone(),
+                //port: game_server.port,
+            };
+
+            let response = RelayPacket::AccomodatePlayer {
+                data: AccomodatePlayerData::Join { transfer_data },
+            };
+
+            Some(response)
         }
         _ => None,
     }

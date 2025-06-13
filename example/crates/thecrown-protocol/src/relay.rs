@@ -6,6 +6,10 @@ use crate::ProtocolPacket;
 pub enum RelayPacket {
     /* Server container server -> Relay */
     RegisterServer { server_name: String, address: String, port: u16 },
+    /* Auth -> Relay - When the player wants to join the network */
+    PlayerWantsToJoin { username: String /* uuid */ },
+    /* Relay -> Auth - When the player wants to join the netwotk */
+    AccomodatePlayer { data: AccomodatePlayerData },
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -20,6 +24,21 @@ pub struct GameServerSpecs {
 pub enum GameServerType {
     Parkour,
     Lobby
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "type")]
+pub enum AccomodatePlayerData {
+    Ban { reason: String, time_left: Option<i64> },
+    Join { transfer_data: TransferPacketData },
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "type")]
+pub struct TransferPacketData {
+    pub cookie: Vec<u8>,
+    pub address: String,
+    pub port: u16
 }
 
 impl ProtocolPacket for RelayPacket {
