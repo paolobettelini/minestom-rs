@@ -133,6 +133,10 @@ pub async fn run_server() -> anyhow::Result<()> {
             if let Ok(name) = player.get_username() {
                 info!("Player configured: {}", name);
 
+                let cookie = player.fetch_cookie(COOKIE_AUTH)?;
+                // TODO replay deve darea anche game_server che va nel cookie
+                //println!("{cookie}");
+
                 // FAKE: the player needs to be sent to lobbysrv1
                 let servers = vec!["lobby1", "parkour1"];
                 let server_name = servers[rand::thread_rng().gen_range(0..servers.len())];

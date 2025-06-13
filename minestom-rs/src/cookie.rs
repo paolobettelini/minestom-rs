@@ -1,15 +1,17 @@
 use jni::JNIEnv;
-use jni::objects::{JObject, JString, JValue};
+use jni::objects::{JObject, JValue};
 
 use crate::entity::SendablePacket;
 use crate::jni_utils::get_env;
 
-pub struct StoreCookiePacket<'a> {
+/// Packet per memorizzazione cookie (CookieStorePacket)
+pub struct CookieStorePacket<'a> {
     pub key: &'a str,
     pub data: Vec<u8>,
 }
 
-impl<'a> SendablePacket for StoreCookiePacket<'a> {
+impl<'a> SendablePacket for CookieStorePacket<'a> {
+    /// Converte in oggetto Java CookieStorePacket
     fn to_java(&self) -> JObject {
         let mut env = get_env().unwrap();
         // Crea Java String per la chiave
@@ -20,11 +22,11 @@ impl<'a> SendablePacket for StoreCookiePacket<'a> {
         let java_data = env
             .byte_array_from_slice(&self.data)
             .expect("Failed to create Java byte[] from Rust Vec<u8>");
-        // Trova la classe StoreCookiePacket
+        // Trova la classe CookieStorePacket
         let pkt_cls = env
-            .find_class("net/minestom/server/network/packet/server/common/StoreCookiePacket")
-            .expect("Failed to find StoreCookiePacket class");
-        // Costruisci StoreCookiePacket(key: String, data: byte[])
+            .find_class("net/minestom/server/network/packet/server/common/CookieStorePacket")
+            .expect("Failed to find CookieStorePacket class");
+        // Costruisci CookieStorePacket(key: String, data: byte[])
         let pkt_obj = env
             .new_object(
                 pkt_cls,
@@ -34,14 +36,14 @@ impl<'a> SendablePacket for StoreCookiePacket<'a> {
                     JValue::Object(&JObject::from(java_data)),
                 ],
             )
-            .expect("Failed to construct Java StoreCookiePacket");
+            .expect("Failed to construct Java CookieStorePacket");
         pkt_obj
     }
 }
 
-impl<'a> StoreCookiePacket<'a> {
+impl<'a> CookieStorePacket<'a> {
+    /// Crea un nuovo CookieStorePacket con chiave e dati
     pub fn new(key: &'a str, data: Vec<u8>) -> Self {
         Self { key, data }
     }
 }
-

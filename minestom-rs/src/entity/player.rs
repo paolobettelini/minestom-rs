@@ -1,4 +1,5 @@
-use jni::objects::{JObject, JValue};
+use jni::objects::{JByteArray, JObject, JValue};
+use jni::sys::jbyteArray;
 
 use crate::Result;
 use crate::entity::PlayerSkin;
@@ -34,6 +35,37 @@ impl crate::entity::Player {
             &[JValue::Object((&java_pkt).into())],
         )?;
         Ok(())
+    }
+
+    /// Fetches a cookie by key, returning None if Java returns null.
+    pub fn fetch_cookie(&self, key: &str) -> Result<Option<Vec<u8>>> {
+        let mut env = get_env()?;
+
+        let key_jstring = env.new_string(key)?;
+
+
+        let future = env.call_method(
+            &self.inner.as_obj()?,
+            "fetchCookie",
+            "(Ljava/lang/String;)Ljava/util/concurrent/CompletableFuture;",
+            &[JValue::Object(&key_jstring)],
+        )?;
+
+        // 3) env.call_method on future.join() → Object (really byte[])
+        let future_obj = future.l()?;
+        let joined = env
+            .call_method(future_obj, "join", "()Ljava/lang/Object;", &[])?
+            .l()?;
+
+        // 4) if null, return None
+        if joined.is_null() {
+            return Ok(None);
+        }
+
+        // 5) treat joined as jbyteArray and convert to Vec<u8>
+        let byte_array = unsafe { JByteArray::from_raw(joined.into_raw()) };
+        let vec: Vec<u8> = env.convert_byte_array(&byte_array)?;
+        Ok(Some(vec))
     }
 
     /// Sends resource packs to the player
