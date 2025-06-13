@@ -11,6 +11,7 @@ use jni::objects::{JObject, JObjectArray};
 use log::{debug, error, info};
 use std::path::Path;
 
+#[derive(Clone)]
 pub struct InstanceManager {
     inner: JavaObject,
 }

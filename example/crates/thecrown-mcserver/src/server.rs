@@ -4,26 +4,31 @@ use crate::logic::parkour::ParkourServer;
 use crate::maps::LobbyMap2;
 use crate::maps::map::LobbyMap;
 use crate::mojang::get_skin_and_signature;
+use thecrown_protocol::GameServerSpecs;
+use thecrown_protocol::GameServerType;
 use log::info;
 use minestom;
+use thecrown_protocol::RelayPacket;
+use thecrown_common::nats::CallbackType;
 use minestom::MinestomServer;
+use thecrown_protocol::McServerPacket;
 use minestom::ServerListPingEvent;
 use minestom::TOKIO_HANDLE;
 use minestom::entity::PlayerSkin;
 use minestom::{
     component,
-    event::player::{
-        AsyncPlayerConfigurationEvent, PlayerSkinInitEvent, PlayerSpawnEvent,
-    },
+    event::player::{AsyncPlayerConfigurationEvent, PlayerSkinInitEvent, PlayerSpawnEvent},
     material::Material,
     resource_pack::{ResourcePackInfo, ResourcePackRequestBuilder},
 };
+use minestom::instance::InstanceManager;
 use rand::Rng;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::LazyLock;
 use std::sync::{Mutex, RwLock};
+use thecrown_common::nats::NatsClient;
 use uuid::Uuid;
 use world_seed_entity_engine::model_engine::ModelEngine;
 
@@ -42,13 +47,73 @@ pub trait Server: Send + Sync {
     ) -> minestom::Result<()>;
 }
 
-pub async fn run_server() -> minestom::Result<()> {
-    init_logging();
+type PacketType = McServerPacket;
+#[derive(Clone)]
+pub struct State {
+    minecraft_server: MinestomServer,
+    instance_manager: InstanceManager,
+}
 
+pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
+    match msg { // TODO voglio ricever un Arc<State>
+        PacketType::StartGameServers { servers } => {
+            for server_specs in servers {
+                log::info!("Starting server {:?}", server_specs);
+                let server: Box<dyn Server + Send + Sync> = match server_specs.server_type {
+                    GameServerType::Lobby => {
+                        let map = LobbyMap2::new(&state.instance_manager).expect("Could not create map");
+                        let server = LobbyServer::new(map, state.minecraft_server.clone()).expect("Could not create expect");
+                        Box::new(server)                        
+                    },
+                    GameServerType::Parkour => {
+                        let server = ParkourServer::default();
+                        Box::new(server)
+                    },
+                };
+
+                let _ = server.init(&state.minecraft_server);
+                let server_name = String::from(server_specs.name);
+                SERVERS
+                    .lock()
+                    .unwrap()
+                    .insert(server_name.clone(), Arc::new(server));
+            }
+            None
+        }
+        _ => None,
+    }
+}
+
+pub async fn run_server() -> anyhow::Result<()> {
+    init_logging();
+    
     let minecraft_server = MinestomServer::new()?;
     let scheduler = minecraft_server.scheduler_manager()?;
     let instance_manager = minecraft_server.instance_manager()?;
     let command_manager = minecraft_server.command_manager()?;
+
+    let server_name = "server1";
+    let nats_url = String::from("127.0.0.1:4222");
+    let subject = format!("mcserver.{}", server_name);
+    let nats_client = Arc::new(NatsClient::new(nats_url).await?);
+    let state = State {
+        minecraft_server: minecraft_server.clone(),
+        instance_manager: instance_manager.clone(),
+    };
+    let async_handler: Arc<CallbackType<_, _>> =
+        Arc::new(|state, msg| Box::pin(handle_msg(state, msg)));
+    let nats_client_inner = nats_client.clone();
+    let task_handle = tokio::task::spawn(async move {
+        nats_client_inner
+            .handle_subscription_with_subject(subject, state.clone(), async_handler.as_ref())
+            .await;
+    });
+    // let out = task_handle.await?;
+    let register_packet = RelayPacket::RegisterServer {
+        server_name: server_name.to_string(),
+        address: String::from("127.0.0.1"),
+        port: 25565
+    };
 
     // WorldEntitySeedEngine initialization
     let output_dir = "/home/paolo/Desktop/github/minestom-rs/example/resources/output";
@@ -58,29 +123,8 @@ pub async fn run_server() -> minestom::Result<()> {
     ModelEngine::set_model_material(Material::MagmaCream)?;
     ModelEngine::load_mappings(mappings, models_dir)?;
 
-    // FAKE:
-    // create parkour server
-    let server = ParkourServer::default();
-    server.init(&minecraft_server)?;
-    let server = Box::new(server);
-    let server_name = String::from("parkour");
-    SERVERS
-        .lock()
-        .unwrap()
-        .insert(server_name.clone(), Arc::new(server));
-    // create lobby server
-    let map = LobbyMap2::new(&instance_manager)?;
-    let server = LobbyServer::new(map, minecraft_server.clone())?;
-    server.init(&minecraft_server)?;
-    let server = Box::new(server);
-    let server_name = String::from("lobbysrv1");
-    SERVERS
-        .lock()
-        .unwrap()
-        .insert(server_name.clone(), Arc::new(server));
-
-    let event_handler = minecraft_server.event_handler()?;
     let minecraft_server_clone = minecraft_server.clone();
+    let event_handler = minecraft_server.event_handler()?;
 
     event_handler.listen(move |config_event: &AsyncPlayerConfigurationEvent| {
         // Try to get player information
@@ -89,8 +133,7 @@ pub async fn run_server() -> minestom::Result<()> {
                 info!("Player configured: {}", name);
 
                 // FAKE: the player needs to be sent to lobbysrv1
-                //let servers = vec!["lobbysrv1", "parkour"];
-                let servers = vec!["lobbysrv1"];
+                let servers = vec!["lobby1", "parkour1"];
                 let server_name = servers[rand::thread_rng().gen_range(0..servers.len())];
                 log::info!("Sending player {} to server: {}", name, server_name);
                 SERVERS
@@ -102,8 +145,7 @@ pub async fn run_server() -> minestom::Result<()> {
                 PLAYER_SERVER
                     .write()
                     .unwrap()
-                    //.insert(player.get_uuid()?, "lobbysrv1".to_string());
-                    .insert(player.get_uuid()?, "parkour".to_string());
+                    .insert(player.get_uuid()?, server_name.to_string());
 
                 // Send resource pack
                 let uuid = uuid::Uuid::new_v4();
@@ -194,6 +236,9 @@ pub async fn run_server() -> minestom::Result<()> {
 
     info!("Starting server on 0.0.0.0:25565...");
     minecraft_server.start("0.0.0.0", 25565)?;
+
+    // Register to relay
+    nats_client.publish(&register_packet).await;
 
     info!("Server is now listening for connections!");
     info!("Press Ctrl+C to stop the server");

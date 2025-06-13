@@ -1,14 +1,15 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+use serde::{Deserialize, Serialize};
+
+pub trait ProtocolPacket {
+    fn get_nats_subject() -> &'static str;
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+mod relay;
+//mod web;
+mod mcserver;
+mod gameserver;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub use relay::*;
+//pub use web::*;
+pub use mcserver::*;
+pub use gameserver::*;

@@ -101,7 +101,10 @@ impl LobbyMap for LobbyMap2 {
         // Old man model
         let model = OldManModel;
         let model = create_wsee_model(model)?;
-        model.init(self.instance.clone(), Pos::of(1800.5, 33.0, 1044.5, -90.0, 0.0))?;
+        model.init(
+            self.instance.clone(),
+            Pos::of(1800.5, 33.0, 1044.5, -90.0, 0.0),
+        )?;
         event_node.listen(move |spawn_event: &PlayerSpawnEvent| {
             if let Ok(player) = spawn_event.player() {
                 let _ = model.add_viewer(&player);
@@ -110,7 +113,6 @@ impl LobbyMap for LobbyMap2 {
             }
             Ok(())
         })?;
-
 
         // Spawn custom block
         let (x, y, z) = (1761, 35, 1044);
@@ -141,22 +143,15 @@ impl LobbyMap for LobbyMap2 {
         ];
         for coord in coords {
             let (x, y, z) = coord;
-            let block = BlockType::Light.to_block()?
-                .with_property("level", "15")?;
-            self.instance.set_block(x as i32, y as i32, z as i32, block)?;
+            let block = BlockType::Light.to_block()?.with_property("level", "15")?;
+            self.instance
+                .set_block(x as i32, y as i32, z as i32, block)?;
             let item = ItemStack::of(Material::Diamond)?
                 .with_amount(1)?
                 .with_custom_model_data("light")?;
             let display = ItemDisplay::new(&item)?;
             display.set_no_gravity(true)?;
-            display.spawn(
-                &self.instance,
-                x as f64,
-                y as f64,
-                z as f64,
-                0.0,
-                0.0,
-            )?;
+            display.spawn(&self.instance, x as f64, y as f64, z as f64, 0.0, 0.0)?;
         }
 
         // Spawn custom rock

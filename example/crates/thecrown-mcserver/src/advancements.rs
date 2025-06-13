@@ -3,10 +3,7 @@ use minestom::MinestomServer;
 use minestom::Player;
 use minestom::advancement::Advancement;
 use minestom::advancement::FrameType;
-use minestom::{
-    component,
-    material::Material,
-};
+use minestom::{component, material::Material};
 use rand::Rng;
 use std::collections::HashMap;
 use std::sync::LazyLock;

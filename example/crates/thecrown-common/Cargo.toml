@@ -1,0 +1,16 @@
+[package]
+name = "thecrown-common"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+async-nats = "0.34.0"
+futures = "0.3.30"
+log = "0.4.21"
+serde = "1.0.202"
+serde_cbor = "0.11.2"
+thecrown-protocol = { path = "../thecrown-protocol" }
+toml = "0.8.13"
+anyhow = "1.0.86"
+rand = "0.8.5"
+reqwest = { version = "0.12.5", features = ["json"] }

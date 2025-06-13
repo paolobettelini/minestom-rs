@@ -101,3 +101,4 @@ java -Djava.library.path=$CARGO_TARGET_DIR/release -jar build/libs/app.jar
 
 Event and command callbacks should be async. InstanceContainer, SharedInstance etc dovrebbero avere gli stessi metodi comuni.
 Lo scheduler non funziona, dà errore JNI.
+In WorldSeedEntityEngine si dovrebbe essere registerListener o un metodo per rimuoverli
