@@ -12,8 +12,7 @@ use minestom::{
         player::{
             AsyncPlayerConfigurationEvent, PlayerChatEvent, PlayerDisconnectEvent, PlayerMoveEvent,
             PlayerSpawnEvent,
-        },
-        server::ServerListPingEvent,
+        }
     },
     instance::InstanceContainer,
     sound::{Sound, SoundEvent, Source},

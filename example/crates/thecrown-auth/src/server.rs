@@ -59,7 +59,7 @@ pub async fn run_server() -> anyhow::Result<()> {
                             //player.kick(component);
                         },
                         Join { transfer_data } => {
-                            player.transfer(transfer_data);
+                            player.transfer(transfer_data)?;
                         },
                     }
                 }

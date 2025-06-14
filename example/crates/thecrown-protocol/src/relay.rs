@@ -4,12 +4,16 @@ use crate::ProtocolPacket;
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum RelayPacket {
-    /* Server container server -> Relay */
+    /* Server container -> Relay */
     RegisterServer { server_name: String, address: String, port: u16 },
     /* Auth -> Relay - When the player wants to join the network */
     PlayerWantsToJoin { username: String /* uuid */ },
     /* Relay -> Auth - When the player wants to join the netwotk */
     AccomodatePlayer { data: AccomodatePlayerData },
+    /* Server container -> Relay */
+    AuthUserJoin { username: String, server: String, cookie: Vec<u8> },
+    /* Relay -> Server container */
+    ServeAuthResult { game_server: Option<String> },
 }
 
 #[derive(Serialize, Deserialize, Debug)]

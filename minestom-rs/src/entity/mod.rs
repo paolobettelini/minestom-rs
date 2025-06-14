@@ -16,7 +16,7 @@ use crate::coordinate::Position;
 use crate::jni_utils::{JavaObject, JniValue, get_env};
 use crate::sound::Sound;
 use crate::text::Component;
-use jni::objects::JString;
+use jni::objects::{JByteArray, JString};
 use jni::objects::{JObject, JValue};
 use uuid;
 
@@ -45,6 +45,76 @@ pub struct Player {
     pub(crate) inner: JavaObject,
 }
 
+#[derive(Clone)]
+pub struct PlayerConnection {
+    pub(crate) inner: JavaObject,
+}
+
+impl PlayerConnection {
+    pub(crate) fn new(inner: JavaObject) -> Self {
+        Self { inner }
+    }
+
+    /// Stores a cookie by key and data.
+    pub fn store_cookie(&self, key: &str, data: &[u8]) -> Result<()> {
+        let mut env = get_env()?;
+        // Convert the Rust &str into a Java String
+        let key_jstring = env.new_string(key)?;
+        // Convert the Rust &[u8] into a Java byte[]
+        let byte_array = env.byte_array_from_slice(data)?;
+        // Call the Java method: void storeCookie(String key, byte[] data)
+        env.call_method(
+            &self.inner.as_obj()?,
+            "storeCookie",
+            "(Ljava/lang/String;[B)V",
+            &[
+                JValue::Object(&key_jstring),
+                JValue::Object(&JObject::from(byte_array)),
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Fetches a cookie by key, returning None if Java returns null.
+    pub fn fetch_cookie(&self, key: &str) -> Result<Option<Vec<u8>>> {
+        let mut env = get_env()?;
+
+        let key_jstring = env.new_string(key)?;
+
+        let future = env.call_method(
+            &self.inner.as_obj()?,
+            "fetchCookie",
+            "(Ljava/lang/String;)Ljava/util/concurrent/CompletableFuture;",
+            &[JValue::Object(&key_jstring)],
+        )?;
+
+        // 3) env.call_method on future.join() → Object (really byte[])
+        let future_obj = future.l()?;
+        let joined = env
+            .call_method(future_obj, "join", "()Ljava/lang/Object;", &[])?
+            .l()?;
+
+        // 4) if null, return None
+        if joined.is_null() {
+            return Ok(None);
+        }
+
+        // 5) treat joined as jbyteArray and convert to Vec<u8>
+        let byte_array = unsafe { JByteArray::from_raw(joined.into_raw()) };
+        let vec: Vec<u8> = env.convert_byte_array(&byte_array)?;
+        Ok(Some(vec))
+    }
+
+    pub fn disconnect(&self) -> Result<()> {
+        let mut env = get_env()?;
+        self.inner.call_void_method(
+            "disconnect",
+            "()V",
+            &[],
+        )
+    }
+}
+
 impl fmt::Debug for Player {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Player {{ inner: {:?} }}", self.inner)
@@ -60,6 +130,15 @@ impl Player {
         let mut env = get_env()?;
         self.inner.call_void_method(
             "sendMessage",
+            "(Lnet/kyori/adventure/text/Component;)V",
+            &[message.as_jvalue(&mut env)?],
+        )
+    }
+
+    pub fn kick(&self, message: &Component) -> Result<()> {
+        let mut env = get_env()?;
+        self.inner.call_void_method(
+            "kick",
             "(Lnet/kyori/adventure/text/Component;)V",
             &[message.as_jvalue(&mut env)?],
         )
@@ -226,6 +305,21 @@ impl Player {
         )?;
 
         Ok(AttributeInstance::new(JavaObject::from_env(
+            &mut env,
+            result.as_obj()?,
+        )?))
+    }
+
+    pub fn get_player_connection(&self) -> Result<PlayerConnection> {
+        let mut env = get_env()?;
+
+        let result = self.inner.call_object_method(
+            "getPlayerConnection",
+            "()Lnet/minestom/server/network/player/PlayerConnection;",
+            &[],
+        )?;
+
+        Ok(PlayerConnection::new(JavaObject::from_env(
             &mut env,
             result.as_obj()?,
         )?))

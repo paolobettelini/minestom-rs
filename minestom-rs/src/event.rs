@@ -741,6 +741,12 @@ pub mod server {
                 inner: JavaObject::from_env(&mut env, response_data.l()?)?,
             })
         }
+
+        /// Sets whether the event is cancelled.
+        pub fn set_cancelled(&self, cancelled: bool) -> Result<()> {
+            self.inner
+                .call_void_method("setCancelled", "(Z)V", &[JniValue::Bool(cancelled)])
+        }
     }
 
     impl Event for ServerListPingEvent {

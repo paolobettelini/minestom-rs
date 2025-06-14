@@ -4,6 +4,8 @@ use crate::logic::parkour::ParkourServer;
 use crate::maps::LobbyMap2;
 use crate::maps::map::LobbyMap;
 use crate::mojang::get_skin_and_signature;
+use minestom::ServerListPingEvent;
+use thecrown_common::player::COOKIE_AUTH;
 use thecrown_protocol::GameServerSpecs;
 use thecrown_protocol::GameServerType;
 use log::info;
@@ -12,7 +14,6 @@ use thecrown_protocol::RelayPacket;
 use thecrown_common::nats::CallbackType;
 use minestom::MinestomServer;
 use thecrown_protocol::McServerPacket;
-use minestom::ServerListPingEvent;
 use minestom::TOKIO_HANDLE;
 use minestom::entity::PlayerSkin;
 use minestom::{
@@ -127,44 +128,62 @@ pub async fn run_server() -> anyhow::Result<()> {
     let minecraft_server_clone = minecraft_server.clone();
     let event_handler = minecraft_server.event_handler()?;
 
+    let nats = nats_client.clone();
     event_handler.listen(move |config_event: &AsyncPlayerConfigurationEvent| {
         // Try to get player information
         if let Ok(player) = config_event.player() {
-            if let Ok(name) = player.get_username() {
-                info!("Player configured: {}", name);
+            if let Ok(username) = player.get_username() {
+                info!("Configuring player: {}", username);
 
-                let cookie = player.fetch_cookie(COOKIE_AUTH)?;
-                // TODO replay deve darea anche game_server che va nel cookie
-                //println!("{cookie}");
+                if let Some(cookie) = player.get_player_connection()?.fetch_cookie(COOKIE_AUTH)? {
+                    // Send AuthUserJoin to Relay
+                    let packet = RelayPacket::AuthUserJoin {
+                        username: username.clone(),
+                        server: server_name.to_string(),
+                        cookie,
+                    };
+                    let response = TOKIO_HANDLE
+                        .block_on(async { nats.request(&packet).await });
 
-                // FAKE: the player needs to be sent to lobbysrv1
-                let servers = vec!["lobby1", "parkour1"];
-                let server_name = servers[rand::thread_rng().gen_range(0..servers.len())];
-                log::info!("Sending player {} to server: {}", name, server_name);
-                SERVERS
-                    .lock()
-                    .unwrap()
-                    .get(server_name)
-                    .unwrap()
-                    .init_player(&minecraft_server_clone, &config_event)?;
-                PLAYER_SERVER
-                    .write()
-                    .unwrap()
-                    .insert(player.get_uuid()?, server_name.to_string());
+                    if let Some(RelayPacket::ServeAuthResult { game_server }) = response {
+                        if let Some(game_server) = game_server {
+                            log::info!("Sending player {} to game server: {}", username, game_server);
+                            SERVERS
+                                .lock()
+                                .unwrap()
+                                .get(&game_server)
+                                .unwrap()
+                                .init_player(&minecraft_server_clone, &config_event)?;
+                            PLAYER_SERVER
+                                .write()
+                                .unwrap()
+                                .insert(player.get_uuid()?, game_server.to_string());
 
-                // Send resource pack
-                let uuid = uuid::Uuid::new_v4();
-                let url = "http://127.0.0.1:6543/resourcepack.zip";
-                let hash = include_str!(concat!(env!("OUT_DIR"), "/resourcepack.sha1"));
+                            // Send resource pack
+                            let uuid = uuid::Uuid::new_v4();
+                            let url = "http://127.0.0.1:6543/resourcepack.zip";
+                            let hash = include_str!(concat!(env!("OUT_DIR"), "/resourcepack.sha1"));
 
-                let pack_info = ResourcePackInfo::new(uuid, url, hash)?;
-                let request = ResourcePackRequestBuilder::new()?
-                    .packs(pack_info)?
-                    .prompt(&component!("Please accept the resource pack").gold())?
-                    .required(true)?
-                    .build()?;
+                            let pack_info = ResourcePackInfo::new(uuid, url, hash)?;
+                            let request = ResourcePackRequestBuilder::new()?
+                                .packs(pack_info)?
+                                .prompt(&component!("Please accept the resource pack").gold())?
+                                .required(true)?
+                                .build()?;
 
-                player.send_resource_packs(&request)?;
+                            player.send_resource_packs(&request)?;
+                        } else {
+                            log::warn!("Player {} bad auth token", username);
+                            player.kick(&component!("Bad authentication token").red())?;
+                        }
+                    } else {
+                        log::warn!("Player {} bad game server", username);
+                        player.kick(&component!("This game server does not exist").red())?;
+                    }
+                } else {
+                    log::warn!("Player {} no cookie", username);
+                    player.kick(&component!("No cookie provided").red())?;
+                }
             }
         }
 
@@ -224,6 +243,11 @@ pub async fn run_server() -> anyhow::Result<()> {
         if let Ok(player) = spawn_event.player() {
             let _ = init_player_advancements(&server, &player);
         }
+        Ok(())
+    })?;
+
+    event_handler.listen(move |event: &ServerListPingEvent| {
+        event.set_cancelled(true)?;
         Ok(())
     })?;
 

@@ -14,7 +14,11 @@ repositories {
 
 dependencies {
     // Direct implementation from GitHub main branch
-    api("com.github.Minestom:Minestom:f62abc722f")
+    //api("com.github.Minestom:Minestom:f62abc722f")
+    implementation(files("/home/paolo/Downloads/Minestom/build/libs/minestom-dev.jar"))
+
+    implementation("net.kyori:adventure-api:4.21.0")
+    implementation("org.jetbrains:annotations:24.1.0")
 }
 
 java {

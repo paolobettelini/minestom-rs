@@ -71,13 +71,15 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
                 .expect("No hub servers found");
             */
 
-            let cookie = crypto::random_token();
+            let server = "server1".to_string();
+            let game_server = "lobby1".to_string();
+            let address = "127.0.0.1".to_string();
+            let port = 25566;
+            let cookie = state.gen_auth_for_player_game_server(username, server, game_server).await;
             let transfer_data = TransferPacketData {
                 cookie: cookie.into(),
-                address: "127.0.0.1".to_string(),
-                port: 25566,
-                //address: game_server.address.clone(),
-                //port: game_server.port,
+                address,
+                port,
             };
 
             let response = RelayPacket::AccomodatePlayer {
@@ -85,6 +87,14 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
             };
 
             Some(response)
+        },
+        RelayPacket::AuthUserJoin { username, server, cookie } => {
+            let game_server = if let Ok(token) = String::from_utf8(cookie) {
+                state.try_auth_user(&username, &server, &token).await
+            } else {
+                None
+            };
+            Some(RelayPacket::ServeAuthResult { game_server })
         }
         _ => None,
     }
