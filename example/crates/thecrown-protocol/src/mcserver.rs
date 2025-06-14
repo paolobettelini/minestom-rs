@@ -1,6 +1,4 @@
-use crate::GameServerSpecs;
-use crate::ProtocolPacket;
-use crate::TransferPacketData;
+use crate::{GameServerSpecs, ProtocolPacket, TransferPacketData};
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]

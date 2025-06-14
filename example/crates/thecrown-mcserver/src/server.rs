@@ -1,33 +1,27 @@
-use crate::advancements::init_player_advancements;
-use crate::logic::lobby::LobbyServer;
-use crate::logic::parkour::ParkourServer;
-use crate::maps::LobbyMap2;
-use crate::maps::map::LobbyMap;
-use crate::mojang::get_skin_and_signature;
+use crate::{lobby::LobbyServer, maps::LobbyMap2};
 use log::info;
-use minestom;
-use minestom::MinestomServer;
-use minestom::ServerListPingEvent;
-use minestom::TOKIO_HANDLE;
-use minestom::entity::PlayerSkin;
-use minestom::instance::InstanceManager;
 use minestom::{
-    component,
+    self, MinestomServer, ServerListPingEvent, TOKIO_HANDLE, component,
+    entity::PlayerSkin,
     event::player::{AsyncPlayerConfigurationEvent, PlayerSkinInitEvent, PlayerSpawnEvent},
+    instance::InstanceManager,
     material::Material,
     resource_pack::{ResourcePackInfo, ResourcePackRequestBuilder},
 };
-use std::collections::HashMap;
-use std::path::Path;
-use std::sync::Arc;
-use std::sync::LazyLock;
-use std::sync::{Mutex, RwLock};
-use thecrown_common::nats::CallbackType;
-use thecrown_common::nats::NatsClient;
-use thecrown_common::player::COOKIE_AUTH;
-use thecrown_protocol::GameServerType;
-use thecrown_protocol::McServerPacket;
-use thecrown_protocol::RelayPacket;
+use std::{
+    collections::HashMap,
+    path::Path,
+    sync::{Arc, LazyLock, Mutex, RwLock},
+};
+use thecrown_advancements::init_player_advancements;
+use thecrown_common::{
+    mojang::get_skin_and_signature,
+    nats::{CallbackType, NatsClient},
+    player::COOKIE_AUTH,
+    server::Server,
+};
+use thecrown_parkour::ParkourServer;
+use thecrown_protocol::{GameServerType, McServerPacket, RelayPacket};
 use uuid::Uuid;
 use world_seed_entity_engine::model_engine::ModelEngine;
 
@@ -36,15 +30,6 @@ static PLAYER_SERVER: LazyLock<RwLock<HashMap<Uuid, String>>> =
 
 static SERVERS: LazyLock<Mutex<HashMap<String, Arc<Box<dyn Server + Send + Sync>>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
-
-pub trait Server: Send + Sync {
-    fn init(&self, minecraft_server: &MinestomServer) -> minestom::Result<()>;
-    fn init_player(
-        &self,
-        minecraft_server: &MinestomServer,
-        config_event: &AsyncPlayerConfigurationEvent,
-    ) -> minestom::Result<()>;
-}
 
 type PacketType = McServerPacket;
 #[derive(Clone)]

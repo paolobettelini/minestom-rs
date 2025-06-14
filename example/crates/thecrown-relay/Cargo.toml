@@ -6,20 +6,20 @@ edition = "2024"
 [dependencies]
 thecrown-common = { path = "../thecrown-common" }
 thecrown-protocol = { path = "../thecrown-protocol" }
-tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "signal", "full"] }
-log = "0.4"
-env_logger = "0.10"
-jni = "0.21" 
-thiserror = "1.0"
-futures = "0.3"
-rand = "0.9.1"
-image = "0.25.6"
-base64 = "0.22.1"
-uuid = { version = "1.16", features = ["serde", "v4"] }
-reqwest = { version = "0.12.15", features = ["json"] }
-serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.140"
-async-nats = "0.42.0"
-serde_cbor = "0.11.2"
-anyhow = "1.0.98"
-chrono = "0.4.41"
+tokio = { workspace = true }
+log = { workspace = true }
+env_logger = { workspace = true }
+jni = { workspace = true }
+thiserror = { workspace = true }
+futures = { workspace = true }
+rand = { workspace = true }
+image = { workspace = true }
+base64 = { workspace = true }
+uuid = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-nats = { workspace = true }
+serde_cbor = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }

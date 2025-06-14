@@ -1,26 +1,26 @@
-use crate::commands::SpawnCommand;
-use crate::commands::WebloginCommand;
-use crate::magic_values::*;
-use crate::maps::map::LobbyMap;
-use crate::server::Server;
+use crate::{
+    commands::{SpawnCommand, WebloginCommand},
+    magic_values::*,
+    maps::map::LobbyMap,
+};
 use log::info;
-use minestom;
-use minestom::MinestomServer;
-use minestom::Player;
-use minestom::event::inventory::InventoryPreClickEvent;
 use minestom::{
+    self, MinestomServer, Player,
     attribute::Attribute,
     component,
     entity::GameMode,
-    event::player::{
-        AsyncPlayerConfigurationEvent, PlayerChatEvent, PlayerDisconnectEvent, PlayerSpawnEvent,
+    event::{
+        inventory::InventoryPreClickEvent,
+        player::{
+            AsyncPlayerConfigurationEvent, PlayerChatEvent, PlayerDisconnectEvent, PlayerSpawnEvent,
+        },
     },
     item::{InventoryHolder, ItemStack},
     material::Material,
 };
 use parking_lot::RwLock;
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
+use thecrown_common::server::Server;
 use uuid::Uuid;
 
 pub struct LobbyServer<T: LobbyMap> {
@@ -29,7 +29,7 @@ pub struct LobbyServer<T: LobbyMap> {
 }
 
 impl<T: LobbyMap> LobbyServer<T> {
-    pub fn new(map: T, minecraft_server: MinestomServer) -> minestom::Result<Self> {
+    pub fn new(map: T, _minecraft_server: MinestomServer) -> minestom::Result<Self> {
         let players = Arc::new(RwLock::new(HashMap::new()));
         map.init(players.clone())?;
 
@@ -40,10 +40,10 @@ impl<T: LobbyMap> LobbyServer<T> {
 impl<T: LobbyMap> Server for LobbyServer<T> {
     fn init_player(
         &self,
-        minecraft_server: &MinestomServer,
+        _minecraft_server: &MinestomServer,
         config_event: &AsyncPlayerConfigurationEvent,
     ) -> minestom::Result<()> {
-        if let Ok(player) = config_event.player() {
+        if let Ok(_player) = config_event.player() {
             info!("Setting spawning instance for player");
             config_event.spawn_instance(&self.map.instance())?;
         }
@@ -60,7 +60,6 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
         let instance = self.map.instance();
 
         let event_handler = instance.event_node()?;
-        let spawn_instance = instance.clone();
 
         let players = self.players.clone();
 

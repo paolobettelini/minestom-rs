@@ -1,4 +1,3 @@
-
 pub trait ProtocolPacket {
     fn get_nats_subject() -> &'static str;
 }

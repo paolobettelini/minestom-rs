@@ -1,8 +1,6 @@
-use minestom::InstanceContainer;
-use minestom::Player;
+use minestom::{InstanceContainer, Player};
 use parking_lot::RwLock;
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 use uuid::Uuid;
 
 pub trait LobbyMap: Clone + Send + Sync + 'static {

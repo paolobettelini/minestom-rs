@@ -1,30 +1,18 @@
 use log::info;
-use minestom;
-use minestom::MinestomServer;
-use minestom::ServerListPingEvent;
-use minestom::TOKIO_HANDLE;
 use minestom::{
-    component,
+    self, MinestomServer, ServerListPingEvent, TOKIO_HANDLE, component,
     event::player::AsyncPlayerConfigurationEvent,
 };
 use std::sync::Arc;
-use thecrown_common::nats::NatsClient;
-use thecrown_common::player::*;
-use thecrown_protocol::AccomodatePlayerData::*;
-use thecrown_protocol::RelayPacket;
-
-type PacketType = RelayPacket;
+use thecrown_common::{nats::NatsClient, player::*, text};
+use thecrown_protocol::{AccomodatePlayerData::*, RelayPacket};
 
 pub async fn run_server() -> anyhow::Result<()> {
     init_logging();
 
     let minecraft_server = MinestomServer::new()?;
-    let scheduler = minecraft_server.scheduler_manager()?;
-    let instance_manager = minecraft_server.instance_manager()?;
-    let command_manager = minecraft_server.command_manager()?;
     let event_handler = minecraft_server.event_handler()?;
 
-    let server_name = "auth";
     let nats_url = String::from("127.0.0.1:4222");
     let nats_client = Arc::new(NatsClient::new(nats_url).await?);
 
@@ -39,10 +27,8 @@ pub async fn run_server() -> anyhow::Result<()> {
                 if let Some(RelayPacket::AccomodatePlayer { data }) = response {
                     match data {
                         Ban { reason, time_left } => {
-                            //AccomodatePlayerData.Ban ban = (AccomodatePlayerData.Ban) response.data;
-
-                            //Component component = Common.createBanMessage(ban.time_left, ban.reason);
-                            //player.kick(component);
+                            let component = text::create_ban_message(&reason, time_left);
+                            player.kick(&component)?;
                         }
                         Join { transfer_data } => {
                             player.transfer(transfer_data)?;

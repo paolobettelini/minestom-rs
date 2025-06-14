@@ -1,0 +1,9 @@
+[package]
+name = "thecrown-advancements"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+minestom = { workspace = true }
+rand = { workspace = true }
+uuid = { workspace = true }

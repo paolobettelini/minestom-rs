@@ -1,15 +1,12 @@
 use crate::maps::LobbyMap;
 use log::info;
-use minestom;
-use minestom::Player;
 use minestom::{
-    Command,
+    self, Command, Player,
     command::{CommandContext, CommandSender},
     component,
 };
 use parking_lot::RwLock;
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
@@ -30,7 +27,6 @@ impl<T: LobbyMap> SpawnCommand<T> {
         let builder = command_manager.register(self.clone())?;
 
         // Clone the map and players for use in the closure
-        let map = self.map.clone();
         let players = self.players.clone();
 
         // Add a condition that checks if the player is in the hashmap

@@ -1,26 +1,19 @@
-use crate::advancements::{self, CanAchieveAdvancement};
-use crate::logic::piano;
-use crate::magic_values::{SHRUNK_ACHIEVEMENT_SCALE, TITAN_ACHIEVEMENT_SCALE};
-use crate::maps::LobbyMap;
-use crate::models::bulbasaur::BulbasaurMob;
-use crate::models::oldman::OldManModel;
-use minestom::Attribute;
-use minestom::BlockType;
-use minestom::InstanceContainer;
-use minestom::Player;
-use minestom::PlayerMoveEvent;
-use minestom::Pos;
-use minestom::entity::ItemDisplay;
-use minestom::event::player::PlayerSpawnEvent;
-use minestom::instance::InstanceManager;
-use minestom::item::ItemStack;
-use minestom::material::Material;
+use crate::{
+    magic_values::{SHRUNK_ACHIEVEMENT_SCALE, TITAN_ACHIEVEMENT_SCALE},
+    maps::LobbyMap,
+};
+use minestom::{
+    Attribute, BlockType, InstanceContainer, Player, PlayerMoveEvent, Pos, entity::ItemDisplay,
+    event::player::PlayerSpawnEvent, instance::InstanceManager, item::ItemStack,
+    material::Material,
+};
 use parking_lot::RwLock;
 use rand::Rng;
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
+use thecrown_advancements::{self as advancements, CanAchieveAdvancement};
+use thecrown_components::piano;
+use thecrown_models::{bulbasaur::BulbasaurMob, oldman::OldManModel};
 use uuid::Uuid;
-use world_seed_entity_engine::generic_model::GenericModel;
 use world_seed_entity_engine::generic_model::create_wsee_model;
 
 #[derive(Clone)]
@@ -50,8 +43,8 @@ impl LobbyMap for LobbyMap2 {
             (1794.5, 41.0, 1022.5, 0.0, 0.0),
         ];
         // random spawn
-        let mut rng = rand::thread_rng();
-        let index = rng.gen_range(0..spawns.len());
+        let mut rng = rand::rng();
+        let index = rng.random_range(0..spawns.len());
         spawns[index]
     }
 
@@ -281,14 +274,15 @@ impl LobbyMap for LobbyMap2 {
             (1799.0, 19.0, 979.0),
             (1804.0, 19.0, 976.0),
         ];
+        let mut rng = rand::rng();
         for coord in coords {
-            let cloud = clouds[rand::thread_rng().gen_range(0..clouds.len())].clone();
+            let cloud = clouds[rng.random_range(0..clouds.len())].clone();
             // TODO: can we instantiate ItemDisplay just once?
             let display = ItemDisplay::new(&cloud)?;
             display.set_no_gravity(true)?;
-            let yaw = rand::thread_rng().gen_range(0..4) as f32 * 90.0;
-            let yaw_variation = rand::thread_rng().gen_range(-15..=15) as f32;
-            let pitch = rand::thread_rng().gen_range(-5..=5) as f32;
+            let yaw = rng.random_range(0..4) as f32 * 90.0;
+            let yaw_variation = rng.random_range(-15..=15) as f32;
+            let pitch = rng.random_range(-5..=5) as f32;
             display.spawn(
                 &self.instance,
                 coord.0,

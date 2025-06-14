@@ -1,13 +1,14 @@
-use minestom;
-use minestom::MinestomServer;
-use minestom::Player;
-use minestom::advancement::Advancement;
-use minestom::advancement::FrameType;
-use minestom::{component, material::Material};
+use minestom::{
+    self, MinestomServer, Player,
+    advancement::{Advancement, FrameType},
+    component,
+    material::Material,
+};
 use rand::Rng;
-use std::collections::HashMap;
-use std::sync::LazyLock;
-use std::sync::RwLock;
+use std::{
+    collections::HashMap,
+    sync::{LazyLock, RwLock},
+};
 use uuid::Uuid;
 
 pub const WELCOME: &'static str = "welcome";
@@ -25,7 +26,7 @@ impl AdvancementsMap {
 
         // TODO: remove when we can uncache advancements
         let suffix: String = (0..5)
-            .map(|_| rand::thread_rng().gen_range('a'..='z'))
+            .map(|_| rand::rng().random_range('a'..='z'))
             .collect();
         let prefix = format!("{}-{}", prefix, suffix);
 
@@ -184,16 +185,13 @@ macro_rules! define_advancements {
             ),* $(,)?
         ]
     ) => {{
-        // 1) Grab the AdvancementManager once for all tabs.
         let adv_manager = $server.advancement_manager()?;
 
-        // 2) Build one HashMap<String, Advancement> to collect everything.
         let mut adv_map: std::collections::HashMap<String, minestom::advancement::Advancement> =
             std::collections::HashMap::new();
 
         $(
             {
-                // (A) Build a root if the optional root‐entry is present:
                 $(
                     let root = minestom::advancement::AdvancementRoot::new(
                         &$root_title,   // must be a component!(…)

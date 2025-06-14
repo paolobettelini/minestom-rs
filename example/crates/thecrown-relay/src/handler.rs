@@ -1,10 +1,8 @@
 use crate::State;
-use thecrown_protocol::AccomodatePlayerData;
-use thecrown_protocol::GameServerSpecs;
-use thecrown_protocol::GameServerType;
-use thecrown_protocol::McServerPacket;
-use thecrown_protocol::RelayPacket;
-use thecrown_protocol::TransferPacketData;
+use thecrown_protocol::{
+    AccomodatePlayerData, GameServerSpecs, GameServerType, McServerPacket, RelayPacket,
+    TransferPacketData,
+};
 
 type PacketType = RelayPacket;
 

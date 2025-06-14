@@ -1,6 +1,5 @@
 use sha1::Digest;
-use std::path::PathBuf;
-use std::{env, fs, process::Command};
+use std::{env, fs, path::PathBuf, process::Command};
 use walkdir::WalkDir;
 
 fn main() {

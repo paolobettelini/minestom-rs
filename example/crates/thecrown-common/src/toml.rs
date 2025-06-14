@@ -1,6 +1,5 @@
 use serde::Deserialize;
-use std::fs;
-use std::path::Path;
+use std::{fs, path::Path};
 
 pub fn parse_toml_config<P: AsRef<Path>, ConfigType: for<'a> Deserialize<'a>>(
     config_path: P,

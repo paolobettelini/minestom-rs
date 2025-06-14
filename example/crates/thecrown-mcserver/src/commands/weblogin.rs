@@ -1,6 +1,5 @@
-use minestom;
 use minestom::{
-    Command,
+    self, Command,
     command::{CommandContext, CommandSender},
     component,
 };

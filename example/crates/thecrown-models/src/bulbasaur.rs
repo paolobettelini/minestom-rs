@@ -1,15 +1,12 @@
-use minestom::InstanceContainer;
-use minestom::Player;
-use minestom::Pos;
-use minestom::entity::EntityCreature;
-use minestom::entity::MinestomEntityCreature;
-use minestom::entity::create_entity_creature;
-use minestom::entity::entity::EntityType;
+use minestom::{
+    InstanceContainer, Player, Pos,
+    entity::{EntityCreature, MinestomEntityCreature, create_entity_creature, entity::EntityType},
+};
 use std::sync::{Arc, Mutex, Weak};
-use world_seed_entity_engine::animation_handler::AnimationHandler;
-use world_seed_entity_engine::generic_model::GenericModel;
-use world_seed_entity_engine::generic_model::WseeModel;
-use world_seed_entity_engine::generic_model::create_wsee_model;
+use world_seed_entity_engine::{
+    animation_handler::AnimationHandler,
+    generic_model::{GenericModel, WseeModel, create_wsee_model},
+};
 
 #[derive(Clone)]
 pub struct BulbasaurModel;

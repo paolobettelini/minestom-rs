@@ -1,9 +1,6 @@
-use jni::JNIEnv;
-use jni::sys::jint;
-use minestom::jni_utils;
-use minestom::{RUNTIME, init_runtime};
-use std::future::Future;
-use std::panic;
+use jni::{JNIEnv, sys::jint};
+use minestom::{RUNTIME, init_runtime, jni_utils};
+use std::{future::Future, panic};
 
 /// A generic JNI entrypoint wrapper.  
 /// F: a zero‑arg closure returning a Future whose Output is jint  

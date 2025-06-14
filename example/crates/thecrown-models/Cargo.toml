@@ -1,0 +1,8 @@
+[package]
+name = "thecrown-models"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+world-seed-entity-engine = { workspace = true }
+minestom = { workspace = true }

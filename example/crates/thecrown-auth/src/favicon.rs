@@ -1,3 +1,4 @@
+use base64::{Engine, engine::general_purpose};
 use image::{ImageBuffer, ImageFormat, Rgb};
 use rand::Rng;
 use std::io::Cursor;
@@ -10,7 +11,7 @@ pub fn random_image() -> String {
     // Create a new image buffer with a base color (black).
     let mut img: ImageBuffer<Rgb<u8>, Vec<u8>> =
         ImageBuffer::from_pixel(width, height, Rgb([0, 0, 0]));
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     // Determine how many blobs (circles) to draw.
     let num_blobs = rng.random_range(2..20);
@@ -22,7 +23,7 @@ pub fn random_image() -> String {
         // Choose a random radius (e.g., between 5 and 15 pixels).
         let radius = rng.random_range(5..15) as i32;
         // Choose a random color.
-        let color = Rgb([rng.r#gen::<u8>(), rng.r#gen::<u8>(), rng.r#gen::<u8>()]);
+        let color = Rgb([rng.random::<u8>(), rng.random::<u8>(), rng.random::<u8>()]);
 
         // Draw the blob by iterating over the bounding box of the circle.
         let x_start = (cx - radius).max(0);
@@ -51,13 +52,13 @@ pub fn random_image() -> String {
     }
 
     // Convert the PNG bytes to base64.
-    let encoded = base64::encode(&buffer);
+    let encoded = general_purpose::STANDARD.encode(&buffer);
 
     // Format as a data URI.
     format!("data:image/png;base64,{}", encoded)
 }
 
-pub fn rotating_circle() -> String {
+pub fn _rotating_circle() -> String {
     // Set the dimensions.
     let width = 64;
     let height = 64;
@@ -65,7 +66,6 @@ pub fn rotating_circle() -> String {
     // Create a new image buffer with a base color (black).
     let mut img: ImageBuffer<Rgb<u8>, Vec<u8>> =
         ImageBuffer::from_pixel(width, height, Rgb([0, 0, 0]));
-    let rng = rand::thread_rng();
 
     use std::time::{SystemTime, UNIX_EPOCH};
     let time = SystemTime::now()
@@ -105,7 +105,7 @@ pub fn rotating_circle() -> String {
     }
 
     // Convert the PNG bytes to base64.
-    let encoded = base64::encode(&buffer);
+    let encoded = general_purpose::STANDARD.encode(&buffer);
 
     // Format as a data URI.
     format!("data:image/png;base64,{}", encoded)

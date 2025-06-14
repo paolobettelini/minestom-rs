@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-use thecrown_common::crypto::*;
-use thecrown_common::nats::NatsClient;
+use std::{collections::HashMap, sync::Arc};
+use thecrown_common::{crypto::*, nats::NatsClient};
 use thecrown_protocol::McServerPacket;
 use tokio::sync::Mutex;
 

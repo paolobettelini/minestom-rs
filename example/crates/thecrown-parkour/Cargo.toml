@@ -4,3 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+thecrown-common = { path = "../thecrown-common"}
+rand = { workspace = true }
+minestom = { workspace = true }
+parking_lot = { workspace = true }
+log = { workspace = true }
+uuid = { workspace = true }

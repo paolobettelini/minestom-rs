@@ -1,21 +1,18 @@
-use minestom::Player;
-use minestom::PlayerEntityInteractEvent;
-use minestom::Result;
-use minestom::Source;
-use minestom::entity::display::ItemDisplay;
-use minestom::entity::entity::Entity;
-use minestom::entity::entity::EntityType;
-use minestom::instance::InstanceContainer;
-use minestom::item::ItemStack;
-use minestom::material::Material;
-use minestom::particle::ParticlePacket;
-use minestom::particle::ParticleType;
-use minestom::sound::Sound;
-use minestom::sound::SoundEvent;
+use minestom::{
+    Player, PlayerEntityInteractEvent, Result, Source,
+    entity::{
+        display::ItemDisplay,
+        entity::{Entity, EntityType},
+    },
+    instance::InstanceContainer,
+    item::ItemStack,
+    material::Material,
+    particle::{ParticlePacket, ParticleType},
+    sound::{Sound, SoundEvent},
+};
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 use uuid::Uuid;
 
 // ID so that multiple pianos can be spawned in the same instance
@@ -49,10 +46,6 @@ pub fn spawn_piano(
     let sin = (yaw as f64).to_radians().sin();
     let cos = (yaw as f64).to_radians().cos();
     let pitch = 0.0; // We only support yaw (multiple of 90)
-    let x_center = x - cos * length / 2.0;
-    let y_center = y;
-    let z_center = z - sin * length / 2.0;
-    let interaction_radius = 3.0 * scale;
     let armor_width = 0.5;
     let tiles_length = 1.533333 * scale;
     let max_depth_interaction = 1.9; // height on the armostand to consider it a click
@@ -63,7 +56,7 @@ pub fn spawn_piano(
     // Direction from left to right of the piano
     // x -= cos and z -= sin
     let offset2 = scale * 0.34;
-    let offsetY = scale * (1.0 / 16.0) * 4.5;
+    let offset_y = scale * (1.0 / 16.0) * 4.5;
 
     let display = ItemDisplay::new(&piano)?;
     display.set_no_gravity(true)?;
@@ -88,7 +81,7 @@ pub fn spawn_piano(
         armor_stand.spawn(
             &instance,
             x + (sin * offset1) - (cos * offset2) - (cos * armor_width * i as f64),
-            y - 1.0 + offsetY,
+            y - 1.0 + offset_y,
             z - (cos * offset1) - (sin * offset2) - (sin * armor_width * i as f64),
             yaw,
             pitch,
@@ -101,7 +94,6 @@ pub fn spawn_piano(
 
     event_node.listen(move |event: &PlayerEntityInteractEvent| {
         let pos = event.get_interact_position()?;
-        let player = event.get_player()?;
         if pos.y > max_depth_interaction {
             let entity = event.get_target()?;
             let tag_handler = entity.tag_handler()?;
@@ -129,7 +121,7 @@ pub fn spawn_piano(
                         let res = find_tile_index(normalized_tile_coordinate, tiles, a, b);
 
                         if let Some((tile_index, tile_middle_point)) = res {
-                            let avg = (a + b) * 0.5; // it doesn't need to be precise.
+                            // let avg = (a + b) * 0.5; // it doesn't need to be precise.
                             // where to spawn the note + sound source (middle point of the tile)
                             // we need to de-normalized
                             let denormalized_middle_point = tile_middle_point * tiles_length;
@@ -137,7 +129,7 @@ pub fn spawn_piano(
                                 offset2 - armor_width * 0.5 + denormalized_middle_point;
                             let offset1 = scale * 0.1; // closer to the player
                             let source_x = x + (sin * offset1) - (cos * note_offset);
-                            let source_y = y - offsetY + 2.0;
+                            let source_y = y - offset_y + 2.0;
                             let source_z = z - (cos * offset1) - (sin * note_offset);
 
                             play_tile(

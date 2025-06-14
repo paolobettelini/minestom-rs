@@ -1,5 +1,4 @@
-use minestom::InstanceContainer;
-use minestom::Pos;
+use minestom::{InstanceContainer, Pos};
 use world_seed_entity_engine::generic_model::GenericModel;
 
 #[derive(Clone)]

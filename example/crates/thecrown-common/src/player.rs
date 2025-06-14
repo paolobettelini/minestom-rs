@@ -1,5 +1,4 @@
-use minestom::Player;
-use minestom::transfer::TransferPacket;
+use minestom::{Player, transfer::TransferPacket};
 use thecrown_protocol::TransferPacketData;
 
 pub const COOKIE_AUTH: &'static str = "auth";

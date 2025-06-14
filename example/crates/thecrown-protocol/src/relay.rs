@@ -49,7 +49,7 @@ pub enum GameServerType {
 pub enum AccomodatePlayerData {
     Ban {
         reason: String,
-        time_left: Option<i64>,
+        time_left: Option<u64>,
     },
     Join {
         transfer_data: TransferPacketData,

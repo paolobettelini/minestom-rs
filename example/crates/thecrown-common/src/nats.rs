@@ -1,10 +1,7 @@
 use async_nats::{ConnectError, Subscriber, ToServerAddrs, client::Client, subject::ToSubject};
 use futures::StreamExt;
-use serde::Deserialize;
-use serde::ser::Serialize;
-use std::fmt::Display;
-use std::future::Future;
-use std::pin::Pin;
+use serde::{Deserialize, ser::Serialize};
+use std::{fmt::Display, future::Future, pin::Pin};
 use thecrown_protocol::ProtocolPacket;
 
 #[derive(Debug, Clone)]
