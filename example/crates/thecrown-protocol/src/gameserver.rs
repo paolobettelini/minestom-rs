@@ -1,5 +1,5 @@
-use serde_derive::{Deserialize, Serialize};
 use crate::ProtocolPacket;
+use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]

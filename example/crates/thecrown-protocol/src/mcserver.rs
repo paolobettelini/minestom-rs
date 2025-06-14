@@ -1,19 +1,29 @@
-use serde_derive::{Deserialize, Serialize};
 use crate::GameServerSpecs;
 use crate::ProtocolPacket;
 use crate::TransferPacketData;
+use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum McServerPacket {
     /* Relay -> Server container */
-    StartGameServers{ servers: Vec<GameServerSpecs> },
+    StartGameServers {
+        servers: Vec<GameServerSpecs>,
+    },
 
     /* Relay -> Gameserver */
-    WhisperCommand { server: String, sender: String, target: String, message: String },
+    WhisperCommand {
+        server: String,
+        sender: String,
+        target: String,
+        message: String,
+    },
 
     /* Relay -> Gameserver */
-    ExecuteTransfer { username: String, transfer: TransferPacketData },
+    ExecuteTransfer {
+        username: String,
+        transfer: TransferPacketData,
+    },
 }
 
 impl ProtocolPacket for McServerPacket {

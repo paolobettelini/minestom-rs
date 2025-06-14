@@ -1,36 +1,23 @@
-use thecrown_protocol::GameServerSpecs;
-use thecrown_protocol::GameServerType;
 use log::info;
 use minestom;
-use thecrown_protocol::AccomodatePlayerData::*;
-use thecrown_protocol::RelayPacket;
-use thecrown_common::nats::CallbackType;
 use minestom::MinestomServer;
-use thecrown_common::player::*;
-use thecrown_protocol::McServerPacket;
 use minestom::ServerListPingEvent;
 use minestom::TOKIO_HANDLE;
-use minestom::entity::PlayerSkin;
 use minestom::{
     component,
-    event::player::{AsyncPlayerConfigurationEvent, PlayerSkinInitEvent, PlayerSpawnEvent},
-    material::Material,
-    resource_pack::{ResourcePackInfo, ResourcePackRequestBuilder},
+    event::player::AsyncPlayerConfigurationEvent,
 };
-use minestom::instance::InstanceManager;
-use std::collections::HashMap;
-use std::path::Path;
 use std::sync::Arc;
-use std::sync::LazyLock;
-use std::sync::{Mutex, RwLock};
 use thecrown_common::nats::NatsClient;
-use uuid::Uuid;
+use thecrown_common::player::*;
+use thecrown_protocol::AccomodatePlayerData::*;
+use thecrown_protocol::RelayPacket;
 
 type PacketType = RelayPacket;
 
 pub async fn run_server() -> anyhow::Result<()> {
     init_logging();
-    
+
     let minecraft_server = MinestomServer::new()?;
     let scheduler = minecraft_server.scheduler_manager()?;
     let instance_manager = minecraft_server.instance_manager()?;
@@ -47,8 +34,7 @@ pub async fn run_server() -> anyhow::Result<()> {
             if let Ok(username) = player.get_username() {
                 // Send PlayerWantsToJoin to Relay
                 let packet = RelayPacket::PlayerWantsToJoin { username };
-                let response = TOKIO_HANDLE
-                    .block_on(async { nats_client.request(&packet).await });
+                let response = TOKIO_HANDLE.block_on(async { nats_client.request(&packet).await });
 
                 if let Some(RelayPacket::AccomodatePlayer { data }) = response {
                     match data {
@@ -57,10 +43,10 @@ pub async fn run_server() -> anyhow::Result<()> {
 
                             //Component component = Common.createBanMessage(ban.time_left, ban.reason);
                             //player.kick(component);
-                        },
+                        }
                         Join { transfer_data } => {
                             player.transfer(transfer_data)?;
-                        },
+                        }
                     }
                 }
             }

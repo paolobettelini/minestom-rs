@@ -1,19 +1,33 @@
-use serde_derive::{Deserialize, Serialize};
 use crate::ProtocolPacket;
+use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum RelayPacket {
     /* Server container -> Relay */
-    RegisterServer { server_name: String, address: String, port: u16 },
+    RegisterServer {
+        server_name: String,
+        address: String,
+        port: u16,
+    },
     /* Auth -> Relay - When the player wants to join the network */
-    PlayerWantsToJoin { username: String /* uuid */ },
+    PlayerWantsToJoin {
+        username: String, /* uuid */
+    },
     /* Relay -> Auth - When the player wants to join the netwotk */
-    AccomodatePlayer { data: AccomodatePlayerData },
+    AccomodatePlayer {
+        data: AccomodatePlayerData,
+    },
     /* Server container -> Relay */
-    AuthUserJoin { username: String, server: String, cookie: Vec<u8> },
+    AuthUserJoin {
+        username: String,
+        server: String,
+        cookie: Vec<u8>,
+    },
     /* Relay -> Server container */
-    ServeAuthResult { game_server: Option<String> },
+    ServeAuthResult {
+        game_server: Option<String>,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -27,14 +41,19 @@ pub struct GameServerSpecs {
 #[serde(tag = "type")]
 pub enum GameServerType {
     Parkour,
-    Lobby
+    Lobby,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum AccomodatePlayerData {
-    Ban { reason: String, time_left: Option<i64> },
-    Join { transfer_data: TransferPacketData },
+    Ban {
+        reason: String,
+        time_left: Option<i64>,
+    },
+    Join {
+        transfer_data: TransferPacketData,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -42,7 +61,7 @@ pub enum AccomodatePlayerData {
 pub struct TransferPacketData {
     pub cookie: Vec<u8>,
     pub address: String,
-    pub port: u16
+    pub port: u16,
 }
 
 impl ProtocolPacket for RelayPacket {

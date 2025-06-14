@@ -1,11 +1,11 @@
-use async_nats::{client::Client, subject::ToSubject, ConnectError, Subscriber, ToServerAddrs};
+use async_nats::{ConnectError, Subscriber, ToServerAddrs, client::Client, subject::ToSubject};
 use futures::StreamExt;
-use serde::ser::Serialize;
 use serde::Deserialize;
+use serde::ser::Serialize;
+use std::fmt::Display;
 use std::future::Future;
 use std::pin::Pin;
 use thecrown_protocol::ProtocolPacket;
-use std::fmt::Display;
 
 #[derive(Debug, Clone)]
 pub struct NatsClient {
@@ -14,11 +14,11 @@ pub struct NatsClient {
 
 /// The type for the async handler function used when subscripting to a queue
 pub type CallbackType<StateType, PacketType> = dyn for<'a> Fn(
-    &'a StateType,
-    PacketType,
-) -> Pin<Box<dyn Future<Output = Option<PacketType>> + Send + 'a>>
-      + Send
-      + Sync;
+        &'a StateType,
+        PacketType,
+    ) -> Pin<Box<dyn Future<Output = Option<PacketType>> + Send + 'a>>
+    + Send
+    + Sync;
 
 impl NatsClient {
     pub async fn new<A: ToServerAddrs>(addrs: A) -> Result<Self, ConnectError> {
@@ -100,7 +100,8 @@ impl NatsClient {
     {
         // Subscribe to the subject
         let subject = <PacketType as ProtocolPacket>::get_nats_subject();
-        self.handle_subscription_with_subject(subject, state, callback).await;
+        self.handle_subscription_with_subject(subject, state, callback)
+            .await;
     }
 
     pub async fn handle_subscription_with_subject<StateType, PacketType, S: ToSubject + Display>(

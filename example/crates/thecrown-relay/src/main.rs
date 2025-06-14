@@ -1,11 +1,11 @@
 use std::sync::Arc;
 use thecrown_common::nats::NatsClient;
-mod state;
 mod handler;
+mod state;
 use handler::*;
+use state::*;
 use thecrown_common::nats::CallbackType;
 use tokio::task;
-use state::*;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

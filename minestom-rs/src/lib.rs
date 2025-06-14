@@ -1,7 +1,9 @@
+pub mod advancement;
 pub mod attribute;
 pub mod block;
 pub mod collision;
 pub mod command;
+pub mod cookie;
 pub mod coordinate;
 pub mod entity;
 pub mod error;
@@ -18,9 +20,7 @@ pub mod server;
 pub mod sound;
 pub mod tag;
 pub mod text;
-pub mod advancement;
 pub mod transfer;
-pub mod cookie;
 
 pub use error::MinestomError;
 pub type Result<T> = std::result::Result<T, MinestomError>;

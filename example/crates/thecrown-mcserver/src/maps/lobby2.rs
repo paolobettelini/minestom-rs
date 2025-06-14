@@ -2,7 +2,7 @@ use crate::advancements::{self, CanAchieveAdvancement};
 use crate::logic::piano;
 use crate::magic_values::{SHRUNK_ACHIEVEMENT_SCALE, TITAN_ACHIEVEMENT_SCALE};
 use crate::maps::LobbyMap;
-use crate::models::bulbasaur::{BulbasaurMob, BulbasaurModel};
+use crate::models::bulbasaur::BulbasaurMob;
 use crate::models::oldman::OldManModel;
 use minestom::Attribute;
 use minestom::BlockType;

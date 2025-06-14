@@ -107,11 +107,7 @@ impl PlayerConnection {
 
     pub fn disconnect(&self) -> Result<()> {
         let mut env = get_env()?;
-        self.inner.call_void_method(
-            "disconnect",
-            "()V",
-            &[],
-        )
+        self.inner.call_void_method("disconnect", "()V", &[])
     }
 }
 

@@ -1,5 +1,5 @@
-use crate::advancement::AdvancementManager;
 use crate::Result;
+use crate::advancement::AdvancementManager;
 use crate::command::CommandManager;
 use crate::entity::Player;
 use crate::event::EventNode;
@@ -141,7 +141,9 @@ impl MinestomServer {
         // Converti in global ref per Rust
         let manager_ref = env.new_global_ref(manager_obj)?;
         // Avvolgi nel tuo struct Rust
-        Ok(AdvancementManager { inner: JavaObject::new(manager_ref) })
+        Ok(AdvancementManager {
+            inner: JavaObject::new(manager_ref),
+        })
     }
 
     /// Gets the command manager for registering and managing commands

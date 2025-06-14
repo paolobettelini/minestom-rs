@@ -2,8 +2,8 @@ use jni::JNIEnv;
 use jni::sys::jint;
 use minestom::jni_utils;
 use minestom::{RUNTIME, init_runtime};
-use std::panic;
 use std::future::Future;
+use std::panic;
 
 /// A generic JNI entrypoint wrapper.  
 /// F: a zero‑arg closure returning a Future whose Output is jint  
@@ -23,9 +23,7 @@ where
     }
 
     // catch panics inside your async block
-    let result = panic::catch_unwind(|| {
-        RUNTIME.block_on(f())
-    });
+    let result = panic::catch_unwind(|| RUNTIME.block_on(f()));
 
     match result {
         Ok(code) => code,

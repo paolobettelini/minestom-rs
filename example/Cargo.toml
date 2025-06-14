@@ -1,0 +1,10 @@
+[workspace]
+members = [
+  "crates/thecrown-auth",
+  "crates/thecrown-common",
+  "crates/thecrown-lobby",
+  "crates/thecrown-mcserver",
+  "crates/thecrown-parkour",
+  "crates/thecrown-protocol",
+  "crates/thecrown-relay",
+]

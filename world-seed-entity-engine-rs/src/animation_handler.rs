@@ -1,5 +1,5 @@
 use jni::objects::{JObject, JString, JValue};
-use minestom::jni_utils::{get_env, JavaObject, JniValue};
+use minestom::jni_utils::{JavaObject, JniValue, get_env};
 
 use crate::generic_model::WseeModel;
 
@@ -46,5 +46,4 @@ impl AnimationHandler {
         )?;
         Ok(())
     }
-
 }

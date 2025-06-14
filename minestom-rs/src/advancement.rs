@@ -1,8 +1,8 @@
 use crate::Result;
-use crate::jni_utils::{JavaObject, JniValue, ToJava, get_env};
-use crate::text::Component;
 use crate::entity::Player;
+use crate::jni_utils::{JavaObject, JniValue, ToJava, get_env};
 use crate::material::Material;
+use crate::text::Component;
 use jni::objects::{JObject, JValue, JValueGen};
 
 /// Frame types for advancements (TASK, GOAL, CHALLENGE)
@@ -22,12 +22,20 @@ impl FrameType {
         let val = env.get_static_field(class, field, &format!("L{};", Self::java_class()))?;
         let obj = val.l()?;
         let global = env.new_global_ref(obj)?;
-        Ok(FrameType { inner: JavaObject::new(global) })
+        Ok(FrameType {
+            inner: JavaObject::new(global),
+        })
     }
 
-    pub fn TASK() -> Self { Self::from_static("TASK").unwrap() }
-    pub fn GOAL() -> Self { Self::from_static("GOAL").unwrap() }
-    pub fn CHALLENGE() -> Self { Self::from_static("CHALLENGE").unwrap() }
+    pub fn TASK() -> Self {
+        Self::from_static("TASK").unwrap()
+    }
+    pub fn GOAL() -> Self {
+        Self::from_static("GOAL").unwrap()
+    }
+    pub fn CHALLENGE() -> Self {
+        Self::from_static("CHALLENGE").unwrap()
+    }
 }
 
 /// Root node of an advancement tab
@@ -54,12 +62,14 @@ impl AdvancementRoot {
         let desc_val = description.as_jvalue(&mut env)?;
         // Material -> Java Material
         let mat_str = env.new_string(icon.to_java_name())?;
-        let material_obj = env.call_static_method(
-            "net/minestom/server/item/Material",
-            "fromKey",
-            "(Ljava/lang/String;)Lnet/minestom/server/item/Material;",
-            &[(&mat_str).into()],
-        )?.l()?;
+        let material_obj = env
+            .call_static_method(
+                "net/minestom/server/item/Material",
+                "fromKey",
+                "(Ljava/lang/String;)Lnet/minestom/server/item/Material;",
+                &[(&mat_str).into()],
+            )?
+            .l()?;
         let binding = JniValue::Object(material_obj);
         let material_val = binding.as_jvalue();
         // FrameType
@@ -80,14 +90,20 @@ impl AdvancementRoot {
         )?;
 
         let global = env.new_global_ref(obj)?;
-        Ok(AdvancementRoot { inner: JavaObject::new(global) })
+        Ok(AdvancementRoot {
+            inner: JavaObject::new(global),
+        })
     }
 
     pub fn as_advancement(&self) -> Advancement {
-        Advancement { inner: self.inner.clone() }
+        Advancement {
+            inner: self.inner.clone(),
+        }
     }
 
-    pub fn inner(&self) -> &JavaObject { &self.inner }
+    pub fn inner(&self) -> &JavaObject {
+        &self.inner
+    }
 }
 
 /// Manager for advancement tabs
@@ -109,7 +125,9 @@ impl AdvancementManager {
         )?;
         let tab_obj = result.l()?;
         let global = env.new_global_ref(tab_obj)?;
-        Ok(AdvancementTab { inner: JavaObject::new(global) })
+        Ok(AdvancementTab {
+            inner: JavaObject::new(global),
+        })
     }
 }
 
@@ -120,7 +138,12 @@ pub struct AdvancementTab {
 }
 impl AdvancementTab {
     /// Create a sub-advancement under this tab
-    pub fn create_advancement(&self, id: &str, adv: Advancement, parent: Advancement) -> Result<()> {
+    pub fn create_advancement(
+        &self,
+        id: &str,
+        adv: Advancement,
+        parent: Advancement,
+    ) -> Result<()> {
         let mut env = get_env()?;
         let id_str = env.new_string(id)?;
         let adv_obj = adv.inner.as_obj()?;
@@ -139,12 +162,14 @@ impl AdvancementTab {
         let mut env = get_env()?;
         let player_obj = player.inner.as_obj()?;
         // call Java boolean addViewer(Player)
-        let added = env.call_method(
-            &self.inner.as_obj()?,
-            "addViewer",
-            "(Lnet/minestom/server/entity/Player;)Z",
-            &[JValue::Object(&player_obj)],
-        )?.z()?;
+        let added = env
+            .call_method(
+                &self.inner.as_obj()?,
+                "addViewer",
+                "(Lnet/minestom/server/entity/Player;)Z",
+                &[JValue::Object(&player_obj)],
+            )?
+            .z()?;
         Ok(added)
     }
 }
@@ -162,7 +187,7 @@ impl Advancement {
         icon: Material,
         frame: FrameType,
         x: f32,
-        y: f32
+        y: f32,
     ) -> Result<Self> {
         let mut env = get_env()?;
         let class = env.find_class("net/minestom/server/advancements/Advancement")?;
@@ -172,12 +197,14 @@ impl Advancement {
         let desc_val = description.as_jvalue(&mut env)?;
         // Material -> Java Material
         let mat_str = env.new_string(icon.to_java_name())?;
-        let material_obj = env.call_static_method(
-            "net/minestom/server/item/Material",
-            "fromKey",
-            "(Ljava/lang/String;)Lnet/minestom/server/item/Material;",
-            &[(&mat_str).into()],
-        )?.l()?;
+        let material_obj = env
+            .call_static_method(
+                "net/minestom/server/item/Material",
+                "fromKey",
+                "(Ljava/lang/String;)Lnet/minestom/server/item/Material;",
+                &[(&mat_str).into()],
+            )?
+            .l()?;
         let material_val = JValueGen::Object(material_obj);
         // Frame
         let frame_obj = frame.inner.as_obj()?;
@@ -188,10 +215,19 @@ impl Advancement {
         let obj = env.new_object(
             class,
             sig,
-            &[ title_val.as_jvalue(), desc_val.as_jvalue(), (&material_val).into(), (&frame_val).into(), x_val, y_val ],
+            &[
+                title_val.as_jvalue(),
+                desc_val.as_jvalue(),
+                (&material_val).into(),
+                (&frame_val).into(),
+                x_val,
+                y_val,
+            ],
         )?;
         let global = env.new_global_ref(obj)?;
-        Ok(Advancement { inner: JavaObject::new(global) })
+        Ok(Advancement {
+            inner: JavaObject::new(global),
+        })
     }
 
     /// Show or hide the toast notification
@@ -201,11 +237,13 @@ impl Advancement {
             &self.inner.as_obj()?,
             "showToast",
             "(Z)Lnet/minestom/server/advancements/Advancement;",
-            &[ JValue::Bool(if show { 1 } else { 0 }) ],
+            &[JValue::Bool(if show { 1 } else { 0 })],
         )?;
         let adv_obj = result.l()?;
         let global = env.new_global_ref(adv_obj)?;
-        Ok(Advancement { inner: JavaObject::new(global) })
+        Ok(Advancement {
+            inner: JavaObject::new(global),
+        })
     }
 
     /// Mark this advancement as achieved or unachieved
@@ -216,23 +254,22 @@ impl Advancement {
             &self.inner.as_obj()?,
             "setAchieved",
             "(Z)Lnet/minestom/server/advancements/Advancement;",
-            &[ JValue::Bool(if achieved { 1 } else { 0 }) ],
+            &[JValue::Bool(if achieved { 1 } else { 0 })],
         )?;
         let adv_obj = result.l()?;
         let global = env.new_global_ref(adv_obj)?;
-        Ok(Advancement { inner: JavaObject::new(global) })
+        Ok(Advancement {
+            inner: JavaObject::new(global),
+        })
     }
 
     pub fn is_achieved(&self) -> Result<bool> {
         let mut env = get_env()?;
-        let result = env.call_method(
-            &self.inner.as_obj()?,
-            "isAchieved",
-            "()Z",
-            &[],
-        )?;
+        let result = env.call_method(&self.inner.as_obj()?, "isAchieved", "()Z", &[])?;
         Ok(result.z()?)
     }
 
-    pub fn inner(&self) -> &JavaObject { &self.inner }
+    pub fn inner(&self) -> &JavaObject {
+        &self.inner
+    }
 }

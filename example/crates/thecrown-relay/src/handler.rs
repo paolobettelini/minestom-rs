@@ -1,22 +1,25 @@
-use chrono::{NaiveDateTime, Utc};
-use futures::StreamExt;
-use thecrown_protocol::GameServerType;
-use thecrown_common::crypto;
-use thecrown_protocol::McServerPacket;
 use crate::State;
-use thecrown_protocol::TransferPacketData;
-use thecrown_protocol::GameServerSpecs;
 use thecrown_protocol::AccomodatePlayerData;
+use thecrown_protocol::GameServerSpecs;
+use thecrown_protocol::GameServerType;
+use thecrown_protocol::McServerPacket;
 use thecrown_protocol::RelayPacket;
+use thecrown_protocol::TransferPacketData;
 
 type PacketType = RelayPacket;
 
 pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
     match msg {
-        RelayPacket::RegisterServer { server_name, address, port } => {
+        RelayPacket::RegisterServer {
+            server_name,
+            address,
+            port,
+        } => {
             log::info!("Server registered: {server_name} {address}:{port}");
-            
-            let server_container = state.register_container_server(server_name, address, port).await;
+
+            let server_container = state
+                .register_container_server(server_name, address, port)
+                .await;
 
             let servers = vec![
                 GameServerSpecs {
@@ -26,13 +29,13 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
                 GameServerSpecs {
                     name: String::from("parkour1"),
                     server_type: GameServerType::Parkour,
-                }
+                },
             ];
             let message = McServerPacket::StartGameServers { servers };
             server_container.publish(message).await;
 
             None
-        },
+        }
         RelayPacket::PlayerWantsToJoin { username } => {
             log::info!("Received join request by {username}");
 
@@ -75,7 +78,9 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
             let game_server = "lobby1".to_string();
             let address = "127.0.0.1".to_string();
             let port = 25566;
-            let cookie = state.gen_auth_for_player_game_server(username, server, game_server).await;
+            let cookie = state
+                .gen_auth_for_player_game_server(username, server, game_server)
+                .await;
             let transfer_data = TransferPacketData {
                 cookie: cookie.into(),
                 address,
@@ -87,8 +92,12 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
             };
 
             Some(response)
-        },
-        RelayPacket::AuthUserJoin { username, server, cookie } => {
+        }
+        RelayPacket::AuthUserJoin {
+            username,
+            server,
+            cookie,
+        } => {
             let game_server = if let Ok(token) = String::from_utf8(cookie) {
                 state.try_auth_user(&username, &server, &token).await
             } else {

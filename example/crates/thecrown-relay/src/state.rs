@@ -1,11 +1,9 @@
-use std::sync::Arc;
 use std::collections::HashMap;
-use std::collections::HashSet;
+use std::sync::Arc;
+use thecrown_common::crypto::*;
 use thecrown_common::nats::NatsClient;
 use thecrown_protocol::McServerPacket;
 use tokio::sync::Mutex;
-use thecrown_common::crypto::*;
-use tokio::sync::RwLock;
 
 #[derive(Debug, Clone)]
 pub struct State {
@@ -26,11 +24,14 @@ impl State {
         }
     }
 
-    pub async fn register_game_server(&self, id: String, server: ()) {
+    pub async fn register_game_server(&self, id: String, server: ()) {}
 
-    }
-
-    pub async fn register_container_server(&self, server_name: String, address: String, port: u16) -> Arc<ServerContainer> {
+    pub async fn register_container_server(
+        &self,
+        server_name: String,
+        address: String,
+        port: u16,
+    ) -> Arc<ServerContainer> {
         let server = ServerContainer {
             nats_client: self.nats_client.clone(),
             server_name: server_name.clone(),
@@ -47,7 +48,12 @@ impl State {
     }
 
     // Prepares the authentication for a player that needs to join a given game name
-    pub async fn gen_auth_for_player_game_server(&self, username: String, server: String, game_server: String) -> String {
+    pub async fn gen_auth_for_player_game_server(
+        &self,
+        username: String,
+        server: String,
+        game_server: String,
+    ) -> String {
         // Auth cookie
         let auth_data = AuthData {
             server,
@@ -102,7 +108,9 @@ pub struct ServerContainer {
 impl ServerContainer {
     pub async fn publish(&self, message: McServerPacket) {
         let subject = format!("mcserver.{}", self.server_name);
-        self.nats_client.publish_with_subject(subject, &message).await;
+        self.nats_client
+            .publish_with_subject(subject, &message)
+            .await;
     }
 }
 

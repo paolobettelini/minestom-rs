@@ -4,32 +4,30 @@ use crate::logic::parkour::ParkourServer;
 use crate::maps::LobbyMap2;
 use crate::maps::map::LobbyMap;
 use crate::mojang::get_skin_and_signature;
-use minestom::ServerListPingEvent;
-use thecrown_common::player::COOKIE_AUTH;
-use thecrown_protocol::GameServerSpecs;
-use thecrown_protocol::GameServerType;
 use log::info;
 use minestom;
-use thecrown_protocol::RelayPacket;
-use thecrown_common::nats::CallbackType;
 use minestom::MinestomServer;
-use thecrown_protocol::McServerPacket;
+use minestom::ServerListPingEvent;
 use minestom::TOKIO_HANDLE;
 use minestom::entity::PlayerSkin;
+use minestom::instance::InstanceManager;
 use minestom::{
     component,
     event::player::{AsyncPlayerConfigurationEvent, PlayerSkinInitEvent, PlayerSpawnEvent},
     material::Material,
     resource_pack::{ResourcePackInfo, ResourcePackRequestBuilder},
 };
-use minestom::instance::InstanceManager;
-use rand::Rng;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::LazyLock;
 use std::sync::{Mutex, RwLock};
+use thecrown_common::nats::CallbackType;
 use thecrown_common::nats::NatsClient;
+use thecrown_common::player::COOKIE_AUTH;
+use thecrown_protocol::GameServerType;
+use thecrown_protocol::McServerPacket;
+use thecrown_protocol::RelayPacket;
 use uuid::Uuid;
 use world_seed_entity_engine::model_engine::ModelEngine;
 
@@ -56,20 +54,23 @@ pub struct State {
 }
 
 pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
-    match msg { // TODO voglio ricever un Arc<State>
+    match msg {
+        // TODO voglio ricever un Arc<State>
         PacketType::StartGameServers { servers } => {
             for server_specs in servers {
                 log::info!("Starting server {:?}", server_specs);
                 let server: Box<dyn Server + Send + Sync> = match server_specs.server_type {
                     GameServerType::Lobby => {
-                        let map = LobbyMap2::new(&state.instance_manager).expect("Could not create map");
-                        let server = LobbyServer::new(map, state.minecraft_server.clone()).expect("Could not create expect");
-                        Box::new(server)                        
-                    },
+                        let map =
+                            LobbyMap2::new(&state.instance_manager).expect("Could not create map");
+                        let server = LobbyServer::new(map, state.minecraft_server.clone())
+                            .expect("Could not create expect");
+                        Box::new(server)
+                    }
                     GameServerType::Parkour => {
                         let server = ParkourServer::default();
                         Box::new(server)
-                    },
+                    }
                 };
 
                 let _ = server.init(&state.minecraft_server);
@@ -87,7 +88,7 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
 
 pub async fn run_server() -> anyhow::Result<()> {
     init_logging();
-    
+
     let minecraft_server = MinestomServer::new()?;
     let scheduler = minecraft_server.scheduler_manager()?;
     let instance_manager = minecraft_server.instance_manager()?;
@@ -142,12 +143,15 @@ pub async fn run_server() -> anyhow::Result<()> {
                         server: server_name.to_string(),
                         cookie,
                     };
-                    let response = TOKIO_HANDLE
-                        .block_on(async { nats.request(&packet).await });
+                    let response = TOKIO_HANDLE.block_on(async { nats.request(&packet).await });
 
                     if let Some(RelayPacket::ServeAuthResult { game_server }) = response {
                         if let Some(game_server) = game_server {
-                            log::info!("Sending player {} to game server: {}", username, game_server);
+                            log::info!(
+                                "Sending player {} to game server: {}",
+                                username,
+                                game_server
+                            );
                             SERVERS
                                 .lock()
                                 .unwrap()
