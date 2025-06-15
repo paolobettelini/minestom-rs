@@ -44,7 +44,7 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
     ) -> minestom::Result<()> {
         if let Ok(_player) = config_event.player() {
             info!("Setting spawning instance for player");
-            config_event.spawn_instance(&self.map.instance())?;
+            config_event.spawn_instance(&self.map.instance().as_instance_container())?;
         }
 
         Ok(())
@@ -92,7 +92,7 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
                 player.set_allow_flying(true)?;
 
                 let scale = distribution(AVG_SCALE, MIN_SCALE, MAX_SCALE);
-                //let scale = 0.2;
+                let scale = 0.2;
 
                 info!("Setting player scale to {}", scale);
                 player

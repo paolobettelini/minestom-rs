@@ -2,8 +2,8 @@ use crate::{
     magic_values::{SHRUNK_ACHIEVEMENT_SCALE, TITAN_ACHIEVEMENT_SCALE},
 };
 use minestom::{
-    Attribute, BlockType, InstanceContainer, Player, PlayerMoveEvent, Pos, entity::ItemDisplay,
-    event::player::PlayerSpawnEvent, instance::InstanceManager, item::ItemStack,
+    Attribute, BlockType, SharedInstance, Player, PlayerMoveEvent, Pos, entity::ItemDisplay,
+    event::player::PlayerSpawnEvent, item::ItemStack,
     material::Material,
 };
 use parking_lot::RwLock;
@@ -18,17 +18,13 @@ use world_seed_entity_engine::generic_model::create_wsee_model;
 
 #[derive(Clone)]
 pub struct LobbyMap2 {
-    pub instance: InstanceContainer,
+    pub instance: SharedInstance,
 }
 
 impl LobbyMap2 {
-    pub fn new(instance_manager: &InstanceManager) -> minestom::Result<Self> {
-        let anvil_path =
-            String::from("/home/paolo/Desktop/github/minestom-rs/example/resources/anvil/lobby2");
-        let instance = instance_manager.create_instance_container()?;
-        instance.load_anvil_world(anvil_path)?;
+    pub fn new(shared_instance: SharedInstance) -> minestom::Result<Self> {
         Ok(Self {
-            instance: instance.clone(),
+            instance: shared_instance,
         })
     }
 }
@@ -52,7 +48,7 @@ impl LobbyMap for LobbyMap2 {
         let event_node = self.instance.event_node()?;
 
         let spawn_pos = Pos::of(1817.5, 41.0, 1044.5, 90.0, 0.0);
-        let mob = BulbasaurMob::new(self.instance.clone(), spawn_pos)?;
+        let mob = BulbasaurMob::new(self.instance.as_instance_container(), spawn_pos)?;
 
         let map = self.clone();
         event_node.listen(move |move_event: &PlayerMoveEvent| {
@@ -95,7 +91,7 @@ impl LobbyMap for LobbyMap2 {
         let model = OldManModel;
         let model = create_wsee_model(model)?;
         model.init(
-            self.instance.clone(),
+            self.instance.as_instance_container(),
             Pos::of(1800.5, 33.0, 1044.5, -90.0, 0.0),
         )?;
         event_node.listen(move |spawn_event: &PlayerSpawnEvent| {
@@ -117,7 +113,7 @@ impl LobbyMap for LobbyMap2 {
         let display = ItemDisplay::new(&item)?;
         display.set_no_gravity(true)?;
         display.spawn(
-            &self.instance,
+            &self.instance.as_instance_container(),
             x as f64 + 0.5,
             y as f64 + 0.5,
             z as f64 + 0.5,
@@ -144,7 +140,7 @@ impl LobbyMap for LobbyMap2 {
                 .with_custom_model_data("light")?;
             let display = ItemDisplay::new(&item)?;
             display.set_no_gravity(true)?;
-            display.spawn(&self.instance, x as f64, y as f64, z as f64, 0.0, 0.0)?;
+            display.spawn(&self.instance.as_instance_container(), x as f64, y as f64, z as f64, 0.0, 0.0)?;
         }
 
         // Spawn custom rock
@@ -154,7 +150,7 @@ impl LobbyMap for LobbyMap2 {
             .with_custom_model_data("rock1")?;
         let display = ItemDisplay::new(&item)?;
         display.set_no_gravity(true)?;
-        display.spawn(&self.instance, x, y, z, yaw, pitch)?;
+        display.spawn(&self.instance.as_instance_container(), x, y, z, yaw, pitch)?;
 
         let (x, y, z, yaw, pitch) = (1791.2, 33.5, 1030.9, 0.0, 0.0);
         let item = ItemStack::of(Material::Diamond)?
@@ -162,11 +158,11 @@ impl LobbyMap for LobbyMap2 {
             .with_custom_model_data("rock1")?;
         let display = ItemDisplay::new(&item)?;
         display.set_no_gravity(true)?;
-        display.spawn(&self.instance, x, y, z, yaw, pitch)?;
+        display.spawn(&self.instance.as_instance_container(), x, y, z, yaw, pitch)?;
 
         // le scritte del cartello non si vedono, nemmeno l'itemframe completamente.
 
-        piano::spawn_piano(self.instance.clone(), players, 1777.4, 28.0, 1056.0, -90.0)?;
+        piano::spawn_piano(self.instance.as_instance_container(), players, 1777.4, 28.0, 1056.0, -90.0)?;
 
         macro_rules! cloud {
             ($name:expr) => {
@@ -284,7 +280,7 @@ impl LobbyMap for LobbyMap2 {
             let yaw_variation = rng.random_range(-15..=15) as f32;
             let pitch = rng.random_range(-5..=5) as f32;
             display.spawn(
-                &self.instance,
+                &self.instance.as_instance_container(),
                 coord.0,
                 coord.1,
                 coord.2,
@@ -296,7 +292,7 @@ impl LobbyMap for LobbyMap2 {
         Ok(())
     }
 
-    fn instance(&self) -> InstanceContainer {
+    fn instance(&self) -> SharedInstance {
         self.instance.clone()
     }
 }

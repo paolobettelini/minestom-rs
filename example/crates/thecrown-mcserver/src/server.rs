@@ -1,13 +1,9 @@
 use log::info;
 use minestom::{
-    self, MinestomServer, ServerListPingEvent, TOKIO_HANDLE, component,
-    entity::PlayerSkin,
-    event::player::{AsyncPlayerConfigurationEvent, PlayerSkinInitEvent, PlayerSpawnEvent},
-    instance::InstanceManager,
-    material::Material,
-    resource_pack::{ResourcePackInfo, ResourcePackRequestBuilder},
+    self, component, entity::PlayerSkin, event::player::{AsyncPlayerConfigurationEvent, PlayerSkinInitEvent, PlayerSpawnEvent}, instance::InstanceManager, material::Material, resource_pack::{ResourcePackInfo, ResourcePackRequestBuilder}, InstanceContainer, MinestomServer, ServerListPingEvent, TOKIO_HANDLE
 };
 use thecrown_lobby::{maps::LobbyMap2, LobbyServer};
+use thecrown_common::map::create_lobby_instance_container;
 use std::{
     collections::HashMap,
     path::Path,
@@ -36,6 +32,7 @@ type PacketType = McServerPacket;
 pub struct State {
     minecraft_server: MinestomServer,
     instance_manager: InstanceManager,
+    lobby_instance_container: InstanceContainer,
 }
 
 pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
@@ -46,10 +43,15 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
                 log::info!("Starting server {:?}", server_specs);
                 let server: Box<dyn Server + Send + Sync> = match server_specs.server_type {
                     GameServerType::Lobby => {
-                        let map =
-                            LobbyMap2::new(&state.instance_manager).expect("Could not create map");
+                        let shared_instance = state.lobby_instance_container.create_shared_instance()
+                            .expect("Could not create shared instance");
+                        
+                        log::info!("Created shared instance for lobby: {}", server_specs.name);
+                        
+                        let map = LobbyMap2::new(shared_instance)
+                            .expect("Could not create map");
                         let server = LobbyServer::new(map, state.minecraft_server.clone())
-                            .expect("Could not create expect");
+                            .expect("Could not create server");
                         Box::new(server)
                     }
                     GameServerType::Parkour => {
@@ -84,9 +86,12 @@ pub async fn run_server() -> anyhow::Result<()> {
     let nats_url = String::from("127.0.0.1:4222");
     let subject = format!("mcserver.{}", server_name);
     let nats_client = Arc::new(NatsClient::new(nats_url).await?);
+    let lobby_instance_container = create_lobby_instance_container(&instance_manager)
+        .expect("Could not create instance container");
     let state = State {
         minecraft_server: minecraft_server.clone(),
         instance_manager: instance_manager.clone(),
+        lobby_instance_container: lobby_instance_container.clone(),
     };
     let async_handler: Arc<CallbackType<_, _>> =
         Arc::new(|state, msg| Box::pin(handle_msg(state, msg)));
@@ -99,7 +104,7 @@ pub async fn run_server() -> anyhow::Result<()> {
     // let out = task_handle.await?;
     let register_packet = RelayPacket::RegisterServer {
         server_name: server_name.to_string(),
-        address: String::from("127.0.0.1"),
+        address: String::from("bettelini.internet-box.ch"),
         port,
     };
 
@@ -150,7 +155,7 @@ pub async fn run_server() -> anyhow::Result<()> {
 
                             // Send resource pack
                             let uuid = uuid::Uuid::new_v4();
-                            let url = "http://127.0.0.1:6543/resourcepack.zip";
+                            let url = "http://bettelini.internet-box.ch:6543/resourcepack.zip";
                             let hash = include_str!(concat!(env!("OUT_DIR"), "/resourcepack.sha1"));
 
                             let pack_info = ResourcePackInfo::new(uuid, url, hash)?;

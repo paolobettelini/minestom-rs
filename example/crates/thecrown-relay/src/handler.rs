@@ -1,4 +1,5 @@
 use crate::State;
+use rand::{seq::IndexedRandom, Rng};
 use thecrown_protocol::{
     AccomodatePlayerData, GameServerSpecs, GameServerType, McServerPacket, RelayPacket,
     TransferPacketData,
@@ -22,6 +23,10 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
             let servers = vec![
                 GameServerSpecs {
                     name: String::from("lobby1"),
+                    server_type: GameServerType::Lobby,
+                },
+                GameServerSpecs {
+                    name: String::from("lobby2"),
                     server_type: GameServerType::Lobby,
                 },
                 GameServerSpecs {
@@ -73,8 +78,12 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
             */
 
             let server = "server1".to_string();
-            let game_server = "lobby1".to_string();
-            let address = "127.0.0.1".to_string();
+
+            let game_servers = vec!["lobby1", "lobby2"];
+            let game_server = game_servers.choose(&mut rand::rng()).unwrap().to_string();
+            log::info!("Putting into {}", &game_server);
+
+            let address = "bettelini.internet-box.ch".to_string();
             let port = 25566;
             let cookie = state
                 .gen_auth_for_player_game_server(username, server, game_server)
