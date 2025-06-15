@@ -4,7 +4,7 @@ use jni::{
     objects::{JClass, JObject, JValue},
     sys,
 };
-use minestom::{InstanceContainer, Player, Pos};
+use minestom::{instance::{Instance, InstanceContainer}, Player, Pos};
 use minestom::{
     Result,
     jni_utils::{JavaObject, get_env},
@@ -21,7 +21,7 @@ use std::{
 /// Trait to implement in Rust for any GenericModelImpl subclass
 pub trait GenericModel: Send + Sync + 'static {
     fn get_id(&self) -> String;
-    fn init(&self, instance: InstanceContainer, pos: Pos);
+    fn init(&self, instance: &dyn Instance, pos: Pos);
 }
 
 #[derive(Clone)]
@@ -68,7 +68,7 @@ pub unsafe extern "system" fn Java_rust_wsee_GenericModelCallback_nativeInit(
     let pos = Pos::new(JavaObject::from_env(&mut env, j_pos).unwrap());
 
     if let Some(model) = MODEL_REGISTRY.read().unwrap().get(&(callback_id as u64)) {
-        let _ = model.init(instance, pos);
+        let _ = model.init(&instance, pos);
     }
 }
 
@@ -90,7 +90,7 @@ pub fn create_wsee_model<M: GenericModel>(model_impl: M) -> Result<WseeModel> {
 }
 
 impl WseeModel {
-    pub fn init(&self, instance: InstanceContainer, pos: Pos) -> Result<()> {
+    pub fn init(&self, instance: &dyn Instance, pos: Pos) -> Result<()> {
         let mut env = get_env()?;
         env.call_method(
             &self.inner.as_obj()?,

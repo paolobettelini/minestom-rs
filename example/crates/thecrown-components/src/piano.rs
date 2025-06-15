@@ -4,7 +4,7 @@ use minestom::{
         display::ItemDisplay,
         entity::{Entity, EntityType},
     },
-    instance::InstanceContainer,
+    instance::Instance,
     item::ItemStack,
     material::Material,
     particle::{ParticlePacket, ParticleType},
@@ -26,7 +26,7 @@ fn read_and_increment_counter() -> u32 {
 }
 
 pub fn spawn_piano(
-    instance: InstanceContainer,
+    instance: &dyn Instance,
     players: Arc<RwLock<HashMap<Uuid, Player>>>,
     x: f64,
     y: f64,
@@ -62,7 +62,7 @@ pub fn spawn_piano(
     display.set_no_gravity(true)?;
     display.set_scale(scale as f32, scale as f32, scale as f32)?;
     display.spawn(
-        &instance,
+        instance,
         x - cos * length / 4.0,
         y + 0.5 * scale,
         z - sin * length / 4.0,
@@ -79,7 +79,7 @@ pub fn spawn_piano(
         armor_stand.set_invisible(true)?;
         armor_stand.set_no_gravity(true)?;
         armor_stand.spawn(
-            &instance,
+            instance,
             x + (sin * offset1) - (cos * offset2) - (cos * armor_width * i as f64),
             y - 1.0 + offset_y,
             z - (cos * offset1) - (sin * offset2) - (sin * armor_width * i as f64),

@@ -1,5 +1,5 @@
 use crate::Component;
-use crate::InstanceContainer;
+use crate::instance::Instance;
 use crate::Result;
 use crate::collision::BoundingBox;
 use crate::jni_utils::{JavaObject, JniValue, get_env};
@@ -125,7 +125,7 @@ impl Entity {
     /// Spawns the entity at the specified location
     pub fn spawn(
         &self,
-        instance: &InstanceContainer,
+        instance: &dyn Instance,
         x: f64,
         y: f64,
         z: f64,

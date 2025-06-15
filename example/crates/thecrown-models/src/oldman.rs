@@ -1,4 +1,4 @@
-use minestom::{InstanceContainer, Pos};
+use minestom::{instance::Instance, Pos};
 use world_seed_entity_engine::generic_model::GenericModel;
 
 #[derive(Clone)]
@@ -8,5 +8,5 @@ impl GenericModel for OldManModel {
         "oldman/oldman.bbmodel".to_string()
     }
 
-    fn init(&self, instance: InstanceContainer, pos: Pos) {}
+    fn init(&self, instance: &dyn Instance, pos: Pos) {}
 }

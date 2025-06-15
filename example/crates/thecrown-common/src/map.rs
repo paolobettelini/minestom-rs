@@ -1,4 +1,4 @@
-use minestom::{InstanceContainer, SharedInstance, Player};
+use minestom::{instance::InstanceContainer, SharedInstance, Player};
 use parking_lot::RwLock;
 use std::{collections::HashMap, sync::Arc};
 use uuid::Uuid;

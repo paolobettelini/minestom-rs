@@ -11,6 +11,40 @@ use jni::objects::{JObject, JObjectArray};
 use log::{debug, error, info};
 use std::path::Path;
 
+/// Common trait for all instance types (InstanceContainer and SharedInstance).
+/// This allows methods to accept either type without needing conversion.
+pub trait Instance {
+    /// Gets the inner Java object for JNI calls
+    fn inner(&self) -> Result<JObject<'_>>;
+    
+    /// Gets all players in this instance
+    fn get_players(&self) -> Result<Vec<Player>>;
+    
+    /// Checks if a chunk is loaded
+    fn get_chunk(&self, chunk_x: i32, chunk_z: i32) -> Result<bool>;
+    
+    /// Loads a chunk
+    fn load_chunk(&self, chunk_x: i32, chunk_z: i32) -> Result<()>;
+    
+    /// Unloads a chunk
+    fn unload_chunk(&self, chunk_x: i32, chunk_z: i32) -> Result<()>;
+    
+    /// Gets the spawn position
+    fn get_spawn_position(&self) -> Result<Position>;
+    
+    /// Sets the spawn position
+    fn set_spawn_position(&self, position: &Position) -> Result<()>;
+    
+    /// Sets a block at the specified coordinates
+    fn set_block(&self, x: i32, y: i32, z: i32, block: Block) -> Result<()>;
+    
+    /// Sets the time rate of this instance
+    fn set_time_rate(&self, rate: i32) -> Result<()>;
+    
+    /// Gets the event node for this instance
+    fn event_node(&self) -> Result<EventNode>;
+}
+
 #[derive(Clone)]
 pub struct InstanceManager {
     inner: JavaObject,
@@ -350,6 +384,48 @@ impl InstanceContainer {
     }
 }
 
+impl Instance for InstanceContainer {
+    fn inner(&self) -> Result<JObject<'_>> {
+        self.inner.as_obj()
+    }
+
+    fn get_players(&self) -> Result<Vec<Player>> {
+        self.get_players()
+    }
+
+    fn get_chunk(&self, chunk_x: i32, chunk_z: i32) -> Result<bool> {
+        self.get_chunk(chunk_x, chunk_z)
+    }
+
+    fn load_chunk(&self, chunk_x: i32, chunk_z: i32) -> Result<()> {
+        self.load_chunk(chunk_x, chunk_z)
+    }
+
+    fn unload_chunk(&self, chunk_x: i32, chunk_z: i32) -> Result<()> {
+        self.unload_chunk(chunk_x, chunk_z)
+    }
+
+    fn get_spawn_position(&self) -> Result<Position> {
+        self.get_spawn_position()
+    }
+
+    fn set_spawn_position(&self, position: &Position) -> Result<()> {
+        self.set_spawn_position(position)
+    }
+
+    fn set_block(&self, x: i32, y: i32, z: i32, block: Block) -> Result<()> {
+        self.set_block(x, y, z, block)
+    }
+
+    fn set_time_rate(&self, rate: i32) -> Result<()> {
+        self.set_time_rate(rate)
+    }
+
+    fn event_node(&self) -> Result<EventNode> {
+        self.event_node()
+    }
+}
+
 impl SharedInstance {
     pub fn new(inner: JavaObject) -> Self {
         Self { inner }
@@ -499,5 +575,47 @@ impl SharedInstance {
             &[],
         )?;
         Ok(EventNode::from(result))
+    }
+}
+
+impl Instance for SharedInstance {
+    fn inner(&self) -> Result<JObject<'_>> {
+        self.inner.as_obj()
+    }
+
+    fn get_players(&self) -> Result<Vec<Player>> {
+        self.get_players()
+    }
+
+    fn get_chunk(&self, chunk_x: i32, chunk_z: i32) -> Result<bool> {
+        self.get_chunk(chunk_x, chunk_z)
+    }
+
+    fn load_chunk(&self, chunk_x: i32, chunk_z: i32) -> Result<()> {
+        self.load_chunk(chunk_x, chunk_z)
+    }
+
+    fn unload_chunk(&self, chunk_x: i32, chunk_z: i32) -> Result<()> {
+        self.unload_chunk(chunk_x, chunk_z)
+    }
+
+    fn get_spawn_position(&self) -> Result<Position> {
+        self.get_spawn_position()
+    }
+
+    fn set_spawn_position(&self, position: &Position) -> Result<()> {
+        self.set_spawn_position(position)
+    }
+
+    fn set_block(&self, x: i32, y: i32, z: i32, block: Block) -> Result<()> {
+        self.set_block(x, y, z, block)
+    }
+
+    fn set_time_rate(&self, rate: i32) -> Result<()> {
+        self.set_time_rate(rate)
+    }
+
+    fn event_node(&self) -> Result<EventNode> {
+        self.event_node()
     }
 }

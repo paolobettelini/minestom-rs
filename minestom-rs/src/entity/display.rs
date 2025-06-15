@@ -1,4 +1,4 @@
-use crate::InstanceContainer;
+use crate::instance::Instance;
 use crate::Result;
 use crate::collision::BoundingBox;
 use crate::item::ItemStack;
@@ -55,7 +55,7 @@ impl ItemDisplay {
     /// Sets the instance and position of this ItemDisplay in one call
     pub fn spawn(
         &self,
-        instance: &InstanceContainer,
+        instance: &dyn Instance,
         x: f64,
         y: f64,
         z: f64,

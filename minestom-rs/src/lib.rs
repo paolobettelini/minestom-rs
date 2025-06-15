@@ -44,7 +44,7 @@ pub use event::player::{
     PlayerEntityInteractEvent, PlayerMoveEvent, PlayerSkinInitEvent, PlayerSpawnEvent,
 };
 pub use event::server::ServerListPingEvent;
-pub use instance::{InstanceContainer, SharedInstance};
+pub use instance::{Instance, InstanceContainer, SharedInstance};
 use jni::objects::{JObject, JString};
 use jni::sys::{JNIEnv, jlong, jobject};
 use log::{debug, error};

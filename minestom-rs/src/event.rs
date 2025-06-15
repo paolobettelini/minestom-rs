@@ -1,6 +1,6 @@
 use crate::coordinate::{Pos, Position};
 use crate::entity::{Player, PlayerSkin};
-use crate::instance::InstanceContainer;
+use crate::instance::{Instance, InstanceContainer};
 use crate::jni_utils::{JavaObject, JniValue, get_env};
 use crate::text::Component;
 use crate::{MinestomError, Result};
@@ -317,7 +317,7 @@ pub mod player {
 
     impl AsyncPlayerConfigurationEvent {
         /// Sets the instance where the player will spawn.
-        pub fn spawn_instance(&self, instance: &InstanceContainer) -> Result<()> {
+        pub fn spawn_instance(&self, instance: &dyn Instance) -> Result<()> {
             let mut env = get_env()?;
 
             debug!("Setting spawning instance for player configuration...");

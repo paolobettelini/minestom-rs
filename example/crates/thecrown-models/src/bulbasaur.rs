@@ -1,5 +1,5 @@
 use minestom::{
-    InstanceContainer, Player, Pos,
+    instance::{Instance, InstanceContainer}, Player, Pos,
     entity::{EntityCreature, MinestomEntityCreature, create_entity_creature, entity::EntityType},
 };
 use std::sync::{Arc, Mutex, Weak};
@@ -15,7 +15,7 @@ impl GenericModel for BulbasaurModel {
         "bulbasaur/bulbasaur.bbmodel".to_string()
     }
 
-    fn init(&self, instance: InstanceContainer, pos: Pos) {}
+    fn init(&self, instance: &dyn Instance, pos: Pos) {}
 }
 
 pub struct BulbasaurMob {
@@ -28,7 +28,7 @@ pub struct BulbasaurMob {
 
 impl BulbasaurMob {
     pub fn new(
-        instance: InstanceContainer,
+        instance: &dyn Instance,
         spawn_pos: Pos,
     ) -> minestom::Result<Arc<Mutex<MinestomEntityCreature>>> {
         let placeholder: Arc<Mutex<MinestomEntityCreature>> =
@@ -39,10 +39,16 @@ impl BulbasaurMob {
 
         let animation_handler = AnimationHandler::new(&model)?;
 
+        // Convert to InstanceContainer for storage
+        let instance_container = match instance.inner() {
+            Ok(obj) => InstanceContainer::new(minestom::jni_utils::JavaObject::from_env(&mut minestom::jni_utils::get_env()?, obj)?),
+            Err(_) => return Err(minestom::MinestomError::EventError("Failed to get instance".to_string())),
+        };
+
         let mob_impl = Self {
             creature_handle: Arc::downgrade(&placeholder),
             model: model.clone(),
-            instance: instance.clone(),
+            instance: instance_container.clone(),
             spawn_pos: spawn_pos.clone(),
             animation_handler: animation_handler.clone(),
         };
@@ -57,10 +63,10 @@ impl BulbasaurMob {
 
         wrapper.set_invisible(true)?;
 
-        model.init(instance.clone(), spawn_pos.clone())?;
+        model.init(&instance_container, spawn_pos.clone())?;
         let _ = animation_handler.play_repeat("animation.bulbasaur.faint");
 
-        wrapper.set_instance_and_pos(&instance, &spawn_pos)?;
+        wrapper.set_instance_and_pos(&instance_container, &spawn_pos)?;
 
         Ok(placeholder.clone())
     }

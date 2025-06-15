@@ -1,5 +1,5 @@
 use crate::jni_utils::{JavaObject, get_env};
-use crate::{InstanceContainer, Player, Pos};
+use crate::{instance::Instance, Player, Pos};
 use jni::sys::{jboolean, jlong, jobject};
 use jni::{
     JNIEnv,
@@ -201,7 +201,7 @@ impl MinestomEntityCreature {
 
     pub fn set_instance_and_pos(
         &self,
-        instance: &InstanceContainer,
+        instance: &dyn Instance,
         pos: &Pos,
     ) -> crate::Result<()> {
         let mut env = get_env()?;
@@ -221,7 +221,7 @@ impl MinestomEntityCreature {
     /// call `.spawn()` or similar.
     ///
     /// This helper simply calls `setInstance(instance, pos)` on your Java object.
-    pub fn spawn(&self, instance: InstanceContainer, pos: Pos) -> crate::Result<()> {
+    pub fn spawn(&self, instance: &dyn Instance, pos: Pos) -> crate::Result<()> {
         let mut env = get_env()?;
         env.call_method(
             &self.inner.as_obj()?,

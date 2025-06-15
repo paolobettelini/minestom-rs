@@ -44,7 +44,7 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
     ) -> minestom::Result<()> {
         if let Ok(_player) = config_event.player() {
             info!("Setting spawning instance for player");
-            config_event.spawn_instance(&self.map.instance().as_instance_container())?;
+            config_event.spawn_instance(&self.map.instance())?;
         }
 
         Ok(())
