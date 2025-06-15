@@ -114,6 +114,24 @@ impl InstanceManager {
             Ok(Some(InstanceContainer::new(result)))
         }
     }
+
+    /// Creates a SharedInstance from an InstanceContainer.
+    /// The SharedInstance will reference the same underlying world data but have separate entities.
+    pub fn create_shared_instance(&self, instance_container: &InstanceContainer) -> Result<SharedInstance> {
+        let mut env = get_env()?;
+        
+        // Get the InstanceContainer object
+        let instance_container_obj = instance_container.inner()?;
+        
+        // Create a new SharedInstance from this InstanceContainer using InstanceManager
+        let shared_instance = self.inner.call_object_method(
+            "createSharedInstance",
+            "(Lnet/minestom/server/instance/InstanceContainer;)Lnet/minestom/server/instance/SharedInstance;",
+            &[JniValue::Object(instance_container_obj)],
+        )?;
+        
+        Ok(SharedInstance::new(shared_instance))
+    }
 }
 
 impl InstanceContainer {
@@ -123,15 +141,6 @@ impl InstanceContainer {
 
     pub fn inner(&self) -> Result<JObject<'_>> {
         self.inner.as_obj()
-    }
-
-    /// Creates a SharedInstance from this InstanceContainer.
-    /// The SharedInstance will reference the same underlying world data.
-    pub fn create_shared_instance(&self) -> Result<SharedInstance> {
-        // In Minestom, SharedInstance is created from InstanceContainer
-        // For now, we'll just clone the inner object since SharedInstance and InstanceContainer
-        // should be compatible at the Java level
-        Ok(SharedInstance::new(self.inner.clone()))
     }
 
     /// Loads an Anvil world into this instance using the Common class implementation.
@@ -433,12 +442,6 @@ impl SharedInstance {
 
     pub fn inner(&self) -> Result<JObject<'_>> {
         self.inner.as_obj()
-    }
-
-    /// Gets the underlying InstanceContainer for compatibility with APIs that still expect InstanceContainer.
-    /// This is safe because SharedInstance wraps the same underlying Java object.
-    pub fn as_instance_container(&self) -> InstanceContainer {
-        InstanceContainer::new(self.inner.clone())
     }
 
     pub fn get_players(&self) -> Result<Vec<Player>> {

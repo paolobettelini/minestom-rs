@@ -29,7 +29,6 @@ public class Common {
 
         instance.setChunkSupplier(LightingChunk::new);
         instance.setChunkLoader(new net.minestom.server.instance.anvil.AnvilLoader(path));
-        instance.setTimeRate(0);
         var chunks = new ArrayList<CompletableFuture<Chunk>>();
         ChunkRange.chunksInRange(0, 0, 32, (x, z) -> chunks.add(instance.loadChunk(x, z)));
         CompletableFuture.runAsync(() -> {

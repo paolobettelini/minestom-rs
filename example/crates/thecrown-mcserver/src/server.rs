@@ -43,7 +43,7 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
                 log::info!("Starting server {:?}", server_specs);
                 let server: Box<dyn Server + Send + Sync> = match server_specs.server_type {
                     GameServerType::Lobby => {
-                        let shared_instance = state.lobby_instance_container.create_shared_instance()
+                        let shared_instance = state.instance_manager.create_shared_instance(&state.lobby_instance_container)
                             .expect("Could not create shared instance");
                         
                         log::info!("Created shared instance for lobby: {}", server_specs.name);

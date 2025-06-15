@@ -45,6 +45,7 @@ impl LobbyMap for LobbyMap2 {
     }
 
     fn init(&self, players: Arc<RwLock<HashMap<Uuid, Player>>>) -> minestom::Result<()> {
+        self.instance.set_time_rate(0)?;
         let event_node = self.instance.event_node()?;
 
         let spawn_pos = Pos::of(1817.5, 41.0, 1044.5, 90.0, 0.0);
