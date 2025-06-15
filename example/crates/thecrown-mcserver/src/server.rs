@@ -1,11 +1,6 @@
 use log::info;
 use minestom::{
-    self, InstanceContainer, MinestomServer, ServerListPingEvent, TOKIO_HANDLE, component,
-    entity::PlayerSkin,
-    event::player::{AsyncPlayerConfigurationEvent, PlayerSkinInitEvent, PlayerSpawnEvent},
-    instance::InstanceManager,
-    material::Material,
-    resource_pack::{ResourcePackInfo, ResourcePackRequestBuilder},
+    self, component, entity::PlayerSkin, event::player::{AsyncPlayerConfigurationEvent, PlayerSkinInitEvent, PlayerSpawnEvent}, instance::InstanceManager, material::Material, resource_pack::{ResourcePackInfo, ResourcePackRequestBuilder}, InstanceContainer, MinestomServer, Player, ServerListPingEvent, TOKIO_HANDLE
 };
 use std::{
     collections::HashMap,
@@ -28,6 +23,10 @@ use uuid::Uuid;
 use world_seed_entity_engine::model_engine::ModelEngine;
 
 static SERVERS: LazyLock<Mutex<HashMap<String, Arc<Box<dyn Server + Send + Sync>>>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new())); // RwLock
+
+// Username, player
+static PLAYERS: LazyLock<Mutex<HashMap<String, Player>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
 type PacketType = McServerPacket;
@@ -74,6 +73,22 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
                     .lock()
                     .unwrap()
                     .insert(server_name.clone(), Arc::new(server));
+            }
+            None
+        }
+        PacketType::WhisperCommand { sender, target, message } => {
+            let res = {
+                let guard = PLAYERS.lock().unwrap();
+                guard.get(&sender).cloned()
+            };
+            if let Some(player) = res {
+                let msg = component!("Whisper >> ")
+                    .color("#454545").unwrap()
+                    .chain(component!("[").gray())
+                    .chain(component!("{}", sender).yellow())
+                    .chain(component!("] ").gray())
+                    .chain(component!(" {}", message).white());
+                let _ = player.send_message(&msg);
             }
             None
         }
@@ -155,14 +170,21 @@ pub async fn run_server() -> anyhow::Result<()> {
                                 username,
                                 game_server
                             );
-                            let servers_guard = SERVERS.lock().unwrap();
-                            let server = servers_guard.get(&game_server).unwrap();
+                            let server = {
+                                let servers_guard = SERVERS.lock().unwrap();
+                                servers_guard.get(&game_server).unwrap().clone()
+                            };
                             server.init_player(&minecraft_server_clone, &config_event)?;
                             // Something like if there server isn't there check another list of
                             // servers that are being created and wait.
                             let res = player.set_server(server.clone());
                             if let Err(e) = res {
                                 log::error!("Error setting setver: {:?}", e);
+                            }
+                            // Add player to global player list
+                            {
+                                let mut guard = PLAYERS.lock().unwrap();
+                                guard.insert(username, player.clone());
                             }
 
                             // Send resource pack

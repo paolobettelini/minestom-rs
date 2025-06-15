@@ -11,7 +11,6 @@ pub enum McServerPacket {
 
     /* Relay -> Gameserver */
     WhisperCommand {
-        server: String,
         sender: String,
         target: String,
         message: String,

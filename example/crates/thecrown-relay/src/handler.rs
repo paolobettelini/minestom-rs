@@ -34,6 +34,9 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
                     server_type: GameServerType::Parkour,
                 },
             ];
+            for server in &servers {
+                state.init_game_server(&server, server_container.clone()).await;
+            }
             let message = McServerPacket::StartGameServers { servers };
             server_container.publish(message).await;
 
@@ -114,7 +117,7 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
             Some(RelayPacket::ServeAuthResult { game_server })
         }
         RelayPacket::WhisperCommand { sender, target, message } => {
-            let status = todo!();
+            let status = state.whisper_command(sender, target, message).await;
             Some(RelayPacket::WhisperCommandResponse { status })
         }
         _ => None,
