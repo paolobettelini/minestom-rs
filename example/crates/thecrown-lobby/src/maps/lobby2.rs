@@ -1,6 +1,5 @@
 use crate::{
     magic_values::{SHRUNK_ACHIEVEMENT_SCALE, TITAN_ACHIEVEMENT_SCALE},
-    maps::LobbyMap,
 };
 use minestom::{
     Attribute, BlockType, InstanceContainer, Player, PlayerMoveEvent, Pos, entity::ItemDisplay,
@@ -9,6 +8,7 @@ use minestom::{
 };
 use parking_lot::RwLock;
 use rand::Rng;
+use thecrown_common::map::LobbyMap;
 use std::{collections::HashMap, sync::Arc};
 use thecrown_advancements::{self as advancements, CanAchieveAdvancement};
 use thecrown_components::piano;

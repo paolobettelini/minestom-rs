@@ -1,10 +1,6 @@
 use jni::{JNIEnv, objects::JClass, sys::jint};
 use thecrown_common as common;
 
-mod commands;
-mod lobby;
-mod magic_values;
-mod maps;
 mod server;
 
 #[unsafe(no_mangle)]

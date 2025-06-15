@@ -1,4 +1,3 @@
-use crate::maps::LobbyMap;
 use log::info;
 use minestom::{
     self, Command, Player,
@@ -6,6 +5,7 @@ use minestom::{
     component,
 };
 use parking_lot::RwLock;
+use thecrown_common::map::LobbyMap;
 use std::{collections::HashMap, sync::Arc};
 use uuid::Uuid;
 

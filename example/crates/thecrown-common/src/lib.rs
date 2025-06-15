@@ -6,3 +6,4 @@ pub mod player;
 pub mod server;
 pub mod text;
 pub mod toml;
+pub mod map;

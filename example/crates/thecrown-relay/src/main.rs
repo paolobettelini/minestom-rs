@@ -41,7 +41,7 @@ async fn main() -> anyhow::Result<()> {
             .handle_subscription(state.clone(), async_handler.as_ref())
             .await;
     });
-    let out = task_handle.await?;
+    task_handle.await?;
 
     Ok(())
 }

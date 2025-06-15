@@ -1,4 +1,3 @@
-use crate::{lobby::LobbyServer, maps::LobbyMap2};
 use log::info;
 use minestom::{
     self, MinestomServer, ServerListPingEvent, TOKIO_HANDLE, component,
@@ -8,6 +7,7 @@ use minestom::{
     material::Material,
     resource_pack::{ResourcePackInfo, ResourcePackRequestBuilder},
 };
+use thecrown_lobby::{maps::LobbyMap2, LobbyServer};
 use std::{
     collections::HashMap,
     path::Path,

@@ -17,3 +17,4 @@ reqwest = { workspace = true }
 minestom = { workspace = true }
 jni = { workspace = true }
 uuid = { workspace = true }
+parking_lot = { workspace = true }
