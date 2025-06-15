@@ -4,7 +4,10 @@ use jni::{
     objects::{JClass, JObject, JValue},
     sys,
 };
-use minestom::{instance::{Instance, InstanceContainer}, Player, Pos};
+use minestom::{
+    Player, Pos,
+    instance::{Instance, InstanceContainer},
+};
 use minestom::{
     Result,
     jni_utils::{JavaObject, get_env},

@@ -1,16 +1,13 @@
-use crate::{
-    magic_values::{SHRUNK_ACHIEVEMENT_SCALE, TITAN_ACHIEVEMENT_SCALE},
-};
+use crate::magic_values::{SHRUNK_ACHIEVEMENT_SCALE, TITAN_ACHIEVEMENT_SCALE};
 use minestom::{
-    Attribute, BlockType, SharedInstance, Player, PlayerMoveEvent, Pos, entity::ItemDisplay,
-    event::player::PlayerSpawnEvent, item::ItemStack,
-    material::Material,
+    Attribute, BlockType, Player, PlayerMoveEvent, Pos, SharedInstance, entity::ItemDisplay,
+    event::player::PlayerSpawnEvent, item::ItemStack, material::Material,
 };
 use parking_lot::RwLock;
 use rand::Rng;
-use thecrown_common::map::LobbyMap;
 use std::{collections::HashMap, sync::Arc};
 use thecrown_advancements::{self as advancements, CanAchieveAdvancement};
+use thecrown_common::map::LobbyMap;
 use thecrown_components::piano;
 use thecrown_models::{bulbasaur::BulbasaurMob, oldman::OldManModel};
 use uuid::Uuid;
@@ -91,10 +88,7 @@ impl LobbyMap for LobbyMap2 {
         // Old man model
         let model = OldManModel;
         let model = create_wsee_model(model)?;
-        model.init(
-            &self.instance,
-            Pos::of(1800.5, 33.0, 1044.5, -90.0, 0.0),
-        )?;
+        model.init(&self.instance, Pos::of(1800.5, 33.0, 1044.5, -90.0, 0.0))?;
         event_node.listen(move |spawn_event: &PlayerSpawnEvent| {
             if let Ok(player) = spawn_event.player() {
                 let _ = model.add_viewer(&player);

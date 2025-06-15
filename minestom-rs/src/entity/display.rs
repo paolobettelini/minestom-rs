@@ -1,6 +1,6 @@
-use crate::instance::Instance;
 use crate::Result;
 use crate::collision::BoundingBox;
+use crate::instance::Instance;
 use crate::item::ItemStack;
 use crate::jni_utils::{JavaObject, JniValue, get_env};
 use jni::objects::JValue;

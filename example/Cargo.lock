@@ -2769,6 +2769,7 @@ dependencies = [
  "minestom",
  "parking_lot",
  "thecrown-common",
+ "thecrown-protocol",
  "uuid",
 ]
 

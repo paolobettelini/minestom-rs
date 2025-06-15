@@ -98,6 +98,10 @@ impl Component {
         self.color("#FFFF00").expect("Failed to set yellow color")
     }
 
+    pub fn gray(self) -> Self {
+        self.color("#AAAAAA").expect("Failed to set gray color")
+    }
+
     // Style methods
     pub fn bold(self) -> Self {
         self.create_styled_component(|inner| {

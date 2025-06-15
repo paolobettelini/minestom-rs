@@ -1,28 +1,31 @@
 use log::info;
 use minestom::{
-    self, component, entity::PlayerSkin, event::player::{AsyncPlayerConfigurationEvent, PlayerSkinInitEvent, PlayerSpawnEvent}, instance::InstanceManager, material::Material, resource_pack::{ResourcePackInfo, ResourcePackRequestBuilder}, InstanceContainer, MinestomServer, ServerListPingEvent, TOKIO_HANDLE
+    self, InstanceContainer, MinestomServer, ServerListPingEvent, TOKIO_HANDLE, component,
+    entity::PlayerSkin,
+    event::player::{AsyncPlayerConfigurationEvent, PlayerSkinInitEvent, PlayerSpawnEvent},
+    instance::InstanceManager,
+    material::Material,
+    resource_pack::{ResourcePackInfo, ResourcePackRequestBuilder},
 };
-use thecrown_lobby::{maps::LobbyMap2, LobbyServer};
-use thecrown_common::map::create_lobby_instance_container;
 use std::{
     collections::HashMap,
     path::Path,
     sync::{Arc, LazyLock, Mutex, RwLock},
 };
 use thecrown_advancements::init_player_advancements;
+use thecrown_commands::{WebloginCommand, WhisperCommand};
 use thecrown_common::{
+    map::create_lobby_instance_container,
     mojang::get_skin_and_signature,
     nats::{CallbackType, NatsClient},
-    player::COOKIE_AUTH,
+    player::{COOKIE_AUTH, GetGameServer},
     server::Server,
 };
+use thecrown_lobby::{LobbyServer, commands::SpawnCommand, maps::LobbyMap2};
 use thecrown_parkour::ParkourServer;
 use thecrown_protocol::{GameServerType, McServerPacket, RelayPacket};
 use uuid::Uuid;
 use world_seed_entity_engine::model_engine::ModelEngine;
-
-static PLAYER_SERVER: LazyLock<RwLock<HashMap<Uuid, String>>> =
-    LazyLock::new(|| RwLock::new(HashMap::new()));
 
 static SERVERS: LazyLock<Mutex<HashMap<String, Arc<Box<dyn Server + Send + Sync>>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
@@ -43,13 +46,14 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
                 log::info!("Starting server {:?}", server_specs);
                 let server: Box<dyn Server + Send + Sync> = match server_specs.server_type {
                     GameServerType::Lobby => {
-                        let shared_instance = state.instance_manager.create_shared_instance(&state.lobby_instance_container)
+                        let shared_instance = state
+                            .instance_manager
+                            .create_shared_instance(&state.lobby_instance_container)
                             .expect("Could not create shared instance");
-                        
+
                         log::info!("Created shared instance for lobby: {}", server_specs.name);
-                        
-                        let map = LobbyMap2::new(shared_instance)
-                            .expect("Could not create map");
+
+                        let map = LobbyMap2::new(shared_instance).expect("Could not create map");
                         let server = LobbyServer::new(map, state.minecraft_server.clone())
                             .expect("Could not create server");
                         Box::new(server)
@@ -120,6 +124,11 @@ pub async fn run_server() -> anyhow::Result<()> {
     ModelEngine::set_model_material(Material::MagmaCream)?;
     ModelEngine::load_mappings(mappings, models_dir)?;
 
+    // Register commands
+    SpawnCommand.register(&command_manager)?;
+    WebloginCommand.register(&command_manager)?;
+    WhisperCommand::new(nats_client.clone()).register(&command_manager)?;
+
     let minecraft_server_clone = minecraft_server.clone();
     let event_handler = minecraft_server.event_handler()?;
 
@@ -146,16 +155,15 @@ pub async fn run_server() -> anyhow::Result<()> {
                                 username,
                                 game_server
                             );
-                            SERVERS
-                                .lock()
-                                .unwrap()
-                                .get(&game_server)
-                                .unwrap()
-                                .init_player(&minecraft_server_clone, &config_event)?;
-                            PLAYER_SERVER
-                                .write()
-                                .unwrap()
-                                .insert(player.get_uuid()?, game_server.to_string());
+                            let servers_guard = SERVERS.lock().unwrap();
+                            let server = servers_guard.get(&game_server).unwrap();
+                            server.init_player(&minecraft_server_clone, &config_event)?;
+                            // Something like if there server isn't there check another list of
+                            // servers that are being created and wait.
+                            let res = player.set_server(server.clone());
+                            if let Err(e) = res {
+                                log::error!("Error setting setver: {:?}", e);
+                            }
 
                             // Send resource pack
                             let uuid = uuid::Uuid::new_v4();

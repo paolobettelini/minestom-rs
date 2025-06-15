@@ -1,9 +1,9 @@
 pub mod crypto;
 pub mod jni;
+pub mod map;
 pub mod mojang;
 pub mod nats;
 pub mod player;
 pub mod server;
 pub mod text;
 pub mod toml;
-pub mod map;

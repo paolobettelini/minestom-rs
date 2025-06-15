@@ -16,31 +16,31 @@ use std::path::Path;
 pub trait Instance {
     /// Gets the inner Java object for JNI calls
     fn inner(&self) -> Result<JObject<'_>>;
-    
+
     /// Gets all players in this instance
     fn get_players(&self) -> Result<Vec<Player>>;
-    
+
     /// Checks if a chunk is loaded
     fn get_chunk(&self, chunk_x: i32, chunk_z: i32) -> Result<bool>;
-    
+
     /// Loads a chunk
     fn load_chunk(&self, chunk_x: i32, chunk_z: i32) -> Result<()>;
-    
+
     /// Unloads a chunk
     fn unload_chunk(&self, chunk_x: i32, chunk_z: i32) -> Result<()>;
-    
+
     /// Gets the spawn position
     fn get_spawn_position(&self) -> Result<Position>;
-    
+
     /// Sets the spawn position
     fn set_spawn_position(&self, position: &Position) -> Result<()>;
-    
+
     /// Sets a block at the specified coordinates
     fn set_block(&self, x: i32, y: i32, z: i32, block: Block) -> Result<()>;
-    
+
     /// Sets the time rate of this instance
     fn set_time_rate(&self, rate: i32) -> Result<()>;
-    
+
     /// Gets the event node for this instance
     fn event_node(&self) -> Result<EventNode>;
 }
@@ -59,24 +59,24 @@ pub struct InstanceContainer {
 
 /// A shared instance that can be used by multiple lobbies without duplicating the underlying world.
 /// This is more efficient than creating multiple InstanceContainers for the same world.
-/// 
+///
 /// SharedInstance wraps the same underlying Java object as InstanceContainer but provides
 /// a semantic distinction for shared usage. Multiple SharedInstance objects can reference
 /// the same world data, making it ideal for scenarios where you want multiple game modes
 /// or lobbies to use the same map without the overhead of duplicating world data.
-/// 
+///
 /// # Example
 /// ```rust,no_run
 /// use minestom::instance::InstanceManager;
-/// 
+///
 /// // Create one InstanceContainer with the world data
 /// let instance_container = instance_manager.create_instance_container()?;
 /// instance_container.load_anvil_world("/path/to/world")?;
-/// 
+///
 /// // Create multiple SharedInstances from the same container
 /// let shared1 = instance_container.create_shared_instance()?;
 /// let shared2 = instance_container.create_shared_instance()?;
-/// 
+///
 /// // Both shared instances reference the same underlying world
 /// // but can be used independently by different lobbies
 /// ```
@@ -117,19 +117,22 @@ impl InstanceManager {
 
     /// Creates a SharedInstance from an InstanceContainer.
     /// The SharedInstance will reference the same underlying world data but have separate entities.
-    pub fn create_shared_instance(&self, instance_container: &InstanceContainer) -> Result<SharedInstance> {
+    pub fn create_shared_instance(
+        &self,
+        instance_container: &InstanceContainer,
+    ) -> Result<SharedInstance> {
         let mut env = get_env()?;
-        
+
         // Get the InstanceContainer object
         let instance_container_obj = instance_container.inner()?;
-        
+
         // Create a new SharedInstance from this InstanceContainer using InstanceManager
         let shared_instance = self.inner.call_object_method(
             "createSharedInstance",
             "(Lnet/minestom/server/instance/InstanceContainer;)Lnet/minestom/server/instance/SharedInstance;",
             &[JniValue::Object(instance_container_obj)],
         )?;
-        
+
         Ok(SharedInstance::new(shared_instance))
     }
 }

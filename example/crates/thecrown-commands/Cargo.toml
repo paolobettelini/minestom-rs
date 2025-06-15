@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 thecrown-common = { path = "../thecrown-common" }
+thecrown-protocol = { path = "../thecrown-protocol" }
 minestom = { workspace = true }
 log = { workspace = true }
 parking_lot = { workspace = true }

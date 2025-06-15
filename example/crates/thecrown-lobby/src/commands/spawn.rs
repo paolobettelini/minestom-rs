@@ -5,36 +5,31 @@ use minestom::{
     component,
 };
 use parking_lot::RwLock;
-use thecrown_common::map::LobbyMap;
-use std::{collections::HashMap, sync::Arc};
+use std::{any::Any, collections::HashMap, sync::Arc};
+use thecrown_common::{
+    map::LobbyMap,
+    player::GetGameServer,
+    server::{ArcServerDowncast, Server},
+};
 use uuid::Uuid;
 
+use crate::{LobbyServer, maps::LobbyMap2};
+
 #[derive(Debug, Clone)]
-pub struct SpawnCommand<T: LobbyMap> {
-    pub map: T,
-    pub players: Arc<RwLock<HashMap<Uuid, Player>>>,
-}
+pub struct SpawnCommand;
 
-impl<T: LobbyMap> SpawnCommand<T> {
-    pub fn new(map: T, players: Arc<RwLock<HashMap<Uuid, Player>>>) -> Self {
-        Self { map, players }
-    }
-
+impl SpawnCommand {
     pub fn register(
-        &self,
+        self,
         command_manager: &minestom::command::CommandManager,
     ) -> minestom::Result<()> {
-        let builder = command_manager.register(self.clone())?;
-
-        // Clone the map and players for use in the closure
-        let players = self.players.clone();
+        let builder = command_manager.register(self)?;
 
         // Add a condition that checks if the player is in the hashmap
         builder.set_condition(move |sender| {
             if let Ok(player) = sender.as_player() {
-                let players_guard = players.read();
-                if players_guard.contains_key(&player.get_uuid()?) {
-                    return Ok(true);
+                if let Some(server) = player.get_server() {
+                    return Ok(server.downcast_ref::<LobbyServer<LobbyMap2>>().is_some());
                 }
             }
             Ok(false)
@@ -44,7 +39,7 @@ impl<T: LobbyMap> SpawnCommand<T> {
     }
 }
 
-impl<T: LobbyMap> Command for SpawnCommand<T> {
+impl Command for SpawnCommand {
     fn name(&self) -> &str {
         "spawn"
     }
@@ -59,9 +54,14 @@ impl<T: LobbyMap> Command for SpawnCommand<T> {
         let message = component!("Welcome to spawn!").gold().italic();
 
         let player = sender.as_player()?;
+        if let Some(server) = player.get_server() {
+            if let Some(lobby) = server.downcast_ref::<LobbyServer<LobbyMap2>>() {
+                let (x, y, z, yaw, pitch) = lobby.map.spawn_coordinate();
+                player.teleport(x, y, z, yaw, pitch)?;
+            }
+        }
+
         player.send_message(&message)?;
-        let (x, y, z, yaw, pitch) = self.map.spawn_coordinate();
-        player.teleport(x, y, z, yaw, pitch)?;
 
         Ok(())
     }

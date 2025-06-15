@@ -9,10 +9,10 @@ pub struct WebloginCommand;
 
 impl WebloginCommand {
     pub fn register(
-        &self,
+        self,
         command_manager: &minestom::command::CommandManager,
     ) -> minestom::Result<()> {
-        let builder = command_manager.register(self.clone())?;
+        let builder = command_manager.register(self)?;
 
         builder.set_condition(move |_| Ok(true))?;
 

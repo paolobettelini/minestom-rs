@@ -1,6 +1,7 @@
 use minestom::{
-    instance::{Instance, InstanceContainer}, Player, Pos,
+    Player, Pos,
     entity::{EntityCreature, MinestomEntityCreature, create_entity_creature, entity::EntityType},
+    instance::{Instance, InstanceContainer},
 };
 use std::sync::{Arc, Mutex, Weak};
 use world_seed_entity_engine::{
@@ -41,8 +42,15 @@ impl BulbasaurMob {
 
         // Convert to InstanceContainer for storage
         let instance_container = match instance.inner() {
-            Ok(obj) => InstanceContainer::new(minestom::jni_utils::JavaObject::from_env(&mut minestom::jni_utils::get_env()?, obj)?),
-            Err(_) => return Err(minestom::MinestomError::EventError("Failed to get instance".to_string())),
+            Ok(obj) => InstanceContainer::new(minestom::jni_utils::JavaObject::from_env(
+                &mut minestom::jni_utils::get_env()?,
+                obj,
+            )?),
+            Err(_) => {
+                return Err(minestom::MinestomError::EventError(
+                    "Failed to get instance".to_string(),
+                ));
+            }
         };
 
         let mob_impl = Self {

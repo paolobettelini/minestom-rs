@@ -1,5 +1,5 @@
 use crate::State;
-use rand::{seq::IndexedRandom, Rng};
+use rand::{Rng, seq::IndexedRandom};
 use thecrown_protocol::{
     AccomodatePlayerData, GameServerSpecs, GameServerType, McServerPacket, RelayPacket,
     TransferPacketData,
@@ -79,7 +79,8 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
 
             let server = "server1".to_string();
 
-            let game_servers = vec!["lobby1", "lobby2"];
+            //let game_servers = vec!["lobby1", "lobby2"];
+            let game_servers = vec!["lobby1", "parkour1"];
             let game_server = game_servers.choose(&mut rand::rng()).unwrap().to_string();
             log::info!("Putting into {}", &game_server);
 
@@ -111,6 +112,10 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
                 None
             };
             Some(RelayPacket::ServeAuthResult { game_server })
+        }
+        RelayPacket::WhisperCommand { sender, target, message } => {
+            let status = todo!();
+            Some(RelayPacket::WhisperCommandResponse { status })
         }
         _ => None,
     }

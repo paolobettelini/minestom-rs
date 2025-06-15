@@ -22,6 +22,15 @@ static CONDITION_CALLBACKS: Lazy<
 
 static NEXT_CALLBACK_ID: AtomicU64 = AtomicU64::new(1);
 
+/// Represents different types of command arguments
+#[derive(Debug, Clone, Copy)]
+pub enum ArgumentType<'a> {
+    String { name: &'a str },
+    Integer { name: &'a str },
+    Player { name: &'a str, only_players: bool },
+    GreedyString { name: &'a str },
+}
+
 /// Represents a command that can be registered with the command manager
 pub trait Command: Send + Sync + Clone + 'static {
     /// Returns the name of the command
@@ -46,27 +55,13 @@ impl CommandContext {
         Self { inner }
     }
 
-    /// Gets the command sender
-    pub fn sender(&self) -> Result<CommandSender> {
-        let mut env = get_env()?;
-        let result = self.inner.call_object_method(
-            "getSender",
-            "()Lnet/minestom/server/command/CommandSender;",
-            &[],
-        )?;
-        Ok(CommandSender::new(JavaObject::from_env(
-            &mut env,
-            result.as_obj()?,
-        )?))
-    }
-
     /// Gets the command arguments
     pub fn get_string(&self, name: &str) -> Result<String> {
         let mut env = get_env()?;
         let j_name = name.to_java(&mut env)?;
         let result = self.inner.call_object_method(
-            "getString",
-            "(Ljava/lang/String;)Ljava/lang/String;",
+            "get",
+            "(Ljava/lang/String;)Ljava/lang/Object;",
             &[j_name],
         )?;
         let obj = result.as_obj()?;
@@ -75,11 +70,76 @@ impl CommandContext {
         Ok(jstr.to_string_lossy().into_owned())
     }
 
-    pub fn get_integer(&self, name: &str) -> Result<i32> {
+    /// Gets a player argument by name
+    pub fn get_player(&self, name: &str) -> Result<EntityFinder> {
         let mut env = get_env()?;
         let j_name = name.to_java(&mut env)?;
-        self.inner
-            .call_int_method("getInteger", "(Ljava/lang/String;)I", &[j_name])
+
+        let result = self.inner.call_object_method(
+            "get",
+            "(Ljava/lang/String;)Ljava/lang/Object;",
+            &[j_name],
+        )?;
+
+        // The result should be an EntityFinder object
+        let finder_obj = JavaObject::from_env(&mut env, result.as_obj()?)?;
+        Ok(EntityFinder::new(finder_obj))
+    }
+
+    /// Gets a string array argument (for greedy strings) and joins them with spaces
+    pub fn get_string_array(&self, name: &str) -> Result<Vec<String>> {
+        let mut env = get_env()?;
+        let j_name = name.to_java(&mut env)?;
+        let result = self.inner.call_object_method(
+            "get",
+            "(Ljava/lang/String;)Ljava/lang/Object;",
+            &[j_name],
+        )?;
+
+        // The result should be a String array
+        let array_obj = result.as_obj()?;
+        let object_array = jni::objects::JObjectArray::from(array_obj);
+        let array_length = env.get_array_length(&object_array)?;
+
+        let mut strings = Vec::new();
+        for i in 0..array_length {
+            let element = env.get_object_array_element(&object_array, i)?;
+            if !element.is_null() {
+                let string_ref = JString::from(element);
+                let jstr = env.get_string(&string_ref)?;
+                strings.push(jstr.to_string_lossy().into_owned());
+            }
+        }
+
+        Ok(strings)
+    }
+}
+
+/// Represents an EntityFinder that can find entities
+pub struct EntityFinder {
+    inner: JavaObject,
+}
+
+impl EntityFinder {
+    pub(crate) fn new(inner: JavaObject) -> Self {
+        Self { inner }
+    }
+
+    /// Finds the first player using the given sender
+    pub fn find_first_player(&self, sender: &CommandSender) -> Result<crate::entity::Player> {
+        let mut env = get_env()?;
+
+        // Call findFirstPlayer() to get the actual Player
+        let sender_obj = sender.inner.as_obj()?;
+        let player_result = env.call_method(
+            self.inner.as_obj()?,
+            "findFirstPlayer",
+            "(Lnet/minestom/server/command/CommandSender;)Lnet/minestom/server/entity/Player;",
+            &[JValue::Object(&sender_obj)],
+        )?;
+
+        let player_obj = JavaObject::from_env(&mut env, player_result.l()?)?;
+        Ok(crate::entity::Player::new(player_obj))
     }
 }
 
@@ -148,6 +208,7 @@ impl CommandManager {
     ) -> Result<CommandBuilder> {
         let command = Arc::new(command);
         let command_name = command.name();
+        let command_aliases = command.aliases();
 
         let mut env = get_env()?;
 
@@ -164,13 +225,23 @@ impl CommandManager {
         let callback_obj =
             env.new_object(callback_class, "(J)V", &[JValue::Long(callback_id as i64)])?;
 
-        // Create the command
+        // Create the command with aliases
         let command_class = env.find_class("net/minestom/server/command/builder/Command")?;
         let j_name = env.new_string(command_name)?;
+
+        // Create aliases array
+        let string_class = env.find_class("java/lang/String")?;
+        let aliases_array =
+            env.new_object_array(command_aliases.len() as i32, &string_class, JObject::null())?;
+        for (i, alias) in command_aliases.iter().enumerate() {
+            let j_alias = env.new_string(alias)?;
+            env.set_object_array_element(&aliases_array, i as i32, &j_alias)?;
+        }
+
         let command_obj = env.new_object(
             command_class,
-            "(Ljava/lang/String;)V",
-            &[JValue::Object(&j_name)],
+            "(Ljava/lang/String;[Ljava/lang/String;)V",
+            &[JValue::Object(&j_name), JValue::Object(&aliases_array)],
         )?;
 
         // Set the default executor
@@ -214,29 +285,144 @@ impl CommandBuilder {
         Self { inner }
     }
 
-    /// Adds a required string argument to the command
+    /// Adds a syntax with a required string argument to the command
     pub fn add_string_arg(&self, name: &str) -> Result<&Self> {
         let mut env = get_env()?;
         let j_name = name.to_java(&mut env)?;
 
-        self.inner.call_void_method(
+        // Create ArgumentString
+        let arg_class =
+            env.find_class("net/minestom/server/command/builder/arguments/ArgumentString")?;
+        let arg_obj = env.new_object(arg_class, "(Ljava/lang/String;)V", &[j_name.as_jvalue()])?;
+
+        // Add syntax with the argument (using varargs)
+        self.inner.call_object_method(
             "addSyntax",
-            "(Lnet/minestom/server/command/builder/arguments/ArgumentString;)Lnet/minestom/server/command/builder/Command;",
-            &[j_name],
+            "(Lnet/minestom/server/command/builder/CommandExecutor;[Lnet/minestom/server/command/builder/arguments/Argument;)Ljava/util/Collection;",
+            &[JniValue::Object(JObject::null()), JniValue::Object(arg_obj)],
         )?;
 
         Ok(self)
     }
 
-    /// Adds a required integer argument to the command
+    /// Adds a syntax with a required integer argument to the command
     pub fn add_integer_arg(&self, name: &str) -> Result<&Self> {
         let mut env = get_env()?;
         let j_name = name.to_java(&mut env)?;
 
-        self.inner.call_void_method(
+        // Create ArgumentInteger
+        let arg_class =
+            env.find_class("net/minestom/server/command/builder/arguments/ArgumentInteger")?;
+        let arg_obj = env.new_object(arg_class, "(Ljava/lang/String;)V", &[j_name.as_jvalue()])?;
+
+        // Add syntax with the argument (using varargs)
+        self.inner.call_object_method(
             "addSyntax",
-            "(Lnet/minestom/server/command/builder/arguments/ArgumentInteger;)Lnet/minestom/server/command/builder/Command;",
-            &[j_name],
+            "(Lnet/minestom/server/command/builder/CommandExecutor;[Lnet/minestom/server/command/builder/arguments/Argument;)Ljava/util/Collection;",
+            &[JniValue::Object(JObject::null()), JniValue::Object(arg_obj)],
+        )?;
+
+        Ok(self)
+    }
+
+    /// Adds a syntax with a required player argument to the command
+    pub fn add_player_arg(&self, name: &str, only_players: bool) -> Result<&Self> {
+        let mut env = get_env()?;
+        let j_name = name.to_java(&mut env)?;
+
+        // Create ArgumentEntity for players
+        let arg_class = env
+            .find_class("net/minestom/server/command/builder/arguments/minecraft/ArgumentEntity")?;
+        let arg_obj = env.new_object(arg_class, "(Ljava/lang/String;)V", &[j_name.as_jvalue()])?;
+
+        env.call_method(
+            &arg_obj,
+            "onlyPlayers",
+            "(Z)Lnet/minestom/server/command/builder/arguments/minecraft/ArgumentEntity;",
+            &[JniValue::Bool(only_players).as_jvalue()],
+        )?;
+
+        // Add syntax with the argument (using varargs)
+        self.inner.call_object_method(
+            "addSyntax",
+            "(Lnet/minestom/server/command/builder/CommandExecutor;[Lnet/minestom/server/command/builder/arguments/Argument;)Ljava/util/Collection;",
+            &[JniValue::Object(JObject::null()), JniValue::Object(arg_obj)],
+        )?;
+
+        Ok(self)
+    }
+
+    /// Adds a syntax with a greedy string argument (consumes all remaining text)
+    pub fn add_greedy_string_arg(&self, name: &str) -> Result<&Self> {
+        let mut env = get_env()?;
+        let j_name = name.to_java(&mut env)?;
+
+        // Create ArgumentStringArray with GREEDY mode
+        let arg_class =
+            env.find_class("net/minestom/server/command/builder/arguments/ArgumentStringArray")?;
+        let arg_obj = env.new_object(arg_class, "(Ljava/lang/String;)V", &[j_name.as_jvalue()])?;
+
+        // Add syntax with the argument (using varargs)
+        self.inner.call_object_method(
+            "addSyntax",
+            "(Lnet/minestom/server/command/builder/CommandExecutor;[Lnet/minestom/server/command/builder/arguments/Argument;)Ljava/util/Collection;",
+            &[JniValue::Object(JObject::null()), JniValue::Object(arg_obj)],
+        )?;
+
+        Ok(self)
+    }
+
+    /// Adds a syntax with multiple arguments to the command
+    pub fn add_syntax_with_args(&self, args: &[ArgumentType]) -> Result<&Self> {
+        let mut env = get_env()?;
+
+        // Create argument array
+        let arg_class = env.find_class("net/minestom/server/command/builder/arguments/Argument")?;
+        let args_array = env.new_object_array(args.len() as i32, &arg_class, JObject::null())?;
+
+        for (i, arg_type) in args.iter().enumerate() {
+            let arg_obj = match arg_type {
+                ArgumentType::String { name } => {
+                    let j_name = name.to_java(&mut env)?;
+                    let class = env.find_class(
+                        "net/minestom/server/command/builder/arguments/ArgumentString",
+                    )?;
+                    env.new_object(class, "(Ljava/lang/String;)V", &[j_name.as_jvalue()])?
+                }
+                ArgumentType::Integer { name } => {
+                    let j_name = name.to_java(&mut env)?;
+                    let class = env.find_class(
+                        "net/minestom/server/command/builder/arguments/ArgumentInteger",
+                    )?;
+                    env.new_object(class, "(Ljava/lang/String;)V", &[j_name.as_jvalue()])?
+                }
+                ArgumentType::Player { name, only_players } => {
+                    let j_name = name.to_java(&mut env)?;
+                    let class = env.find_class(
+                        "net/minestom/server/command/builder/arguments/minecraft/ArgumentEntity",
+                    )?;
+                    let obj =
+                        env.new_object(class, "(Ljava/lang/String;)V", &[j_name.as_jvalue()])?;
+                    env.call_method(&obj, "onlyPlayers", "(Z)Lnet/minestom/server/command/builder/arguments/minecraft/ArgumentEntity;", &[JniValue::Bool(true).as_jvalue()])?;
+                    obj
+                }
+                ArgumentType::GreedyString { name } => {
+                    let j_name = name.to_java(&mut env)?;
+                    let class = env.find_class(
+                        "net/minestom/server/command/builder/arguments/ArgumentStringArray",
+                    )?;
+                    env.new_object(class, "(Ljava/lang/String;)V", &[j_name.as_jvalue()])?
+                }
+            };
+
+            env.set_object_array_element(&args_array, i as i32, &arg_obj)?;
+        }
+
+        // Add syntax with the arguments (array is passed as varargs)
+        self.inner.call_object_method(
+            "addSyntax",
+            "(Lnet/minestom/server/command/builder/CommandExecutor;[Lnet/minestom/server/command/builder/arguments/Argument;)Ljava/util/Collection;",
+            &[JniValue::Object(JObject::null()), JniValue::Object(JObject::from(args_array))],
         )?;
 
         Ok(self)

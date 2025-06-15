@@ -28,6 +28,16 @@ pub enum RelayPacket {
     ServeAuthResult {
         game_server: Option<String>,
     },
+    /* Game Server -> Relay */
+    WhisperCommand {
+        sender: String,
+        target: String,
+        message: String,
+    },
+    /* Relay -> Game Server */
+    WhisperCommandResponse {
+        status: bool,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug)]

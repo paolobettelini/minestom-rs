@@ -1,6 +1,8 @@
 mod magic_values;
 use magic_values::*;
+pub mod commands;
 pub mod maps;
+use commands::SpawnCommand;
 use log::info;
 use minestom::{
     self, MinestomServer, Player,
@@ -17,8 +19,8 @@ use minestom::{
     material::Material,
 };
 use parking_lot::RwLock;
-use thecrown_commands::{SpawnCommand, WebloginCommand};
 use std::{collections::HashMap, sync::Arc};
+use thecrown_commands::{WebloginCommand, WhisperCommand};
 use thecrown_common::{map::LobbyMap, server::Server};
 use uuid::Uuid;
 
@@ -55,18 +57,11 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
         let instance_manager = minecraft_server.instance_manager()?;
         let command_manager = minecraft_server.command_manager()?;
 
-        // TODO use ShareInstance from a static instance
         let instance = self.map.instance();
 
         let event_handler = instance.event_node()?;
 
         let players = self.players.clone();
-
-        // Register commands
-        //let spawn_command = SpawnCommand::new(self.map.clone(), players.clone());
-        //let weblogin_command = WebloginCommand;
-        //spawn_command.register(&command_manager)?;
-        //weblogin_command.register(&command_manager)?;
 
         let map_clone = self.map.clone();
         event_handler.listen(move |spawn_event: &PlayerSpawnEvent| {
@@ -92,7 +87,7 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
                 player.set_allow_flying(true)?;
 
                 let scale = distribution(AVG_SCALE, MIN_SCALE, MAX_SCALE);
-                let scale = 0.2;
+                let scale = if username == "HypePaul" { 10.0 } else { 0.2 };
 
                 info!("Setting player scale to {}", scale);
                 player

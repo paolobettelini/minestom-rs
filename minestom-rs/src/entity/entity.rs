@@ -1,7 +1,7 @@
 use crate::Component;
-use crate::instance::Instance;
 use crate::Result;
 use crate::collision::BoundingBox;
+use crate::instance::Instance;
 use crate::jni_utils::{JavaObject, JniValue, get_env};
 use crate::tag::TagHandler;
 use jni::objects::{JObject, JValue};
