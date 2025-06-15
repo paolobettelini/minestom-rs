@@ -83,7 +83,7 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
             let game_server = game_servers.choose(&mut rand::rng()).unwrap().to_string();
             log::info!("Putting into {}", &game_server);
 
-            let address = "bettelini.internet-box.ch".to_string();
+            let address = "127.0.0.1".to_string();
             let port = 25566;
             let cookie = state
                 .gen_auth_for_player_game_server(username, server, game_server)

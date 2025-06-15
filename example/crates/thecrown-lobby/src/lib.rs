@@ -63,10 +63,10 @@ impl<T: LobbyMap> Server for LobbyServer<T> {
         let players = self.players.clone();
 
         // Register commands
-        let spawn_command = SpawnCommand::new(self.map.clone(), players.clone());
-        let weblogin_command = WebloginCommand;
-        spawn_command.register(&command_manager)?;
-        weblogin_command.register(&command_manager)?;
+        //let spawn_command = SpawnCommand::new(self.map.clone(), players.clone());
+        //let weblogin_command = WebloginCommand;
+        //spawn_command.register(&command_manager)?;
+        //weblogin_command.register(&command_manager)?;
 
         let map_clone = self.map.clone();
         event_handler.listen(move |spawn_event: &PlayerSpawnEvent| {

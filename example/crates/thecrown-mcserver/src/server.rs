@@ -60,7 +60,11 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
                     }
                 };
 
-                let _ = server.init(&state.minecraft_server);
+                let res = server.init(&state.minecraft_server);
+                if let Err(e) = res {
+                    log::error!("{:?}", e);
+                }
+
                 let server_name = String::from(server_specs.name);
                 SERVERS
                     .lock()
@@ -104,7 +108,7 @@ pub async fn run_server() -> anyhow::Result<()> {
     // let out = task_handle.await?;
     let register_packet = RelayPacket::RegisterServer {
         server_name: server_name.to_string(),
-        address: String::from("bettelini.internet-box.ch"),
+        address: String::from("127.0.0.1"),
         port,
     };
 
@@ -155,7 +159,7 @@ pub async fn run_server() -> anyhow::Result<()> {
 
                             // Send resource pack
                             let uuid = uuid::Uuid::new_v4();
-                            let url = "http://bettelini.internet-box.ch:6543/resourcepack.zip";
+                            let url = "http://127.0.0.1:6543/resourcepack.zip";
                             let hash = include_str!(concat!(env!("OUT_DIR"), "/resourcepack.sha1"));
 
                             let pack_info = ResourcePackInfo::new(uuid, url, hash)?;
