@@ -36,7 +36,7 @@ use tokio::runtime::Handle;
 // Re-export commonly used types
 use crate::event::CALLBACKS;
 use crate::jni_utils::JavaObject;
-pub use command::{Command, EntityFinder};
+pub use command::{Command, EntityFinder, Suggestion, SuggestionEntry, Argument, create_string_arg, create_integer_arg, create_player_arg, create_greedy_string_arg};
 pub use entity::Player;
 pub use event::Event;
 pub use event::player::{

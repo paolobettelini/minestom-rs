@@ -83,7 +83,7 @@ pub async fn handle_msg(state: &State, msg: PacketType) -> Option<PacketType> {
             };
             if let Some(player) = res {
                 let msg = component!("Whisper >> ")
-                    .color("#454545").unwrap()
+                    .gray()
                     .chain(component!("[").gray())
                     .chain(component!("{}", sender).yellow())
                     .chain(component!("] ").gray())

@@ -20,15 +20,99 @@ static CONDITION_CALLBACKS: Lazy<
     RwLock<HashMap<u64, Arc<dyn Fn(&CommandSender) -> Result<bool> + Send + Sync>>>,
 > = Lazy::new(|| RwLock::new(HashMap::new()));
 
+// Store suggestion callbacks
+static SUGGESTION_CALLBACKS: Lazy<
+    RwLock<HashMap<u64, Arc<dyn Fn(&CommandSender, &CommandContext, &mut Suggestion) -> Result<()> + Send + Sync>>>,
+> = Lazy::new(|| RwLock::new(HashMap::new()));
+
 static NEXT_CALLBACK_ID: AtomicU64 = AtomicU64::new(1);
 
-/// Represents different types of command arguments
-#[derive(Debug, Clone, Copy)]
-pub enum ArgumentType<'a> {
-    String { name: &'a str },
-    Integer { name: &'a str },
-    Player { name: &'a str, only_players: bool },
-    GreedyString { name: &'a str },
+/// Represents a command argument
+pub struct Argument {
+    inner: JavaObject,
+}
+
+impl Argument {
+    pub(crate) fn new(inner: JavaObject) -> Self {
+        Self { inner }
+    }
+
+    /// Sets a suggestion callback for this argument
+    pub fn set_suggestion_callback<F>(&self, callback: F) -> Result<()>
+    where
+        F: Fn(&CommandSender, &CommandContext, &mut Suggestion) -> Result<()> + Send + Sync + 'static,
+    {
+        let mut env = get_env()?;
+
+        // Store the suggestion callback
+        let callback_id = NEXT_CALLBACK_ID.fetch_add(1, Ordering::SeqCst);
+        let callback = Arc::new(callback);
+        SUGGESTION_CALLBACKS.write().insert(callback_id, callback);
+
+        // Create the suggestion callback executor
+        let callback_class = env.find_class("rust/minestom/SuggestionCallback")?;
+        let callback_obj =
+            env.new_object(callback_class, "(J)V", &[JValue::Long(callback_id as i64)])?;
+
+        // Set the suggestion callback
+        self.inner.call_object_method(
+            "setSuggestionCallback",
+            "(Lnet/minestom/server/command/builder/suggestion/SuggestionCallback;)Lnet/minestom/server/command/builder/arguments/Argument;",
+            &[JniValue::Object(callback_obj)],
+        )?;
+
+        Ok(())
+    }
+
+    pub(crate) fn inner(&self) -> &JavaObject {
+        &self.inner
+    }
+}
+
+/// Creates a string argument
+pub fn create_string_arg(name: &str) -> Result<Argument> {
+    let mut env = get_env()?;
+    let j_name = name.to_java(&mut env)?;
+
+    let arg_class = env.find_class("net/minestom/server/command/builder/arguments/ArgumentString")?;
+    let arg_obj = env.new_object(arg_class, "(Ljava/lang/String;)V", &[j_name.as_jvalue()])?;
+
+    Ok(Argument::new(JavaObject::from_env(&mut env, arg_obj)?))
+}
+
+/// Creates an integer argument
+pub fn create_integer_arg(name: &str) -> Result<Argument> {
+    let mut env = get_env()?;
+    let j_name = name.to_java(&mut env)?;
+
+    let arg_class = env.find_class("net/minestom/server/command/builder/arguments/ArgumentInteger")?;
+    let arg_obj = env.new_object(arg_class, "(Ljava/lang/String;)V", &[j_name.as_jvalue()])?;
+
+    Ok(Argument::new(JavaObject::from_env(&mut env, arg_obj)?))
+}
+
+/// Creates a player argument
+pub fn create_player_arg(name: &str, only_players: bool) -> Result<Argument> {
+    let mut env = get_env()?;
+    let j_name = name.to_java(&mut env)?;
+
+    let arg_class = env.find_class("net/minestom/server/command/builder/arguments/minecraft/ArgumentEntity")?;
+    let arg_obj = env.new_object(arg_class, "(Ljava/lang/String;Z)V", &[j_name.as_jvalue(), JniValue::Bool(false).as_jvalue()])?;
+
+    env.call_method(&arg_obj, "onlyPlayers", "(Z)Lnet/minestom/server/command/builder/arguments/minecraft/ArgumentEntity;", &[JniValue::Bool(only_players).as_jvalue()])?;
+
+    Ok(Argument::new(JavaObject::from_env(&mut env, arg_obj)?))
+}
+
+/// Creates a greedy string argument (consumes all remaining text)
+pub fn create_greedy_string_arg(name: &str) -> Result<Argument> {
+    let mut env = get_env()?;
+    let j_name = name.to_java(&mut env)?;
+
+    let arg_class = env.find_class("net/minestom/server/command/builder/arguments/ArgumentStringArray")?;
+    let arg_obj = env.new_object(arg_class, "(Ljava/lang/String;)V", &[j_name.as_jvalue()])?;
+
+    Ok(Argument::new(JavaObject::from_env(&mut env, arg_obj)?))
 }
 
 /// Represents a command that can be registered with the command manager
@@ -140,6 +224,82 @@ impl EntityFinder {
 
         let player_obj = JavaObject::from_env(&mut env, player_result.l()?)?;
         Ok(crate::entity::Player::new(player_obj))
+    }
+}
+
+/// Represents a suggestion entry for command completion
+pub struct SuggestionEntry {
+    inner: JavaObject,
+}
+
+impl SuggestionEntry {
+    /// Creates a new suggestion entry with the given text
+    pub fn new(text: &str) -> Result<Self> {
+        let mut env = get_env()?;
+        let j_text = text.to_java(&mut env)?;
+        
+        let entry_class = env.find_class("net/minestom/server/command/builder/suggestion/SuggestionEntry")?;
+        let entry_obj = env.new_object(
+            entry_class,
+            "(Ljava/lang/String;)V",
+            &[j_text.as_jvalue()],
+        )?;
+        
+        Ok(Self {
+            inner: JavaObject::from_env(&mut env, entry_obj)?,
+        })
+    }
+    
+    pub(crate) fn inner(&self) -> &JavaObject {
+        &self.inner
+    }
+}
+
+/// Represents a suggestion for command completion
+pub struct Suggestion {
+    inner: JavaObject,
+}
+
+impl Suggestion {
+    pub(crate) fn new(inner: JavaObject) -> Self {
+        Self { inner }
+    }
+    
+    /// Sets the start position for the suggestion
+    pub fn set_start(&self, start: i32) -> Result<()> {
+        let mut env = get_env()?;
+        env.call_method(
+            self.inner.as_obj()?,
+            "setStart",
+            "(I)V",
+            &[JValue::Int(start)],
+        )?;
+        Ok(())
+    }
+    
+    /// Sets the length for the suggestion
+    pub fn set_length(&self, length: i32) -> Result<()> {
+        let mut env = get_env()?;
+        env.call_method(
+            self.inner.as_obj()?,
+            "setLength",
+            "(I)V",
+            &[JValue::Int(length)],
+        )?;
+        Ok(())
+    }
+    
+    /// Adds a suggestion entry
+    pub fn add_entry(&self, entry: &SuggestionEntry) -> Result<()> {
+        let mut env = get_env()?;
+        let entry_obj = entry.inner.as_obj()?;
+        env.call_method(
+            self.inner.as_obj()?,
+            "addEntry",
+            "(Lnet/minestom/server/command/builder/suggestion/SuggestionEntry;)V",
+            &[JValue::Object(&entry_obj)],
+        )?;
+        Ok(())
     }
 }
 
@@ -373,48 +533,15 @@ impl CommandBuilder {
     }
 
     /// Adds a syntax with multiple arguments to the command
-    pub fn add_syntax_with_args(&self, args: &[ArgumentType]) -> Result<&Self> {
+    pub fn add_syntax_with_args(&self, args: &[&Argument]) -> Result<&Self> {
         let mut env = get_env()?;
 
         // Create argument array
         let arg_class = env.find_class("net/minestom/server/command/builder/arguments/Argument")?;
         let args_array = env.new_object_array(args.len() as i32, &arg_class, JObject::null())?;
 
-        for (i, arg_type) in args.iter().enumerate() {
-            let arg_obj = match arg_type {
-                ArgumentType::String { name } => {
-                    let j_name = name.to_java(&mut env)?;
-                    let class = env.find_class(
-                        "net/minestom/server/command/builder/arguments/ArgumentString",
-                    )?;
-                    env.new_object(class, "(Ljava/lang/String;)V", &[j_name.as_jvalue()])?
-                }
-                ArgumentType::Integer { name } => {
-                    let j_name = name.to_java(&mut env)?;
-                    let class = env.find_class(
-                        "net/minestom/server/command/builder/arguments/ArgumentInteger",
-                    )?;
-                    env.new_object(class, "(Ljava/lang/String;)V", &[j_name.as_jvalue()])?
-                }
-                ArgumentType::Player { name, only_players } => {
-                    let j_name = name.to_java(&mut env)?;
-                    let class = env.find_class(
-                        "net/minestom/server/command/builder/arguments/minecraft/ArgumentEntity",
-                    )?;
-                    let obj =
-                        env.new_object(class, "(Ljava/lang/String;)V", &[j_name.as_jvalue()])?;
-                    env.call_method(&obj, "onlyPlayers", "(Z)Lnet/minestom/server/command/builder/arguments/minecraft/ArgumentEntity;", &[JniValue::Bool(true).as_jvalue()])?;
-                    obj
-                }
-                ArgumentType::GreedyString { name } => {
-                    let j_name = name.to_java(&mut env)?;
-                    let class = env.find_class(
-                        "net/minestom/server/command/builder/arguments/ArgumentStringArray",
-                    )?;
-                    env.new_object(class, "(Ljava/lang/String;)V", &[j_name.as_jvalue()])?
-                }
-            };
-
+        for (i, arg) in args.iter().enumerate() {
+            let arg_obj = arg.inner.as_obj()?;
             env.set_object_array_element(&args_array, i as i32, &arg_obj)?;
         }
 
@@ -453,6 +580,98 @@ impl CommandBuilder {
         )?;
 
         Ok(())
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "system" fn Java_rust_minestom_SuggestionCallback_applySuggestion(
+    env: *mut jni::sys::JNIEnv,
+    _class: jni::objects::JClass,
+    callback_id: jni::sys::jlong,
+    sender: jni::objects::JObject,
+    context: jni::objects::JObject,
+    suggestion: jni::objects::JObject,
+) {
+    // Catch any panic to prevent unwinding into Java
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        // Convert the raw JNIEnv pointer to a safe JNIEnv wrapper
+        let env_wrapper = match unsafe { jni::JNIEnv::from_raw(env) } {
+            Ok(env) => env,
+            Err(e) => {
+                error!("Failed to get JNIEnv: {}", e);
+                return;
+            }
+        };
+
+        // Create a mutable reference to the environment
+        let env = env_wrapper;
+
+        // Create a frame to automatically delete local references when we're done
+        let _frame = match env.push_local_frame(64) {
+            Ok(frame) => frame,
+            Err(e) => {
+                error!("Failed to create local frame: {}", e);
+                return;
+            }
+        };
+
+        // Create global references to ensure the objects stay alive
+        let global_context = match env.new_global_ref(&context) {
+            Ok(global) => global,
+            Err(e) => {
+                error!("Failed to create global reference for context: {}", e);
+                return;
+            }
+        };
+
+        let global_sender = match env.new_global_ref(&sender) {
+            Ok(global) => global,
+            Err(e) => {
+                error!("Failed to create global reference for sender: {}", e);
+                return;
+            }
+        };
+
+        let global_suggestion = match env.new_global_ref(&suggestion) {
+            Ok(global) => global,
+            Err(e) => {
+                error!("Failed to create global reference for suggestion: {}", e);
+                return;
+            }
+        };
+
+        // Create JavaObjects from the global references
+        let context_obj = JavaObject::new(global_context);
+        let sender_obj = JavaObject::new(global_sender);
+        let suggestion_obj = JavaObject::new(global_suggestion);
+
+        // Create the command context, sender, and suggestion
+        let context = CommandContext::new(context_obj);
+        let sender = CommandSender::new(sender_obj);
+        let mut suggestion = Suggestion::new(suggestion_obj);
+
+        // Get the callback from our global map
+        let callback = {
+            let callbacks = SUGGESTION_CALLBACKS.read();
+            match callbacks.get(&(callback_id as u64)) {
+                Some(callback) => callback.clone(),
+                None => {
+                    error!("No suggestion callback found for id: {}", callback_id);
+                    return;
+                }
+            }
+        };
+
+        debug!("Executing suggestion callback...");
+
+        // Execute the callback
+        if let Err(e) = callback(&sender, &context, &mut suggestion) {
+            error!("Error executing suggestion callback: {}", e);
+        }
+    }));
+
+    if let Err(e) = result {
+        error!("Panic occurred in suggestion callback: {:?}", e);
     }
 }
 

@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use minestom::{
     self, Command, TOKIO_HANDLE,
-    command::{ArgumentType, CommandContext, CommandSender},
-    component,
+    command::{CommandContext, CommandSender},
+    component, Suggestion, SuggestionEntry, create_string_arg, create_greedy_string_arg,
 };
 use thecrown_common::nats::NatsClient;
 use thecrown_protocol::RelayPacket;
@@ -24,13 +24,21 @@ impl WhisperCommand {
         let builder = command_manager.register(self)?;
 
         // Add syntax: /whisper <player> <message>
-        builder.add_syntax_with_args(&[
-            ArgumentType::String { name: "player" }, //, only_players: false },
-            ArgumentType::GreedyString { name: "message" },
-        ])?;
+        let player_arg = create_string_arg("player")?;
+        let message_arg = create_greedy_string_arg("message")?;
 
-        // TODO set suggestion callback and manually add all the player of this servers,
-        // members of the party and friends and members of the gild (?)
+        // Set suggestion callback for player names
+        player_arg.set_suggestion_callback(|_sender, _context, suggestion| {
+            let player1 = SuggestionEntry::new("Alice")?;
+            let player2 = SuggestionEntry::new("Bob")?;
+            
+            suggestion.add_entry(&player1)?;
+            suggestion.add_entry(&player2)?;
+            
+            Ok(())
+        })?;
+
+        builder.add_syntax_with_args(&[&player_arg, &message_arg])?;
 
         // Set condition to only allow players
         builder.set_condition(move |sender| Ok(sender.is_player()?))?;
