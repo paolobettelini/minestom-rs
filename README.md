@@ -1,8 +1,5 @@
 # Minestom Rust bindings.
 
-I comandi devono essere inizializzati all'inizio e basta. Quindi bisogna aggiungere a player
-un .get_server etc. così che si possa gestire la condition.
-
 This crate is not meant to be used in a binary crate. [Minestom](https://github.com/Minestom/Minestom) needs to run in a JVM.
 You need to create both a (minimal) Java project and a `cdylib` crate.
 The Java project will load the `cdylib` and execute your code.
@@ -100,9 +97,12 @@ gradle build
 java -Djava.library.path=$CARGO_TARGET_DIR/release -jar build/libs/app.jar 
 ```
 
-# TODO
+<!-- # TODO
 
 Event and command callbacks should be async. InstanceContainer, SharedInstance etc dovrebbero avere gli stessi metodi comuni.
 Lo scheduler non funziona, dà errore JNI.
 In WorldSeedEntityEngine si dovrebbe essere registerListener o un metodo per rimuoverli.
-Si potrebbe fare che per esempio il piano viene inserito nell'instance container mentre gli armorstand solo nella shared instance.
+Si potrebbe fare che per esempio il piano viene inserito nell'instance container mentre gli armorstand solo nella shared instance. Nel piano usare una entity interation al posto di 5 armorstand.
+I comandi devono essere inizializzati all'inizio e basta. Quindi bisogna aggiungere a player
+un .get_server etc. così che si possa gestire la condition.
+-->
